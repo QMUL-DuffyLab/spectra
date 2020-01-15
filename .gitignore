@@ -1,0 +1,14 @@
+# ignore executable, .o files and output
+obj/
+out/
+
+# only track .def files in input dir
+in/*
+!in/*.def
+ignore/*
+
+# i > to *.out to be able to grep through stdout sometimes
+*.out
+
+# macs are annoying
+*.DS_Store
