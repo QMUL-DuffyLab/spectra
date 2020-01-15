@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 #include <complex.h>
 #include <gsl/gsl_integration.h>
 
@@ -82,13 +83,15 @@ double
 At(double w0, double re, double im, Params p)
 {
     /* Params *p = (Params *) params; */
-    double complex exponent = -I * (w0 * p.t) - re - (I * im);
+    double complex exponent = -I * (w0 * p.t) - (re + (I * im));
     return exp(exponent);
 }
 
 int
 main(int argc, char** argv)
 {
+    time_t start_time, end_time;
+    time(&start_time);
     Params p;
     /* can write stuff to read this in */
     p.s0 = 0.5;
@@ -125,6 +128,11 @@ main(int argc, char** argv)
 		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). At = %10.6f. iterations: %i\n",
 		cmtime, re_res, im_res, re_err, im_err, Ati, work->size);
     }
+    time(&end_time);
+    /* this is pretty useless, i forgot it only does integer seconds */
+    double time_taken = difftime(end_time, start_time);
+    fprintf(stdout, "Time taken: %12.8f\n",
+	    time_taken);
     gsl_integration_workspace_free(work);
     exit(EXIT_SUCCESS);
 }
