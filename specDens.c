@@ -14,7 +14,8 @@ typedef struct {
 } Params;
 
 /* Chl spectral density */
-double cw_chl(double w, void* params)
+double
+cw_chl(double w, void* params)
 {
     /* Pass a void pointer and cast it here for compatibility
      * with gsl_function when we do the quadrature */
@@ -26,7 +27,8 @@ double cw_chl(double w, void* params)
 }
 
 /* Car spectral density */
-double cw_car(double w, void* params)
+double
+cw_car(double w, void* params)
 {
     Params *p = (Params *) params;
     double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
@@ -40,14 +42,16 @@ double cw_car(double w, void* params)
  * which should be switchable, but we need to call a function pointer
  * of a specific form later on. Hence, add a function pointer to the params
  * struct and use that to decide which spectral density function to use. */
-double trig_re(double w, void* params)
+double
+trig_re(double w, void* params)
 {
     Params *p = (Params *) params;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (1 - cos(w * p->t))
 	   * (1. / tanh((HBAR * w) / (2. * KB * p->T)));
 }
 
-double trig_im(double w, void* params)
+double
+trig_im(double w, void* params)
 {
     Params *p = (Params *) params;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (sin(w * p->t) - w * p->t);
@@ -74,7 +78,16 @@ double trig_im(double w, void* params)
 /*     return result; */
 /* } */
 
-int main(int argc, char** argv)
+double
+At(double w0, double re, double im, Params p)
+{
+    /* Params *p = (Params *) params; */
+    double complex exponent = -I * (w0 * p.t) - re - (I * im);
+    return exp(exponent);
+}
+
+int
+main(int argc, char** argv)
 {
     Params p;
     /* can write stuff to read this in */
@@ -106,9 +119,11 @@ int main(int argc, char** argv)
 	F.function = &trig_im;
 	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &im_res, &im_err);
 
+	double w0 = 1.0;
+	double Ati = At(w0, re_res, im_res, p);
 	fprintf(stdout, "t = %8.5f. result: "
-		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). iterations: %i\n",
-		cmtime, re_res, im_res, re_err, im_err, work->size);
+		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). At = %10.6f. iterations: %i\n",
+		cmtime, re_res, im_res, re_err, im_err, Ati, work->size);
     }
     gsl_integration_workspace_free(work);
     exit(EXIT_SUCCESS);
