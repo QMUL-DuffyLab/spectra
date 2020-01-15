@@ -6,6 +6,7 @@ out/
 in/*
 !in/*.def
 ignore/*
+test
 
 # i > to *.out to be able to grep through stdout sometimes
 *.out

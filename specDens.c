@@ -90,21 +90,26 @@ int main(int argc, char** argv)
     p.cw = cw;
 
     double re_res, re_err, im_res, im_err;
-    double complex res[2];
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
     gsl_function F;
-    /* possible issue here with the function pointer */
-    F.function = &trig_re;
-    F.params = &p;
-    gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &re_res, &re_err);
-    F.function = &trig_im;
-    gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &im_res, &im_err);
 
+    for (int i = 10; i < 1000; i++) {
 
-    fprintf(stdout, "result: "
-    	    "(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). iterations: %i\n",
-    	    re_res, im_res, re_err, im_err, work->size);
+	/* SO: 1E-15 means that each step is a femtosecond,
+	 * and the 2 Pi c * 100 gives us cm, which is
+	 * what we need for the rest of the functions. */
+	double cmtime = ((double) i) * 2. * M_PI * 3E8 * 100 * 1E-15;
+	p.t = cmtime;
+	F.function = &trig_re;
+	F.params = &p;
+	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &re_res, &re_err);
+	F.function = &trig_im;
+	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &im_res, &im_err);
+
+	fprintf(stdout, "t = %8.5f. result: "
+		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). iterations: %i\n",
+		cmtime, re_res, im_res, re_err, im_err, work->size);
+    }
     gsl_integration_workspace_free(work);
     exit(EXIT_SUCCESS);
-
 }
