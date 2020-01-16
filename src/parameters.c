@@ -45,7 +45,9 @@ getParameters(char *filename)
 	    p.w1 = atof(val);
 	} else if (strcmp(key, "w2") == 0) {
 	    p.w2 = atof(val);
-	} 
+	} else if (strcmp(key, "T") == 0) {
+	    p.T = atof(val);
+	}
 
 	/* future file names */
 	/* else if (strcmp(key, "mag") == 0) { */

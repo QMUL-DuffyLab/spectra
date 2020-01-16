@@ -1,5 +1,4 @@
 #include <time.h>
-#include <complex.h>
 #include <gsl/gsl_integration.h>
 #include <fftw3.h>
 #include "functions.h"
@@ -22,13 +21,7 @@ main(int argc, char** argv)
 
     /* ALL THIS SHOULD BE READ IN */
     int num_steps = 1000;
-    p.s0 = 0.5;
-    p.s1 = 0.8;
-    p.s2 = 0.5;
-    p.w1 = 0.56;
-    p.w2 = 1.94;
-    p.t = 1.0;
-    p.T = 3.0;
+    p = getParameters(argv[1]);
 
     times = malloc(num_steps * sizeof(double));
     Atv   = malloc(num_steps * sizeof(double));
