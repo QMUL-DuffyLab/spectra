@@ -23,7 +23,7 @@ else
 endif
 
 ifeq ($(UNAME), Darwin)
-	LIBRARIES = -lm -lgsl -L/opt/local/lib -L/opt/local/lib/mpich-devel-mp -L/opt/local/lib/openmpi-mp
+	LIBRARIES = -lm -lgsl -lfftw3 -L/opt/local/lib -L/opt/local/lib/mpich-devel-mp -L/opt/local/lib/openmpi-mp
 	INCLUDES = -I/opt/local/include
 	CFLAGS = -Wall -Wextra -std=c99 $(DEBUGFLAG) $(INCLUDES)
 	LFLAGS = -Wall -Wextra -std=c99 $(DEBUGFLAG) $(LIBRARIES)

@@ -11,7 +11,7 @@ main(int argc, char** argv)
     time(&start_time);
     Parameters p;
     double *times, *Atv, *Ftv;
-    fftw_complex *in, *out;
+    fftw_complex *out, *in;
     fftw_plan plan;
     double (*cw)(double, void *);
     double (*re)(double, void *);
@@ -78,8 +78,25 @@ main(int argc, char** argv)
 		im_err, Atv[i], Ftv[i], work->size);
     }
 
-    
+    fprintf(stdout, "Performing FFT.\n");
 
+    /* this assignment is very ugly but trying to copy Chris's code */
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * num_steps);
+    for (int i = 0; i < num_steps; i++) {
+	in[i][0] = Atv[i];
+	in[i][1] = 0.0;
+    }
+
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * num_steps);
+    plan = fftw_plan_dft_1d(num_steps, 
+    	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_execute(plan); 
+    double pf = 2.* M_PI * 3E8 * 100. * 1E-15 * sqrt(num_steps);
+    for (int i = 0; i < num_steps; i++) {
+	fprintf(stdout, "FFT element = (%8.5f + %8.5f)\n",
+		out[i][0]*pf, out[i][1]*pf);
+    }
+    fprintf(stdout, "FFT performed.\n");
 
     time(&end_time);
     /* this is pretty useless, i forgot it only does integer seconds */
@@ -87,6 +104,8 @@ main(int argc, char** argv)
     fprintf(stdout, "Time taken: %12.8f\n",
 	    time_taken);
     gsl_integration_workspace_free(work);
+    fftw_destroy_plan(plan);
+    fftw_free(out);
     free(times);
     free(Atv);
     free(Ftv);
