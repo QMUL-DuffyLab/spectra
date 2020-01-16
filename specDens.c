@@ -3,6 +3,7 @@
 #include <time.h>
 #include <complex.h>
 #include <gsl/gsl_integration.h>
+#include <fftw3.h>
 
 /* in cm lol */
 #define HBAR 2.90283E-23
@@ -60,10 +61,24 @@ trig_im(double w, void* params)
 }
 
 double
+reorg_int(double w, void* params)
+{
+    Params *p = (Params *) params;
+    return p->cw(w, p) * (1. / (M_PI * w));
+}
+
+double
 At(double w0, double re, double im, Params p)
 {
     /* Params *p = (Params *) params; */
     double complex exponent = -I * (w0 * p.t) - (re + (I * im));
+    return exp(exponent);
+}
+
+double
+Ft(double w0, double re, double im, double reorg, Params p)
+{
+    double complex exponent = -I * (w0 * p.t) - (re + (I * im)) - (2. * reorg);
     return exp(exponent);
 }
 
@@ -73,7 +88,9 @@ main(int argc, char** argv)
     time_t start_time, end_time;
     time(&start_time);
     Params p;
-    double *times, *Atv;
+    double *times, *Atv, *Ftv;
+    fftw_complex *in, *out;
+    fftw_plan plan;
 
     /* ALL THIS SHOULD BE READ IN */
     int num_steps = 1000;
@@ -84,10 +101,11 @@ main(int argc, char** argv)
     p.w2 = 1.94;
     p.t = 1.0;
     p.T = 3.0;
+    double (*cw)(double, void *);
+    double (*re)(double, void *);
     /* note: this'll have to be done via a string 
      * switch in an input file because
      * you can't do &var of a string */
-    double (*cw)(double, void *);
     cw = &cw_chl;
     p.cw = cw;
 
@@ -96,12 +114,17 @@ main(int argc, char** argv)
     gsl_function F;
     times = malloc(num_steps * sizeof(double));
     Atv   = malloc(num_steps * sizeof(double));
+    Ftv   = malloc(num_steps * sizeof(double));
 
     /* reorganisation energy */
-    F.function = &cw;
+    re = &reorg_int;
+    F.function = re;
     F.params = &p;
     gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000,
 			  work, &reorg_res, &reorg_err);
+    /* need to switch back to the spectral density function:
+     * this is a very ugly way of doing this honestly */
+    cw = &cw_chl;
 
     for (int i = 10; i < num_steps; i++) {
 
@@ -119,9 +142,12 @@ main(int argc, char** argv)
 
 	double w0 = 1.0;
 	Atv[i] = At(w0, re_res, im_res, p);
+	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, p);
 	fprintf(stdout, "t = %8.5f. result: "
-		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). At = %10.6f. iterations: %i\n",
-		cmtime, re_res, im_res, re_err, im_err, Atv[i], work->size);
+		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi)."
+		"At = %10.6f. Ft = %10.6f. iterations: %lu\n",
+		cmtime, re_res, im_res, re_err,
+		im_err, Atv[i], Ftv[i], work->size);
     }
     time(&end_time);
     /* this is pretty useless, i forgot it only does integer seconds */
