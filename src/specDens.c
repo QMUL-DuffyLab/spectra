@@ -4,16 +4,11 @@
 #include <complex.h>
 #include <gsl/gsl_integration.h>
 #include <fftw3.h>
+#include "parameters.h"
 
 /* in cm lol */
 #define HBAR 2.90283E-23
 #define KB 1.3806503E-23
-
-/* contains the relevant parameters for Chl/Car spectral densities */
-typedef struct {
-    double s0, s1, s2, g0, g1, g2, l0, l1, l2, w1, w2, t, T;
-    double (* cw)(double, void *);
-} Params;
 
 /* Chl spectral density */
 double
@@ -21,7 +16,7 @@ cw_chl(double w, void* params)
 {
     /* Pass a void pointer and cast it here for compatibility
      * with gsl_function when we do the quadrature */
-    Params *p = (Params *) params;
+    Parameters *p = (Parameters *) params;
     /* 7! is 5040; this is the Renger form for chlorophyll */
     double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.))) * (exp(-1. * sqrt(w / p->w1)));
     double c2 = (p->s2 / (5040 * 2 * pow(p->w2, 4.))) * (exp(-1. * sqrt(w / p->w2)));
@@ -32,7 +27,7 @@ cw_chl(double w, void* params)
 double
 cw_car(double w, void* params)
 {
-    Params *p = (Params *) params;
+    Parameters *p = (Parameters *) params;
     /* ansatz from Kieran's paper on carotenoids */
     double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
     	      ((pow(w, 2.) - pow(p->w1, 2.)) - (pow(w, 2.) * pow(p->g1, 2.)));
@@ -48,7 +43,7 @@ cw_car(double w, void* params)
 double
 trig_re(double w, void* params)
 {
-    Params *p = (Params *) params;
+    Parameters *p = (Parameters *) params;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (1 - cos(w * p->t))
 	   * (1. / tanh((HBAR * w) / (2. * KB * p->T)));
 }
@@ -56,27 +51,26 @@ trig_re(double w, void* params)
 double
 trig_im(double w, void* params)
 {
-    Params *p = (Params *) params;
+    Parameters *p = (Parameters *) params;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (sin(w * p->t) - w * p->t);
 }
 
 double
 reorg_int(double w, void* params)
 {
-    Params *p = (Params *) params;
+    Parameters *p = (Parameters *) params;
     return p->cw(w, p) * (1. / (M_PI * w));
 }
 
 double
-At(double w0, double re, double im, Params p)
+At(double w0, double re, double im, Parameters p)
 {
-    /* Params *p = (Params *) params; */
     double complex exponent = -I * (w0 * p.t) - (re + (I * im));
     return exp(exponent);
 }
 
 double
-Ft(double w0, double re, double im, double reorg, Params p)
+Ft(double w0, double re, double im, double reorg, Parameters p)
 {
     double complex exponent = -I * (w0 * p.t) - (re + (I * im)) - (2. * reorg);
     return exp(exponent);
@@ -87,10 +81,14 @@ main(int argc, char** argv)
 {
     time_t start_time, end_time;
     time(&start_time);
-    Params p;
+    Parameters p;
     double *times, *Atv, *Ftv;
     fftw_complex *in, *out;
     fftw_plan plan;
+    double (*cw)(double, void *);
+    double (*re)(double, void *);
+    double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
+    gsl_function gsl_reorg, gsl_re, gsl_im;
 
     /* ALL THIS SHOULD BE READ IN */
     int num_steps = 1000;
@@ -101,44 +99,45 @@ main(int argc, char** argv)
     p.w2 = 1.94;
     p.t = 1.0;
     p.T = 3.0;
-    double (*cw)(double, void *);
-    double (*re)(double, void *);
+
+    times = malloc(num_steps * sizeof(double));
+    Atv   = malloc(num_steps * sizeof(double));
+    Ftv   = malloc(num_steps * sizeof(double));
     /* note: this'll have to be done via a string 
      * switch in an input file because
      * you can't do &var of a string */
     cw = &cw_chl;
     p.cw = cw;
 
-    double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
-    gsl_function F;
-    times = malloc(num_steps * sizeof(double));
-    Atv   = malloc(num_steps * sizeof(double));
-    Ftv   = malloc(num_steps * sizeof(double));
 
     /* reorganisation energy */
     re = &reorg_int;
-    F.function = re;
-    F.params = &p;
-    gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000,
+    gsl_reorg.function = re;
+    gsl_reorg.params = &p;
+    gsl_integration_qagiu(&gsl_reorg, 0., 1e-4, 1e-7, 1000,
 			  work, &reorg_res, &reorg_err);
-    /* need to switch back to the spectral density function:
-     * this is a very ugly way of doing this honestly */
-    cw = &cw_chl;
+    gsl_re.function = &trig_re;
+    gsl_im.function = &trig_im;
 
     for (int i = 10; i < num_steps; i++) {
 
 	/* SO: 1E-15 means that each step is a femtosecond,
 	 * and the 2 Pi c * 100 gives us cm, which is
-	 * what we need for the rest of the functions. */
+	 * what we need for the rest of the functions.
+	 * also I start from i = 10 because the integral
+	 * seems to be singular as t -> 0; look at this later */
 	double cmtime = ((double) i) * 2. * M_PI * 3E8 * 100 * 1E-15;
-	p.t = cmtime;
 	times[i] = cmtime;
-	F.function = &trig_re;
-	F.params = &p;
-	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &re_res, &re_err);
-	F.function = &trig_im;
-	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &im_res, &im_err);
+
+	p.t = cmtime;
+	gsl_re.params = &p;
+	gsl_im.params = &p;
+
+	gsl_integration_qagiu(&gsl_re, 0., 1e-4, 1e-7, 1000,
+			      work, &re_res, &re_err);
+	gsl_integration_qagiu(&gsl_im, 0., 1e-4, 1e-7, 1000,
+			      work, &im_res, &im_err);
 
 	double w0 = 1.0;
 	Atv[i] = At(w0, re_res, im_res, p);
@@ -149,6 +148,10 @@ main(int argc, char** argv)
 		cmtime, re_res, im_res, re_err,
 		im_err, Atv[i], Ftv[i], work->size);
     }
+
+    
+
+
     time(&end_time);
     /* this is pretty useless, i forgot it only does integer seconds */
     double time_taken = difftime(end_time, start_time);
@@ -157,5 +160,6 @@ main(int argc, char** argv)
     gsl_integration_workspace_free(work);
     free(times);
     free(Atv);
+    free(Ftv);
     exit(EXIT_SUCCESS);
 }
