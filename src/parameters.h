@@ -5,6 +5,9 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
+#define HBAR 2.90283E-23 /* in cm lol */
+#define KB 1.3806503E-23 /* but not this? ask chris */
+
 /* possibly useful for pigment switch? */
 typedef enum {
     NONE = 0,

@@ -1,80 +1,10 @@
-#include <stdio.h>
-#include <math.h>
 #include <time.h>
 #include <complex.h>
 #include <gsl/gsl_integration.h>
 #include <fftw3.h>
+#include "functions.h"
 #include "parameters.h"
 
-/* in cm lol */
-#define HBAR 2.90283E-23
-#define KB 1.3806503E-23
-
-/* Chl spectral density */
-double
-cw_chl(double w, void* params)
-{
-    /* Pass a void pointer and cast it here for compatibility
-     * with gsl_function when we do the quadrature */
-    Parameters *p = (Parameters *) params;
-    /* 7! is 5040; this is the Renger form for chlorophyll */
-    double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.))) * (exp(-1. * sqrt(w / p->w1)));
-    double c2 = (p->s2 / (5040 * 2 * pow(p->w2, 4.))) * (exp(-1. * sqrt(w / p->w2)));
-    return ((M_PI * p->s0 * pow(w, 5.)) / (p->s1 + p->s2)) * (c1 + c2);
-}
-
-/* Car spectral density */
-double
-cw_car(double w, void* params)
-{
-    Parameters *p = (Parameters *) params;
-    /* ansatz from Kieran's paper on carotenoids */
-    double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
-    	      ((pow(w, 2.) - pow(p->w1, 2.)) - (pow(w, 2.) * pow(p->g1, 2.)));
-    double c2 = 2. * p->l2 * (w * p->g2 * pow(p->w2, 2.)) /
-    	      ((pow(w, 2.) - pow(p->w2, 2.)) - (pow(w, 2.) * pow(p->g2, 2.)));
-    return (c1 + c2 + 2 * p->l0 * (w * p->g0) / (pow(w, 2.) + pow(p->g0, 2.)));
-}
-
-/* the integral for g(t) includes the spectral density function,
- * which should be switchable, but we need to call a function pointer
- * of a specific form later on. Hence, add a function pointer to the params
- * struct and use that to decide which spectral density function to use. */
-double
-trig_re(double w, void* params)
-{
-    Parameters *p = (Parameters *) params;
-    return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (1 - cos(w * p->t))
-	   * (1. / tanh((HBAR * w) / (2. * KB * p->T)));
-}
-
-double
-trig_im(double w, void* params)
-{
-    Parameters *p = (Parameters *) params;
-    return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (sin(w * p->t) - w * p->t);
-}
-
-double
-reorg_int(double w, void* params)
-{
-    Parameters *p = (Parameters *) params;
-    return p->cw(w, p) * (1. / (M_PI * w));
-}
-
-double
-At(double w0, double re, double im, Parameters p)
-{
-    double complex exponent = -I * (w0 * p.t) - (re + (I * im));
-    return exp(exponent);
-}
-
-double
-Ft(double w0, double re, double im, double reorg, Parameters p)
-{
-    double complex exponent = -I * (w0 * p.t) - (re + (I * im)) - (2. * reorg);
-    return exp(exponent);
-}
 
 int
 main(int argc, char** argv)
@@ -140,8 +70,8 @@ main(int argc, char** argv)
 			      work, &im_res, &im_err);
 
 	double w0 = 1.0;
-	Atv[i] = At(w0, re_res, im_res, p);
-	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, p);
+	Atv[i] = At(w0, re_res, im_res, cmtime);
+	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
 	fprintf(stdout, "t = %8.5f. result: "
 		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi)."
 		"At = %10.6f. Ft = %10.6f. iterations: %lu\n",
