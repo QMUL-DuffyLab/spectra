@@ -13,6 +13,18 @@ getParameters(char *filename)
     p.t = 0.0; p.T = 0.0;
     p.cw = NULL;
 
+    /* try and do something clever: check via the filename
+     * whether we're simulating a chlorophyll or a carotenoid */
+    if (strstr(filename, "CLA") != NULL || strstr(filename, "CHL") != NULL) {
+    	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
+    		"spectral density\n", filename);
+    	p.ligand = 1;
+    } else {
+    	fprintf(stdout, "Ligand name read as %s; using carotenoid "
+    		"spectral density\n", filename);
+    	p.ligand = 0;
+    }
+
     fp = fopen(filename, "r");
     if (fp == NULL) {
 	fprintf(stdout, "Invalid parameter filename: %s."

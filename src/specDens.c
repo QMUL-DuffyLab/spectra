@@ -4,7 +4,6 @@
 #include "functions.h"
 #include "parameters.h"
 
-
 int
 main(int argc, char** argv)
 {
@@ -26,9 +25,16 @@ main(int argc, char** argv)
     times = malloc(num_steps * sizeof(double));
     Atv   = malloc(num_steps * sizeof(double));
     Ftv   = malloc(num_steps * sizeof(double));
-    /* note: this'll have to be done via a string 
-     * switch in an input file because
-     * you can't do &var of a string */
+
+    if (p.ligand == 1) {
+	cw = &cw_chl;
+    } else if (p.ligand == 0) {
+	cw = &cw_car;
+    } else {
+    	fprintf(stdout, "Ligand selection not working\n");
+    	exit(EXIT_FAILURE);
+    }
+
     cw = &cw_chl;
     p.cw = cw;
 
@@ -62,7 +68,7 @@ main(int argc, char** argv)
 	gsl_integration_qagiu(&gsl_im, 0., 1e-4, 1e-7, 1000,
 			      work, &im_res, &im_err);
 
-	double w0 = 1.0;
+	double w0 = 0.0;
 	Atv[i] = At(w0, re_res, im_res, cmtime);
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
 	fprintf(stdout, "t = %8.5f. result: "

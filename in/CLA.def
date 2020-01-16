@@ -1,0 +1,7 @@
+# parameter file for CLA lineshape
+s0 = 0.5
+s1 = 0.8
+s2 = 0.5
+w1 = 0.56
+w2 = 1.94
+T = 3.0
