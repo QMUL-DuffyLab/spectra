@@ -21,7 +21,7 @@ cw_chl(double w, void* params)
     /* Pass a void pointer and cast it here for compatibility
      * with gsl_function when we do the quadrature */
     Params *p = (Params *) params;
-    /* 7! is 5040 */
+    /* 7! is 5040; this is the Renger form for chlorophyll */
     double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.))) * (exp(-1. * sqrt(w / p->w1)));
     double c2 = (p->s2 / (5040 * 2 * pow(p->w2, 4.))) * (exp(-1. * sqrt(w / p->w2)));
     return ((M_PI * p->s0 * pow(w, 5.)) / (p->s1 + p->s2)) * (c1 + c2);
@@ -32,6 +32,7 @@ double
 cw_car(double w, void* params)
 {
     Params *p = (Params *) params;
+    /* ansatz from Kieran's paper on carotenoids */
     double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
     	      ((pow(w, 2.) - pow(p->w1, 2.)) - (pow(w, 2.) * pow(p->g1, 2.)));
     double c2 = 2. * p->l2 * (w * p->g2 * pow(p->w2, 2.)) /
@@ -58,27 +59,6 @@ trig_im(double w, void* params)
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.))) * (sin(w * p->t) - w * p->t);
 }
 
-/* double complex *gn(Params p, double t, double T) */
-/* { */
-/*     double re_res, re_err, im_res, im_err; */
-/*     double complex result[2]; */
-/*     p.t = t; */
-/*     p.T = T; */
-/*     gsl_function F; */
-/*     /1* possible issue here with the function pointer *1/ */
-/*     F.function = &trig_re; */
-/*     F.params = &p; */
-/*     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000); */
-/*     /1* this will eventually do the integral *1/ */
-/*     gsl_integration_qagiu(&F, 0, 1, 1e-7, 1000, work, &re_res, &re_err); */
-/*     F.function = &trig_im; */
-/*     gsl_integration_qagiu(&F, 0, 1, 1e-7, 1000, work, &im_res, &im_err); */
-/*     result[0] = re_res + I * im_res; */
-/*     result[1] = re_err + im_err; */
-
-/*     return result; */
-/* } */
-
 double
 At(double w0, double re, double im, Params p)
 {
@@ -93,7 +73,10 @@ main(int argc, char** argv)
     time_t start_time, end_time;
     time(&start_time);
     Params p;
-    /* can write stuff to read this in */
+    double *times, *Atv;
+
+    /* ALL THIS SHOULD BE READ IN */
+    int num_steps = 1000;
     p.s0 = 0.5;
     p.s1 = 0.8;
     p.s2 = 0.5;
@@ -101,21 +84,33 @@ main(int argc, char** argv)
     p.w2 = 1.94;
     p.t = 1.0;
     p.T = 3.0;
+    /* note: this'll have to be done via a string 
+     * switch in an input file because
+     * you can't do &var of a string */
     double (*cw)(double, void *);
     cw = &cw_chl;
     p.cw = cw;
 
-    double re_res, re_err, im_res, im_err;
+    double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
     gsl_function F;
+    times = malloc(num_steps * sizeof(double));
+    Atv   = malloc(num_steps * sizeof(double));
 
-    for (int i = 10; i < 1000; i++) {
+    /* reorganisation energy */
+    F.function = &cw;
+    F.params = &p;
+    gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000,
+			  work, &reorg_res, &reorg_err);
+
+    for (int i = 10; i < num_steps; i++) {
 
 	/* SO: 1E-15 means that each step is a femtosecond,
 	 * and the 2 Pi c * 100 gives us cm, which is
 	 * what we need for the rest of the functions. */
 	double cmtime = ((double) i) * 2. * M_PI * 3E8 * 100 * 1E-15;
 	p.t = cmtime;
+	times[i] = cmtime;
 	F.function = &trig_re;
 	F.params = &p;
 	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &re_res, &re_err);
@@ -123,10 +118,10 @@ main(int argc, char** argv)
 	gsl_integration_qagiu(&F, 0., 1e-4, 1e-7, 1000, work, &im_res, &im_err);
 
 	double w0 = 1.0;
-	double Ati = At(w0, re_res, im_res, p);
+	Atv[i] = At(w0, re_res, im_res, p);
 	fprintf(stdout, "t = %8.5f. result: "
 		"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi). At = %10.6f. iterations: %i\n",
-		cmtime, re_res, im_res, re_err, im_err, Ati, work->size);
+		cmtime, re_res, im_res, re_err, im_err, Atv[i], work->size);
     }
     time(&end_time);
     /* this is pretty useless, i forgot it only does integer seconds */
@@ -134,5 +129,7 @@ main(int argc, char** argv)
     fprintf(stdout, "Time taken: %12.8f\n",
 	    time_taken);
     gsl_integration_workspace_free(work);
+    free(times);
+    free(Atv);
     exit(EXIT_SUCCESS);
 }
