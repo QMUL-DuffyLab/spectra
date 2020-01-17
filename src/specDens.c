@@ -49,6 +49,8 @@ main(int argc, char** argv)
     gsl_reorg.params = &p;
     gsl_integration_qagiu(&gsl_reorg, 0., 1e-4, 1e-7, 1000,
 			  work, &reorg_res, &reorg_err);
+    fprintf(stdout, "Reorganisation energy lambda = %12.8f\n",reorg_res);
+
     gsl_re.function = &trig_re;
     gsl_im.function = &trig_im;
 
@@ -83,7 +85,7 @@ main(int argc, char** argv)
 	/* 	"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi)." */
 	/* 	"At = %10.6f. Ft = %10.6f. iterations: %lu\n", */
 	/* 	cmtime, re_res, im_res, re_err, */
-		/* im_err, Atv[i], Ftv[i], work->size); */
+	/* 	im_err, Atv[i], Ftv[i], work->size); */
 	/* fprintf(stdout, "t = %8.5f " */
 	/* 	"At = %8.5f + %8.5f\n", */
 		/* cmtime, creal(Atv[i]), cimag(Atv[i])); */
@@ -120,7 +122,26 @@ main(int argc, char** argv)
     }
 
     fclose(fp);
-    fprintf(stdout, "FFT performed.\n");
+    fprintf(stdout, "FFT on A(t) performed.\n");
+
+    for (unsigned long i = 0; i < pr.ns; i++) {
+	in[i][0] = creal(Ftv[i]);
+	in[i][1] = cimag(Ftv[i]);
+    }
+    fftw_execute(plan); 
+
+    fp = fopen(pr.fw_file, "w");
+
+    for (unsigned long i = 0; i < pr.ns; i++) {
+    	double k = i * 2. * M_PI / (pr.ns);
+    	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
+    	/* the 6.4 here is from an N in the python code */
+	fprintf(fp, " %12.8f %12.8f\n",
+		freq / pf, out[i][0]* pf_norm * 6.4);
+    }
+
+    fclose(fp);
+    fprintf(stdout, "FFT on F(t) performed.\n");
 
     time(&end_time);
     /* this is pretty useless, i forgot it only does integer seconds */

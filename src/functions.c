@@ -73,7 +73,6 @@ At(double w0, double re, double im, double t)
 double complex
 Ft(double w0, double re, double im, double reorg, double t)
 {
-    double complex exponent = -I * (w0 * t) - (re + (I * im))
-			    - (2. * reorg);
+    double complex exponent = -I * ((w0 * t) - (2. * reorg)) - (re + (I * im));
     return exp(exponent);
 }
