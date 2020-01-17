@@ -41,9 +41,11 @@ double
 trig_re(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
+    /* (H * C)/KB in cm = 1.439 */
+    double hbeta = 1.439 / p->T;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.)))
 	   * (1 - cos(w * p->t))
-	   * (1. / tanh((HBAR * w) / (2. * KB * p->T)));
+	   * (1. / tanh(0.5 * w * hbeta));
 }
 
 double
@@ -61,14 +63,14 @@ reorg_int(double w, void* params)
     return p->cw(w, p) * (1. / (M_PI * w));
 }
 
-double
+double complex
 At(double w0, double re, double im, double t)
 {
     double complex exponent = -I * (w0 * t) - (re + (I * im));
     return exp(exponent);
 }
 
-double
+double complex
 Ft(double w0, double re, double im, double reorg, double t)
 {
     double complex exponent = -I * (w0 * t) - (re + (I * im))

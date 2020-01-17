@@ -1,5 +1,43 @@
 #include "parameters.h"
 
+Protocol
+getProtocol(char *filename)
+{
+    FILE *fp;
+    Protocol p;
+    char line[200], key[200], val[200];
+    p.T = 0.0; p.ns = 0;
+
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+	fprintf(stdout, "Invalid parameter filename: %s."
+		" Try again.\n", filename);
+	exit(EXIT_FAILURE);
+    }
+    while (fgets(line, 199, fp) != NULL) {
+    	sscanf(line, " %s = %s", key, val);
+	if (strcmp(key, "#") == 0) {
+	    continue;
+	} else if (strcmp(key, "T") == 0) {
+	    p.T = atof(val);
+	} else if (strcmp(key, "ns") == 0) {
+	    p.ns = atoi(val);
+	} else if (strcmp(key, "Aw_file") == 0) {
+	    strcpy(p.aw_file, val);
+	} else if (strcmp(key, "Fw_file") == 0) {
+	    strcpy(p.fw_file, val);
+	} 
+    }
+
+    int cl = fclose(fp);
+    if (cl != 0) {
+    	fprintf(stdout, "Failed to close protocol file %d.\n", cl);
+    	exit(EXIT_FAILURE);
+    }
+
+    return p;
+}
+
 Parameters
 getParameters(char *filename)
 {
