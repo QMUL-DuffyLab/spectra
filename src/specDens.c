@@ -113,8 +113,8 @@ main(int argc, char** argv)
     	double k = i * 2. * M_PI / (pr.ns);
     	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
     	/* the 6.4 here is from an N in the python code */
-	fprintf(fp, " %12.8f %12.8f\n",
-		freq / pf, out[i][0]* pf_norm * 6.4);
+	fprintf(fp, " %18.10f %18.10f\n",
+		freq / pf, out[i][0] * pf_norm * 6.4);
     }
 
     fclose(fp);
@@ -132,7 +132,7 @@ main(int argc, char** argv)
     	double k = i * 2. * M_PI / (pr.ns);
     	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
     	/* the 6.4 here is from an N in the python code */
-	fprintf(fp, " %12.8f %12.8f\n",
+	fprintf(fp, " %18.10f %18.10f\n",
 		freq / pf, out[i][0]* pf_norm * 6.4);
     }
 
