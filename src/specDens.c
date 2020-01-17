@@ -39,7 +39,6 @@ main(int argc, char** argv)
     	exit(EXIT_FAILURE);
     }
 
-    cw = &cw_chl;
     p.cw = cw;
 
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
@@ -53,7 +52,7 @@ main(int argc, char** argv)
     gsl_re.function = &trig_re;
     gsl_im.function = &trig_im;
 
-    for (int i = 0; i < pr.ns; i++) {
+    for (unsigned long i = 0; i < pr.ns; i++) {
 
 	/* SO: 1E-15 means that each step is a femtosecond,
 	 * and the 2 Pi c * 100 gives us cm, which is
@@ -95,7 +94,7 @@ main(int argc, char** argv)
     /* this assignment is very ugly but trying to copy Chris's code */
     in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
 
-    for (int i = 0; i < pr.ns; i++) {
+    for (unsigned long i = 0; i < pr.ns; i++) {
 	in[i][0] = creal(Atv[i]);
 	in[i][1] = cimag(Atv[i]);
 	/* fprintf(stdout,"t = %8.5f, A(t) = %8.5f + %8.5f\n", */
@@ -112,11 +111,12 @@ main(int argc, char** argv)
 
     FILE *fp = fopen(pr.aw_file, "w");
 
-    for (int i = 0; i < pr.ns; i++) {
+    for (unsigned long i = 0; i < pr.ns; i++) {
     	double k = i * 2. * M_PI / (pr.ns);
     	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
+    	/* the 6.4 here is from an N in the python code */
 	fprintf(fp, " %12.8f %12.8f\n",
-		freq/pf, out[i][0]*pf_norm);
+		freq / pf, out[i][0]* pf_norm * 6.4);
     }
 
     fclose(fp);
