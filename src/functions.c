@@ -24,11 +24,11 @@ cw_car(double w, void* params)
     Parameters *p = (Parameters *) params;
     /* ansatz from Kieran's paper on carotenoids */
     double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
-    	      ((pow(w, 2.) - pow(p->w1, 2.))
-    	     - (pow(w, 2.) * pow(p->g1, 2.)));
+    	      (pow((pow(w, 2.) - pow(p->w1, 2.)), 2.)
+   	    + (pow(w, 2.) * pow(p->g1, 2.)));
     double c2 = 2. * p->l2 * (w * p->g2 * pow(p->w2, 2.)) /
-    	      ((pow(w, 2.) - pow(p->w2, 2.))
-    	     - (pow(w, 2.) * pow(p->g2, 2.)));
+    	      (pow((pow(w, 2.) - pow(p->w2, 2.)), 2.)
+    	    + (pow(w, 2.) * pow(p->g2, 2.)));
     return (c1 + c2 + 2 * p->l0 * (w * p->g0)
     	    / (pow(w, 2.) + pow(p->g0, 2.)));
 }

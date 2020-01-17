@@ -16,13 +16,13 @@ fw = np.loadtxt(args.fw_file)
 fw = fw[fw[:, 0].argsort()]
 
 # testing for comparison
-aw_chris = np.loadtxt("/Users/cgray/Downloads/Duffy_Fitting_Code/A_spec_theor_CHL_RENGER.txt")
+aw_chris = np.loadtxt("/Users/cgray/Downloads/Duffy_Fitting_Code/A_spec_theor_CAR_2MODE.txt")
 
 fig, ax = plt.subplots()
 plt.grid()
 plt.xlabel('$ \omega $')
 plt.ylabel(r'$ A(\omega) $')
-plt.xlim((-1000.0, 1000.0))
+# plt.xlim((-1000.0, 1000.0))
 plt.plot(aw[:, 0], aw[:, 1], label="My result")
 plt.plot(aw_chris[:, 0], aw_chris[:, 1], label="Chris result")
 plt.legend()

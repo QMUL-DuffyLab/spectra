@@ -1,5 +1,6 @@
 #include <time.h>
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_errno.h>
 #include <fftw3.h>
 #include "functions.h"
 #include "parameters.h"
@@ -24,7 +25,9 @@ main(int argc, char** argv)
 	exit(EXIT_FAILURE);
     }
 
-    /* ALL THIS SHOULD BE READ IN */
+    /* TESTING */
+    gsl_set_error_handler_off();
+
     p = getParameters(argv[2]);
     Protocol pr = getProtocol(argv[1]);
     /* this is ugly but need T in parameters
