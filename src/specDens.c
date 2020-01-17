@@ -53,7 +53,7 @@ main(int argc, char** argv)
     gsl_re.function = &trig_re;
     gsl_im.function = &trig_im;
 
-    for (int i = 7; i < pr.ns; i++) {
+    for (int i = 0; i < pr.ns; i++) {
 
 	/* SO: 1E-15 means that each step is a femtosecond,
 	 * and the 2 Pi c * 100 gives us cm, which is
@@ -70,9 +70,9 @@ main(int argc, char** argv)
 	double small_t, small_t_err;
 	gsl_integration_qags(&gsl_re, 0., 1e-6, 1e-4, 1e-7, 1000,
 			      work, &small_t, &small_t_err);
-	gsl_integration_qagiu(&gsl_re, 1e-4, 1e-4, 1e-7, 1000,
+	gsl_integration_qagiu(&gsl_re, 1e-5, 1e-8, 1e-8, 1000,
 			      work, &re_res, &re_err);
-	gsl_integration_qagiu(&gsl_im, 0., 1e-4, 1e-7, 1000,
+	gsl_integration_qagiu(&gsl_im, 0., 1e-8, 1e-8, 1000,
 			      work, &im_res, &im_err);
 
 	re_res = re_res + small_t;
@@ -87,27 +87,39 @@ main(int argc, char** argv)
 		/* im_err, Atv[i], Ftv[i], work->size); */
 	/* fprintf(stdout, "t = %8.5f " */
 	/* 	"At = %8.5f + %8.5f\n", */
-	/* 	cmtime, creal(Atv[i]), cimag(Atv[i])); */
+		/* cmtime, creal(Atv[i]), cimag(Atv[i])); */
     }
 
     fprintf(stdout, "Performing FFT.\n");
 
     /* this assignment is very ugly but trying to copy Chris's code */
     in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
+
     for (int i = 0; i < pr.ns; i++) {
 	in[i][0] = creal(Atv[i]);
 	in[i][1] = cimag(Atv[i]);
+	/* fprintf(stdout,"t = %8.5f, A(t) = %8.5f + %8.5f\n", */
+	/* 	times[i], creal(Atv[i]), cimag(Atv[i])); */
     }
 
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
     plan = fftw_plan_dft_1d(pr.ns, 
     	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(plan); 
-    double pf = 2.* M_PI * 3E8 * 100. * 1E-15 * sqrt(pr.ns);
+
+    double pf = 2.* M_PI * 3E8 * 100. * 1E-15;
+    double pf_norm = pf * (1. / sqrt(pr.ns));
+
+    FILE *fp = fopen(pr.aw_file, "w");
+
     for (int i = 0; i < pr.ns; i++) {
-	fprintf(stdout, "FT = %8.5f\n",
-		out[i][0]*pf);
+    	double k = i * 2. * M_PI / (pr.ns);
+    	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
+	fprintf(fp, " %12.8f %12.8f\n",
+		freq/pf, out[i][0]*pf_norm);
     }
+
+    fclose(fp);
     fprintf(stdout, "FFT performed.\n");
 
     time(&end_time);
