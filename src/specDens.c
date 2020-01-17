@@ -19,6 +19,11 @@ main(int argc, char** argv)
     double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_function gsl_reorg, gsl_re, gsl_im;
 
+    if (argc != 3) {
+	fprintf(stdout, "Wrong number of arguments. Try again\n");
+	exit(EXIT_FAILURE);
+    }
+
     /* ALL THIS SHOULD BE READ IN */
     p = getParameters(argv[2]);
     Protocol pr = getProtocol(argv[1]);
@@ -54,14 +59,16 @@ main(int argc, char** argv)
     gsl_re.function = &trig_re;
     gsl_im.function = &trig_im;
 
+    /* SO: 1E-15 means that each step is a femtosecond,
+     * and the 2 Pi C * 100 gives us cm, which is
+     * what we need for the rest of the functions. */
+    double pf = 2.* M_PI * CMS * 100. * 1E-15;
+    double pf_norm = pf * (1. / sqrt(pr.ns));
+    double w0 = 0.0;
+
     for (unsigned long i = 0; i < pr.ns; i++) {
 
-	/* SO: 1E-15 means that each step is a femtosecond,
-	 * and the 2 Pi c * 100 gives us cm, which is
-	 * what we need for the rest of the functions.
-	 * also I start from i = 10 because the integral
-	 * seems to be singular as t -> 0; look at this later */
-	double cmtime = ((double) i) * 2. * M_PI * 3E8 * 100 * 1E-15;
+	double cmtime = ((double) i) * pf;
 	times[i] = cmtime;
 
 	p.t = cmtime;
@@ -78,17 +85,8 @@ main(int argc, char** argv)
 
 	re_res = re_res + small_t;
 	re_err = re_err + small_t_err;
-	double w0 = 0.0;
 	Atv[i] = At(w0, re_res, im_res, cmtime);
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
-	/* fprintf(stdout, "t = %8.5f. result: " */
-	/* 	"(%10.6f + %10.6fi) +- (%10.6f + %10.6fi)." */
-	/* 	"At = %10.6f. Ft = %10.6f. iterations: %lu\n", */
-	/* 	cmtime, re_res, im_res, re_err, */
-	/* 	im_err, Atv[i], Ftv[i], work->size); */
-	/* fprintf(stdout, "t = %8.5f " */
-	/* 	"At = %8.5f + %8.5f\n", */
-		/* cmtime, creal(Atv[i]), cimag(Atv[i])); */
     }
 
     fprintf(stdout, "Performing FFT.\n");
@@ -99,17 +97,12 @@ main(int argc, char** argv)
     for (unsigned long i = 0; i < pr.ns; i++) {
 	in[i][0] = creal(Atv[i]);
 	in[i][1] = cimag(Atv[i]);
-	/* fprintf(stdout,"t = %8.5f, A(t) = %8.5f + %8.5f\n", */
-	/* 	times[i], creal(Atv[i]), cimag(Atv[i])); */
     }
 
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
     plan = fftw_plan_dft_1d(pr.ns, 
     	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(plan); 
-
-    double pf = 2.* M_PI * 3E8 * 100. * 1E-15;
-    double pf_norm = pf * (1. / sqrt(pr.ns));
 
     FILE *fp = fopen(pr.aw_file, "w");
 

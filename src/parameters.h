@@ -6,8 +6,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define HBAR 2.90283E-23 /* in cm lol */
-#define KB 1.3806503E-23 /* but not this? ask chris */
+#define CMS 299792458 /* speed of light _C_ in _M_etres per _S_econd */
 
 typedef struct {
     long unsigned int ns;
