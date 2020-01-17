@@ -88,7 +88,7 @@ main(int argc, char** argv)
 
 	re_res = re_res + small_t;
 	re_err = re_err + small_t_err;
-	Atv[i] = At(w0, re_res, im_res, cmtime);
+	Atv[i] = At(w0, re_res, im_res, cmtime, p.l1, p.l2);
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
     }
 
