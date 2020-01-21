@@ -22,11 +22,7 @@ getProtocol(char *filename)
 	    p.T = atof(val);
 	} else if (strcmp(key, "ns") == 0) {
 	    p.ns = atoi(val);
-	} else if (strcmp(key, "Aw_file") == 0) {
-	    strcpy(p.aw_file, val);
-	} else if (strcmp(key, "Fw_file") == 0) {
-	    strcpy(p.fw_file, val);
-	} 
+	}
     }
 
     int cl = fclose(fp);
@@ -97,7 +93,11 @@ getParameters(char *filename)
 	    p.w2 = atof(val);
 	} else if (strcmp(key, "T") == 0) {
 	    p.T = atof(val);
-	}
+	} else if (strcmp(key, "Aw_file") == 0) {
+	    strcpy(p.aw_file, val);
+	} else if (strcmp(key, "Fw_file") == 0) {
+	    strcpy(p.fw_file, val);
+	} 
 
 	/* future file names */
 	/* else if (strcmp(key, "mag") == 0) { */

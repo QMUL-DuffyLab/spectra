@@ -107,9 +107,10 @@ main(int argc, char** argv)
     	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(plan); 
 
-    FILE *fp = fopen(pr.aw_file, "w");
+    FILE *fp = fopen(p.aw_file, "w");
 
     for (unsigned long i = 0; i < pr.ns; i++) {
+    	/* unpack the ordering used by FFTW */
     	double k = i * 2. * M_PI / (pr.ns);
     	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
     	/* the 6.4 here is from an N in the python code */
@@ -126,7 +127,7 @@ main(int argc, char** argv)
     }
     fftw_execute(plan); 
 
-    fp = fopen(pr.fw_file, "w");
+    fp = fopen(p.fw_file, "w");
 
     for (unsigned long i = 0; i < pr.ns; i++) {
     	double k = i * 2. * M_PI / (pr.ns);

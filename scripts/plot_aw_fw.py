@@ -16,7 +16,7 @@ fw = np.loadtxt(args.fw_file)
 fw = fw[fw[:, 0].argsort()]
 
 # testing for comparison
-aw_chris = np.loadtxt("/Users/cgray/Downloads/Duffy_Fitting_Code/A_spec_theor_CHL_RENGER.txt")
+aw_chris = np.loadtxt("/Users/cgray/Downloads/Duffy_Fitting_Code/A_spec_theor_CAR_2MODE.txt")
 
 fig, ax = plt.subplots()
 plt.grid()
