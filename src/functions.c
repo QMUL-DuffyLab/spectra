@@ -33,6 +33,16 @@ cw_car(double w, void* params)
     	    / (pow(w, 2.) + pow(p->g0, 2.)));
 }
 
+/* overdamped brownian oscillator */
+double
+cw_odo(double w, void* params)
+{
+    Parameters *p = (Parameters *) params;
+    /* l0 is the reorganisation energy expressed in cm^{-1},
+     * gamma0 is the correlation time of fluctuations in cm^{-1} */
+    return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
+}
+
 /* the integral for g(t) includes the spectral density function,
  * which should be switchable, but we need to call a function pointer
  * of a specific form later on. Hence, add a function pointer to the params

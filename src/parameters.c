@@ -50,15 +50,22 @@ getParameters(char *filename)
     /* try and do something clever: check via the filename
      * whether we're simulating a chlorophyll or a carotenoid */
     if (strstr(filename, "CLA") != NULL
-     || strstr(filename, "CHL") != NULL
-     || strstr(filename, "CLC") != NULL) {
+     || strstr(filename, "CHL") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
     		"spectral density\n", filename);
     	p.ligand = 1;
-    } else {
+    } else if (strstr(filename, "CLC") != NULL) {
+    	fprintf(stdout, "Ligand name read as %s; using ODO "
+    		"spectral density\n", filename);
+    	p.ligand = 2;
+    } else if (strstr(filename, "CAR") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using carotenoid "
     		"spectral density\n", filename);
-    	p.ligand = 0;
+	p.ligand = 0;
+    } else {
+    	fprintf(stdout, "Not sure what kind of spectral density"
+    		" function to use. Try again.\n");
+    	exit(EXIT_FAILURE);
     }
 
     fp = fopen(filename, "r");

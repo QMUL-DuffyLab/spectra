@@ -40,6 +40,8 @@ main(int argc, char** argv)
 
     if (p.ligand == 1) {
 	cw = &cw_chl;
+    } else if (p.ligand == 2) {
+	cw = &cw_odo;
     } else if (p.ligand == 0) {
 	cw = &cw_car;
     } else {
