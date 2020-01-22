@@ -15,16 +15,21 @@ aw = aw[aw[:, 0].argsort()]
 fw = np.loadtxt(args.fw_file)
 fw = fw[fw[:, 0].argsort()]
 
+# this could be done much more elegantly
+ligand = args.aw_file[4:7]
+exp_file = "in/{0}_exp.dat".format(ligand)
+
 # testing for comparison
-aw_chris = np.loadtxt("/Users/cgray/Downloads/Duffy_Fitting_Code/A_spec_theor_CAR_2MODE.txt")
+# aw_chris = np.loadtxt("/Users/cgray/Downloads/Duffy_Fitting_Code/A_spec_theor_CAR_2MODE.txt")
+aw_exp = np.loadtxt(exp_file)
 
 fig, ax = plt.subplots()
 plt.grid()
 plt.xlabel('$ \omega $')
 plt.ylabel(r'$ A(\omega) $')
-# plt.xlim((-1000.0, 1000.0))
+plt.xlim((-1000.0, 1000.0))
 plt.plot(aw[:, 0], aw[:, 1] - np.min(aw[:, 1]), label="My result", lw=2.5)
-plt.plot(aw_chris[:, 0], aw_chris[:, 1], label="Chris result", lw=1.5)
+plt.plot(aw_exp[:, 0], aw_exp[:, 1], label="Exp result", lw=1.5)
 plt.legend()
 plt.savefig(args.output_aw_file)
 plt.close()
@@ -33,7 +38,7 @@ fig, ax = plt.subplots()
 plt.grid()
 plt.xlabel('$ \omega $')
 plt.ylabel(r'$ F(\omega) $')
-plt.xlim((-1000.0, 1000.0))
+# plt.xlim((-1000.0, 1000.0))
 plt.plot(fw[:, 0], fw[:, 1], label="My result")
 plt.legend()
 plt.savefig(args.output_fw_file)
