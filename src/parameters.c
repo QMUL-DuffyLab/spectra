@@ -49,7 +49,9 @@ getParameters(char *filename)
 
     /* try and do something clever: check via the filename
      * whether we're simulating a chlorophyll or a carotenoid */
-    if (strstr(filename, "CLA") != NULL || strstr(filename, "CHL") != NULL) {
+    if (strstr(filename, "CLA") != NULL
+     || strstr(filename, "CHL") != NULL
+     || strstr(filename, "CLC") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
     		"spectral density\n", filename);
     	p.ligand = 1;
