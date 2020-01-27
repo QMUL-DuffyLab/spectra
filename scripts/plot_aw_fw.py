@@ -3,6 +3,25 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
+def plot(x, y, filename, **kwargs):
+    fig, ax = plt.subplots()
+    plt.grid()
+    if 'xlabel' in kwargs:
+        plt.xlabel(kwargs['xlabel'])
+
+    if 'ylabel' in kwargs:
+        plt.ylabel(kwargs['ylabel'], labelpad=-4)
+
+    if 'label' in kwargs:
+        plt.plot(x, y, label=kwargs['label'])
+        plt.legend()
+    else:
+        plt.plot(x, y)
+
+    fig.tight_layout()
+    plt.savefig(filename, bbox_inches='tight')
+    plt.close()
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--ligand", help="ligand code")
 parser.add_argument("-a", "--aw_file", help="A(w) input file")

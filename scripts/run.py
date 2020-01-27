@@ -17,16 +17,10 @@ parser = argparse.ArgumentParser(description="Run script for FCP lineshape code"
 parser.add_argument("-r", "--run", default=1, type=int, help="Defaults to 1; set to 0 to prevent running of program")
 parser.add_argument("-l", "--ligand", help="Name of ligand")
 
-# (optional) parameter arguments
-# default=[] ensures the dict comprehension below works
-# even if none of these arguments are included
-parser.add_argument("--nx", nargs='*', default=[],
-                    help="List of nx values to use")
-
 args = parser.parse_args()
 
 # separate into parameter and non-parameter dicts:
-# this makes it easier to iterate over
+# makes it easier to iterate over
 non_params = ['run', 'clusters', 'no_slots', 'analyse',
         'input_file', 'protocol_file', 'output_dir']
 npd = dict((k, v) for k, v in vars(args).items() if k in non_params)
@@ -62,8 +56,8 @@ for i in range(len(perm)):
         p[d_keys[j]] = perm[i][j]
         label = label + "{}_{}_".format(d_keys[j], perm[i][j])
     
-    p['mag'] = os.path.join(prefix, label + "ac_mag.out")
-    p['stats'] = os.path.join(prefix, label + "stats.out")
+    p['Aw_file'] = os.path.join(prefix, label + "Aw_file.out")
+    p['Fw_file'] = os.path.join(prefix, label + "Fw_file.out")
 
     temp_file = os.path.join(os.getcwd(),
                 os.path.dirname(npd['input_file']), label + "params")
@@ -72,39 +66,11 @@ for i in range(len(perm)):
         print("{} = {}".format(key, p[key]), file=f)
 
     f.close()
-    if npd['clusters'] == 1:
-        job_file = os.path.join(os.getcwd(),
-                   os.path.dirname(npd['input_file']), label[:-1] + ".job")
-        jf = open(job_file, "w")
-        job_script = print("""#!/bin/bash -f
-# =================================
-#$ -M callum.gray.10@ucl.ac.uk
-#$ -m bes
-#$ -V
-#$ -j y
-#$ -cwd
-#$ -N '{0}'
-#$ -S /bin/bash
-#$ -l vf={1}
-#$ -pe ompi {2}
-#
-IPWD=`pwd`
-echo "Got ${{NSLOTS}} slots in ${{IPWD}}."
-mpirun --mca btl ^openib --mca mtl ^psm --n ${{NSLOTS}} ./{3} {4} {5}
-exit 0
-        """.format(label[:-1],ram,npd['no_slots'],prog_name,
-                   temp_file,npd['protocol_file']), file=jf)
-        jf.close()
-        run_cmd = "qsub -q {0} {1}".format(queue, job_file)
-        if npd['run'] == 1:
-            os.system(run_cmd)
-        else:
-            print(run_cmd)
-
+    run_cmd = "{0} ./{1} {2} & ".format(
+             prog_name, ligand_file, npd['protocol_file'])
+    if npd['run'] == 1:
+        os.system(run_cmd)
     else:
-        run_cmd = "mpirun -np {0} ./{1} {2} {3} | tee {2}.out & ".format(npd['no_slots'],
-                 prog_name, temp_file, npd['protocol_file'])
-        if npd['run'] == 1:
-            os.system(run_cmd)
-        else:
-            print(run_cmd)
+        print(run_cmd)
+
+# call run script
