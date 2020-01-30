@@ -34,25 +34,32 @@ program coupling_calc
   tresp_lengths = 0
   Jij = 0.0
 
+  ! in principle we could probably do the reading in as
+  ! part of the main loop below, but the time taken to
+  ! read in the control file and parse the filenames is
+  ! negligible and it reads much nicer this way, I think.
   open(unit=10, file=control_file)
   do i = 1, control_len
+
     read(10, '(a)') line
     posit = scan(line, ' ')
     coord_files(i) = line(1:posit - 1)
     tresp_files(i) = line(posit:)
+
+    coord_lengths(i) = get_file_length(coord_files(i))
+    tresp_lengths(i) = get_file_length(tresp_files(i))
+
+    write(*, *) trim(adjustl(coord_files(i))), coord_lengths(i)
+    write(*, *) trim(adjustl(tresp_files(i))), tresp_lengths(i)
+
   end do
   close(10)
 
-  do i = 1, control_len
-    coord_lengths(i) = get_file_length(coord_files(i))
-    tresp_lengths(i) = get_file_length(tresp_files(i))
-  end do
-
-  do i = 1, control_len
-    write(*, *) trim(adjustl(coord_files(i))), coord_lengths(i)
-    write(*, *) trim(adjustl(tresp_files(i))), tresp_lengths(i)
-  end do
-
+  ! we can also speed this up by only taking the j loop from
+  ! i, control_len instead of 1, control_len, since the
+  ! matrix J_ij is symmetric by construction. It'll require an
+  ! extra few lines when writing output which I haven't bothered
+  ! to write yet, hence why I'm still doing it the slow way here.
   i_loop: do i = 1, control_len
 
     allocate(coords_i(3, coord_lengths(i)))
