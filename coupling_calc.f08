@@ -1,29 +1,39 @@
 program coupling_calc
   use iso_fortran_env
   implicit none
-  logical :: file_check
+  logical :: file_check, verbose
   character(31) :: pdb_temp
   character(50) :: coord_fmt, control_file
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files
   integer :: i, j, k, l, posit, coord_stat, tresp_stat, control_len
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
+  real :: start_time, end_time
   real(kind=8) :: rx, ry, rz, r, conv
   real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij
 
+  verbose = .false.
+  call cpu_time(start_time)
   coord_fmt = '(A31 F8.3 F8.3 F8.3 A)'
 
-  ! NB: a lot of fucking around here can be avoided if all the
-  ! tresp files are the same length as the corresponding PDB
-  ! files, but this doesn't seem to be the case? check with Chris
+  ! NB: some of the fucking around here could probably be avoided
+  ! if all the tresp files are the same length as the corresponding PDB
+  ! files, but this doesn't seem to be the case? i have no idea why
 
   ! control_file is the name of the control file
+  ! this way we automatically deal with varying numbers of pigments
   control_file = "J_control.txt"
   control_len = get_file_length(control_file)
 
-  write(*,*) "Control length = ", control_len
+  if (verbose) then
+    write(*,*) "Control length = ", control_len
+  end if
 
+  ! coord/tresp_length arrays allow for varying numbers of
+  ! atoms and tresp charges (not necessarily the same thing?)
+  ! per pigment; we need to know these numbers to allocate
+  ! the coordinate and tresp arrays later on in the main loop
   allocate(coord_files(control_len))
   allocate(tresp_files(control_len))
   allocate(coord_lengths(control_len))
@@ -49,8 +59,10 @@ program coupling_calc
     coord_lengths(i) = get_file_length(coord_files(i))
     tresp_lengths(i) = get_file_length(tresp_files(i))
 
-    write(*, *) trim(adjustl(coord_files(i))), coord_lengths(i)
-    write(*, *) trim(adjustl(tresp_files(i))), tresp_lengths(i)
+    if (verbose) then
+      write(*, *) trim(adjustl(coord_files(i))), coord_lengths(i)
+      write(*, *) trim(adjustl(tresp_files(i))), tresp_lengths(i)
+    end if
 
   end do
   close(10)
@@ -62,6 +74,8 @@ program coupling_calc
   ! to write yet, hence why I'm still doing it the slow way here.
   i_loop: do i = 1, control_len
 
+    ! number of atoms/tresp charges per pigment isn't known at
+    ! compile time, so allocate at run time once we've got them
     allocate(coords_i(3, coord_lengths(i)))
     allocate(tresp_i(tresp_lengths(i)))
     open(unit=10, file=trim(adjustl(coord_files(i))))
@@ -73,6 +87,8 @@ program coupling_calc
     end do
     do k = 1, tresp_lengths(i) - 1
       read(11, '(a)') line
+      ! had to write a separate function to parse the tresp input
+      ! because fortran was being funny about the hard tabs
       tresp_i(k) = parse_tresp_line(line)
     end do
     close(10)
@@ -141,6 +157,9 @@ program coupling_calc
 
   end do i_loop
 
+  call cpu_time(end_time)
+  write (*,*) "Time taken: ", end_time - start_time, " seconds."
+
   contains
 
   function get_file_length(buffer) result(res)
@@ -152,7 +171,7 @@ program coupling_calc
     inquire(file=trim(adjustl(buffer)),exist=file_check)
     if (file_check) then
       open(unit=99, file=trim(adjustl(buffer)))
-      write(*,*) "Opened file ", trim(adjustl(buffer))
+      ! write(*,*) "Opened file ", trim(adjustl(buffer))
     else
       write (*,*) "File ",trim(adjustl(buffer)), &
         " doesn't exist. Check and try again."
@@ -180,6 +199,9 @@ program coupling_calc
     integer :: pos
     real(kind=8) :: res
     line = buffer
+    ! for some reason read didn't like hard tab delimiters and
+    ! kept breaking, so this is a bit of a hack: the decimal point
+    ! is the only full stop on each line, so find that and work back
     pos = scan(line, '.')
     line = line(pos - 2:)
     read(line, *) res
