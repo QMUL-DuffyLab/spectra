@@ -2,9 +2,8 @@ program coupling_calc
   use iso_fortran_env
   implicit none
   logical :: file_check
-  character(3) :: tresp_temp
   character(31) :: pdb_temp
-  character(50) :: coord_fmt, tresp_fmt, control_file
+  character(50) :: coord_fmt, control_file
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files
   integer :: i, j, k, l, posit, coord_stat, tresp_stat, control_len
@@ -14,7 +13,6 @@ program coupling_calc
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij
 
   coord_fmt = '(A31 F8.3 F8.3 F8.3 A)'
-  tresp_fmt = '(A 1X A 1X F10.6)'
 
   ! NB: a lot of fucking around here can be avoided if all the
   ! tresp files are the same length as the corresponding PDB
@@ -22,17 +20,7 @@ program coupling_calc
 
   ! control_file is the name of the control file
   control_file = "J_control.txt"
-  open(unit=10, file=control_file)
-  control_len = 0
-  do
-    read(10, *, iostat=coord_stat)
-    if (coord_stat == iostat_end) then
-      exit
-    else
-      control_len = control_len + 1
-    end if
-  end do
-  close(10)
+  control_len = get_file_length(control_file)
 
   write(*,*) "Control length = ", control_len
 
@@ -56,55 +44,13 @@ program coupling_calc
   close(10)
 
   do i = 1, control_len
-    inquire(file=trim(adjustl(coord_files(i))),exist=file_check)
-    if (file_check) then
-      open(unit=10, file=trim(adjustl(coord_files(i))))
-      write(*,*) "Opened file ", trim(adjustl(coord_files(i)))
-    else
-      write (*,*) "File ",trim(adjustl(coord_files(i))), &
-        " doesn't exist. Check and try again."
-      stop
-    end if
-
-    do
-      read(10, '(a)', iostat=coord_stat) line
-      if (coord_stat == iostat_end) then
-        exit
-      else
-        coord_lengths(i) = coord_lengths(i) + 1
-      end if
-    end do
-    close(10)
-
+    coord_lengths(i) = get_file_length(coord_files(i))
+    tresp_lengths(i) = get_file_length(tresp_files(i))
   end do
 
   do i = 1, control_len
-
-    inquire(file=trim(adjustl(tresp_files(i))),exist=file_check)
-    if (file_check) then
-      open(unit=10, file=trim(adjustl(tresp_files(i))))
-      write(*,*) "Opened file ", trim(adjustl(tresp_files(i)))
-    else
-      write (*,*) "File ",trim(adjustl(tresp_files(i))), &
-        " doesn't exist. Check and try again."
-      stop
-    end if
-
-    do
-      read(10, '(a)', iostat=tresp_stat) line
-      if (tresp_stat == iostat_end) then
-        exit
-      else
-        tresp_lengths(i) = tresp_lengths(i) + 1
-      end if
-    end do
-    close(10)
-
-  end do
-
-  do i = 1, control_len
-    write(*, *) trim(coord_files(i)), coord_lengths(i)
-    write(*, *) trim(tresp_files(i)), tresp_lengths(i)
+    write(*, *) trim(adjustl(coord_files(i))), coord_lengths(i)
+    write(*, *) trim(adjustl(tresp_files(i))), tresp_lengths(i)
   end do
 
   i_loop: do i = 1, control_len
@@ -139,7 +85,6 @@ program coupling_calc
       do k = 1, tresp_lengths(j) - 1
         read(11, '(a)') line
         tresp_j(k) = parse_tresp_line(line)
-        ! write(*, *) tresp_j(k)
       end do
       close(10)
       close(11)
@@ -191,6 +136,36 @@ program coupling_calc
 
   contains
 
+  function get_file_length(buffer) result(res)
+    implicit none
+    logical :: file_check
+    character(len=*), intent(in) :: buffer
+    integer :: n, res, stat
+
+    inquire(file=trim(adjustl(buffer)),exist=file_check)
+    if (file_check) then
+      open(unit=99, file=trim(adjustl(buffer)))
+      write(*,*) "Opened file ", trim(adjustl(buffer))
+    else
+      write (*,*) "File ",trim(adjustl(buffer)), &
+        " doesn't exist. Check and try again."
+      stop
+    end if
+
+    n = 0
+    do
+      read(99, *, iostat=stat)
+      if (stat == iostat_end) then
+        exit
+      else
+        n = n + 1
+      end if
+    end do
+    close(99)
+    res = n
+
+  end function get_file_length
+
   function parse_tresp_line(buffer) result(res)
     implicit none
     character(len=*), intent(in) :: buffer
@@ -205,4 +180,3 @@ program coupling_calc
   end function parse_tresp_line
 
 end program coupling_calc
-
