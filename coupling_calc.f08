@@ -1,15 +1,15 @@
 program coupling_calc
   use iso_fortran_env
   implicit none
-  logical :: file_check, verbose
+  logical :: verbose
   character(31) :: pdb_temp
   character(50) :: coord_fmt, control_file
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files
-  integer :: i, j, k, l, posit, coord_stat, tresp_stat, control_len
+  integer :: i, j, k, l, posit, coord_stat, control_len
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
-  real(kind=8) :: rx, ry, rz, r, conv
+  real(kind=8) :: rx, ry, rz, r, e2kb, kc
   real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij, Jeig
 
@@ -17,11 +17,14 @@ program coupling_calc
   call cpu_time(start_time)
   coord_fmt = '(A31 F8.3 F8.3 F8.3 A)'
 
-  ! NB: some of the fucking around here could probably be avoided
-  ! if all the tresp files are the same length as the corresponding PDB
-  ! files, but this doesn't seem to be the case? i have no idea why
+  ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
+  ! the 1.98E-23 isn't kB, it's some conversion factor;
+  ! came from Chris. should probably sit down and figure it out lol
+  ! second is Coulomb constant 1 / 4_pi_e0
+  ! the 0.5 is because e_r = 2 for proteins
+  e2kb = 1.2955E-5
+  kc = 8.988E9 * 0.5
 
-  ! control_file is the name of the control file
   ! this way we automatically deal with varying numbers of pigments
   control_file = "J_control.txt"
   control_len = get_file_length(control_file)
@@ -45,6 +48,8 @@ program coupling_calc
   coord_lengths = 0
   tresp_lengths = 0
   Jij = 0.0
+  Jeig = 0.0
+  lambda = 0.0
 
   ! in principle we could probably do the reading in as
   ! part of the main loop below, but the time taken to
@@ -102,7 +107,7 @@ program coupling_calc
       allocate(tresp_j(tresp_lengths(j)))
       open(unit=10, file=trim(adjustl(coord_files(j))))
       open(unit=11, file=trim(adjustl(tresp_files(j))))
-      read(11, *) ! first line in tresp files is a comment
+      read(11, *)
       do k = 1, coord_lengths(j)
         read(10, fmt=coord_fmt) pdb_temp, &
         coords_j(1, k), coords_j(2, k), coords_j(3, k), pdb_temp
@@ -125,29 +130,14 @@ program coupling_calc
             ! again, tresp length must equal pdb length, surely?????
             Jij(i, j) = Jij(i, j) + ((tresp_i(k) * tresp_j(l)) / (r))
           else
-            ! not sure this is correct yet but it should be
-            ! possible to get oscillator strengths this way
-            rx = coords_i(1, k)
-            ry = coords_i(2, k)
-            rz = coords_i(3, k)
-            r = sqrt(rx**2 + ry**2 + rz**2)
-            Jij(i, j) = Jij(i, j) + tresp_i(k) * tresp_i(k) * r
+            ! assume chla Qy 14900, Qx ?
+            ! chlc relative from spectrum?
+            ! car s2 20,000 s1 14,900?
+            ! lookup fcp spectroscopy
           end if
 
         end do l_loop
       end do k_loop
-
-      ! first number is e_c^2 / k_B * 1E-10, for conversion
-      ! although NB: this seems to use KB = 1.98E-23, it
-      ! should be 1.38E23. check this with Chris!
-      ! second is Coulomb constant 1 / 4_pi_e0
-      ! third is e_r = 2 for proteins
-      conv = 1.295E-5 * 8.988E9 * 0.5
-      ! write(*, *) trim(adjustl(coord_files(i)))," ",&
-      !             trim(adjustl(tresp_files(i)))," ",&
-      !             trim(adjustl(coord_files(j)))," ",&
-      !             trim(adjustl(tresp_files(j)))," ",&
-      !             Jij(i, j) * conv
 
       deallocate(coords_j)
       deallocate(tresp_j)
@@ -159,21 +149,24 @@ program coupling_calc
 
   end do i_loop
 
-  call cpu_time(end_time)
-  write (*,*) "Time taken: ", end_time - start_time, " seconds."
-
-  Jij = Jij * conv
+  ! not sure if this is correct or not
+  Jij = Jij * e2kb * kc
   Jeig = Jij
-  ! SSYEV does eigendecomposition of a real symmetric matrix
+
+  write(*, *) Jeig(1,1), Jeig(1,2)
+  ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
-  call ssyev('V', 'U', control_len, Jeig, control_len, lambda,&
-              r, -1, coord_stat)
+  call dsyev('V', 'U', control_len, Jeig, control_len,&
+              lambda, r, -1, coord_stat)
   write(*,*) "Optimal size of work array = ", int(r)
+  write(*, *) Jeig(1,1), Jeig(1,2)
   allocate(work(int(r)))
-  call ssyev('V', 'U', control_len, Jeig, control_len, lambda,&
-              work, 4 * control_len, coord_stat)
-  ! now Jeig and lambda contain eigenvectors and eigenvalues of J
+  call dsyev('V', 'U', control_len, Jeig, control_len,&
+              lambda, work, 4 * control_len, coord_stat)
+  write(*,*) coord_stat
+  write(*,*) size(Jeig, 1), size(Jeig, 2)
+  write(*, *) Jeig(1,1), Jeig(1,2)
 
   open(unit=10, file="out/J_ij.out")
   open(unit=11, file="out/J_eig.out")
@@ -183,12 +176,12 @@ program coupling_calc
       ! can write these with implied do loops
       ! (Jij(i, j), j = 1, control_len)
       ! but it made the code slower?
-      write(10, '(17F18.10)', advance='no') Jij(i, j)
-      write(11, '(17F18.10)', advance='no') Jeig(i, j)
+      write(10, '(17F16.5)', advance='no') Jij(i, j)
+      write(11, '(17F16.5)', advance='no') Jeig(i, j)
     end do
     write(10,*) ! blank line between rows!
     write(11,*)
-    write(12, '(F18.10)') lambda(i)
+    write(12, *) lambda(i)
   end do
   close(10)
   close(11)
@@ -199,8 +192,11 @@ program coupling_calc
   deallocate(coord_lengths)
   deallocate(tresp_lengths)
   deallocate(Jij)
-  deallocate(Jeig)
+  deallocate(work)
   deallocate(lambda)
+
+  call cpu_time(end_time)
+  write (*,*) "Time taken: ", end_time - start_time, " seconds."
 
   stop
 
