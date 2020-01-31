@@ -10,8 +10,8 @@ program coupling_calc
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
   real(kind=8) :: rx, ry, rz, r, conv
-  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j
-  real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij
+  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda
+  real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij, Jeig
 
   verbose = .false.
   call cpu_time(start_time)
@@ -39,6 +39,8 @@ program coupling_calc
   allocate(coord_lengths(control_len))
   allocate(tresp_lengths(control_len))
   allocate(Jij(control_len, control_len))
+  allocate(Jeig(control_len, control_len))
+  allocate(lambda(control_len))
 
   coord_lengths = 0
   tresp_lengths = 0
@@ -141,11 +143,11 @@ program coupling_calc
       ! second is Coulomb constant 1 / 4_pi_e0
       ! third is e_r = 2 for proteins
       conv = 1.295E-5 * 8.988E9 * 0.5
-      write(*, *) trim(adjustl(coord_files(i)))," ",&
-                  trim(adjustl(tresp_files(i)))," ",&
-                  trim(adjustl(coord_files(j)))," ",&
-                  trim(adjustl(tresp_files(j)))," ",&
-                  Jij(i, j) * conv
+      ! write(*, *) trim(adjustl(coord_files(i)))," ",&
+      !             trim(adjustl(tresp_files(i)))," ",&
+      !             trim(adjustl(coord_files(j)))," ",&
+      !             trim(adjustl(tresp_files(j)))," ",&
+      !             Jij(i, j) * conv
 
       deallocate(coords_j)
       deallocate(tresp_j)
@@ -159,6 +161,48 @@ program coupling_calc
 
   call cpu_time(end_time)
   write (*,*) "Time taken: ", end_time - start_time, " seconds."
+
+  Jij = Jij * conv
+  Jeig = Jij
+  ! SSYEV does eigendecomposition of a real symmetric matrix
+  ! this first one is the query: find optimal size of work array
+  ! using lwork = -1 sets r to the optimal work size
+  call ssyev('V', 'U', control_len, Jeig, control_len, lambda,&
+              r, -1, coord_stat)
+  write(*,*) "Optimal size of work array = ", int(r)
+  allocate(work(int(r)))
+  call ssyev('V', 'U', control_len, Jeig, control_len, lambda,&
+              work, 4 * control_len, coord_stat)
+  ! now Jeig and lambda contain eigenvectors and eigenvalues of J
+
+  open(unit=10, file="out/J_ij.out")
+  open(unit=11, file="out/J_eig.out")
+  open(unit=12, file="out/lambda.out")
+  do i = 1, control_len
+    do j = 1, control_len
+      ! can write these with implied do loops
+      ! (Jij(i, j), j = 1, control_len)
+      ! but it made the code slower?
+      write(10, '(17F18.10)', advance='no') Jij(i, j)
+      write(11, '(17F18.10)', advance='no') Jeig(i, j)
+    end do
+    write(10,*) ! blank line between rows!
+    write(11,*)
+    write(12, '(F18.10)') lambda(i)
+  end do
+  close(10)
+  close(11)
+  close(12)
+
+  deallocate(coord_files)
+  deallocate(tresp_files)
+  deallocate(coord_lengths)
+  deallocate(tresp_lengths)
+  deallocate(Jij)
+  deallocate(Jeig)
+  deallocate(lambda)
+
+  stop
 
   contains
 
