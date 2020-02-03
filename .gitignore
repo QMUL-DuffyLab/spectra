@@ -2,3 +2,4 @@ coupling_calc
 coupling_calc.dSYM
 .DS_Store
 out/
+*.txt

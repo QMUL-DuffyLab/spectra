@@ -10,7 +10,7 @@ program coupling_calc
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
   real(kind=8) :: rx, ry, rz, r, e2kb, kc
-  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda
+  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda, osc
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij, Jeig
 
   verbose = .false.
@@ -27,6 +27,7 @@ program coupling_calc
 
   ! this way we automatically deal with varying numbers of pigments
   control_file = "J_control.txt"
+  osc_file = "osc.txt"
   control_len = get_file_length(control_file)
 
   if (verbose) then
@@ -44,20 +45,24 @@ program coupling_calc
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
   allocate(lambda(control_len))
+  allocate(osc(control_len))
 
   coord_lengths = 0
   tresp_lengths = 0
   Jij = 0.0
   Jeig = 0.0
   lambda = 0.0
+  osc = 0.0
 
   ! in principle we could probably do the reading in as
   ! part of the main loop below, but the time taken to
   ! read in the control file and parse the filenames is
   ! negligible and it reads much nicer this way, I think.
   open(unit=10, file=control_file)
+  open(unit=11, file=osc_file)
   do i = 1, control_len
 
+    read(11, *) osc(i)
     read(10, '(a)') line
     posit = scan(line, ' ')
     coord_files(i) = line(1:posit - 1)
@@ -134,6 +139,7 @@ program coupling_calc
             ! chlc relative from spectrum?
             ! car s2 20,000 s1 14,900?
             ! lookup fcp spectroscopy
+            Jij(i, j) = osc(i)
           end if
 
         end do l_loop
@@ -153,19 +159,16 @@ program coupling_calc
   Jij = Jij * e2kb * kc
   Jeig = Jij
 
-  write(*, *) Jeig(1,1), Jeig(1,2)
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
   call dsyev('V', 'U', control_len, Jeig, control_len,&
               lambda, r, -1, coord_stat)
   write(*,*) "Optimal size of work array = ", int(r)
-  write(*, *) Jeig(1,1), Jeig(1,2)
   allocate(work(int(r)))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
-              lambda, work, 4 * control_len, coord_stat)
-  write(*,*) coord_stat
-  write(*,*) size(Jeig, 1), size(Jeig, 2)
+              lambda, work, int(r), coord_stat)
+  write(*,*) "LAPACK INFO (should be 0) = ",coord_stat
   write(*, *) Jeig(1,1), Jeig(1,2)
 
   open(unit=10, file="out/J_ij.out")
