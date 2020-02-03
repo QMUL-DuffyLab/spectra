@@ -3,7 +3,7 @@ program coupling_calc
   implicit none
   logical :: verbose
   character(31) :: pdb_temp
-  character(50) :: coord_fmt, control_file
+  character(50) :: coord_fmt, control_file, osc_file
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files
   integer :: i, j, k, l, posit, coord_stat, control_len

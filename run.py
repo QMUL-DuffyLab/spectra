@@ -37,7 +37,7 @@ car_list = ['Fuco_301', 'Fuco_302', 'Fuco_303', 'Fuco_304', 'Fuco_305', 'Fuco_30
 chl_pdb_list = ["coords/{}.pdb".format(p) for p in chl_list]
 car_pdb_list = ["coords/{}.pdb".format(p) for p in car_list]
 # chl_tresp_list = ['Chla', 'Chla', 'Chla', 'Chla', 'Chla', 'Chla', 'Chla', 'Chlc2_anion', 'Chlc1_anion']
-chl_tresp_list = ["{}_anion".format(p[0:-4]) if "Chlc" in p else p[0:-4] for p in chl_list]
+chl_tresp_list = ["{}_anion".format(p[0:-4]) if "Chlc" in p else p[0:-3] for p in chl_list]
 car_tresp_list = [p[0:-4] for p in car_list]
 
 pdb_list = []
@@ -54,11 +54,11 @@ for s in args.states:
         state.append([s for p in car_pdb_list])
 
 
+# need to flatten the lists for the loop below
 pdb_list = [y for x in pdb_list for y in x]
 tresp_list = [y for x in tresp_list for y in x]
 state = [y for x in state for y in x]
-print(pdb_list)
-print(tresp_list)
+
 f = open(control_file, "w")
 g = open(osc_file, "w")
 for i, var in enumerate(pdb_list):
