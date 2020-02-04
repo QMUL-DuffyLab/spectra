@@ -19,12 +19,21 @@ parser.add_argument("-s", "--states", nargs="*", default=['Qy', 'S1', 'Qx', 'S2'
 args = parser.parse_args()
 
 control_file = "J_control.txt"
-osc_file = "osc.txt"
-osc_strengths = {
-        'Chla_Qy': 14900.0, 'Chla_Qx': 5000.0,
-        'Chlc_Qy': 10000.0, 'Chlc_Qx': 2500.0, 
+ei_file = "ei.txt"
+
+'''
+comments on following excitation energies:
+    chl a ones are taken from valkunas 2013 jcpl
+    chl c taken from peak locations listed on wikipedia lol
+    fuco and diadino :shrug:, although enriquez 2010 gives
+    diadino S1 at about 14170
+'''
+
+ei_strengths = {
+        'Chla_Qy': 14900.0, 'Chla_Qx': 16300.0,
+        'Chlc_Qy': 15970.0, 'Chlc_Qx': 17330.0,
         'Fuco_S2': 20000.0, 'Diad_S2': 20000.0,
-        'Fuco_S1': 14950.0, 'Diad_S1': 14950.0
+        'Fuco_S1': 14900.0, 'Diad_S1': 14900.0
                  }
 
 '''
@@ -60,10 +69,10 @@ tresp_list = [y for x in tresp_list for y in x]
 state = [y for x in state for y in x]
 
 f = open(control_file, "w")
-g = open(osc_file, "w")
+g = open(ei_file, "w")
 for i, var in enumerate(pdb_list):
     print("{} {}".format(pdb_list[i], tresp_list[i]), file=f)
-    print(osc_strengths["{}_{}".format(var[7:11], state[i])], file=g)
+    print(ei_strengths["{}_{}".format(var[7:11], state[i])], file=g)
 
 f.close()
 g.close()

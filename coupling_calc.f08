@@ -3,15 +3,16 @@ program coupling_calc
   implicit none
   logical :: verbose
   character(31) :: pdb_temp
-  character(50) :: coord_fmt, control_file, osc_file
+  character(50) :: coord_fmt, control_file, ei_file
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files
   integer :: i, j, k, l, posit, coord_stat, control_len
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
   real(kind=8) :: rx, ry, rz, r, e2kb, kc
-  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda, osc
-  real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j, Jij, Jeig
+  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda, ei
+  real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j,&
+  Jij, Jeig, mu, mu_ex
 
   verbose = .false.
   call cpu_time(start_time)
@@ -27,7 +28,7 @@ program coupling_calc
 
   ! this way we automatically deal with varying numbers of pigments
   control_file = "J_control.txt"
-  osc_file = "osc.txt"
+  ei_file = "ei.txt"
   control_len = get_file_length(control_file)
 
   if (verbose) then
@@ -44,25 +45,29 @@ program coupling_calc
   allocate(tresp_lengths(control_len))
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
+  allocate(mu(3, control_len)) ! fortran is column major
+  allocate(mu_ex(3, control_len))
   allocate(lambda(control_len))
-  allocate(osc(control_len))
+  allocate(ei(control_len))
 
   coord_lengths = 0
   tresp_lengths = 0
   Jij = 0.0
   Jeig = 0.0
+  mu = 0.0
+  mu_ex = 0.0
   lambda = 0.0
-  osc = 0.0
+  ei = 0.0
 
   ! in principle we could probably do the reading in as
   ! part of the main loop below, but the time taken to
   ! read in the control file and parse the filenames is
   ! negligible and it reads much nicer this way, I think.
   open(unit=10, file=control_file)
-  open(unit=11, file=osc_file)
+  open(unit=11, file=ei_file)
   do i = 1, control_len
 
-    read(11, *) osc(i)
+    read(11, *) ei(i)
     read(10, '(a)') line
     posit = scan(line, ' ')
     coord_files(i) = line(1:posit - 1)
@@ -78,6 +83,12 @@ program coupling_calc
 
   end do
   close(10)
+  close(11)
+
+  ! we multiply the whole Jij matrix later on to convert
+  ! to wavenumbers; the read in excitation energies are already
+  ! in wavenumbers so do that conversion backwards here
+  ei = ei / (e2kb * kc)
 
   ! we can also speed this up by only taking the j loop from
   ! i, control_len instead of 1, control_len, since the
@@ -124,6 +135,12 @@ program coupling_calc
       close(10)
       close(11)
 
+      ! only need to do this once; doesn't have to be in kl loops
+      ! diagonal elements are the excitation energies
+      if (i.eq.j) then
+        Jij(i, j) = ei(i)
+      end if
+
       k_loop: do k = 1, coord_lengths(i)
         l_loop: do l = 1, coord_lengths(j)
 
@@ -132,14 +149,12 @@ program coupling_calc
             ry = coords_i(2, k) - coords_j(2, l)
             rz = coords_i(3, k) - coords_j(3, l)
             r = sqrt(rx**2 + ry**2 + rz**2)
-            ! again, tresp length must equal pdb length, surely?????
             Jij(i, j) = Jij(i, j) + ((tresp_i(k) * tresp_j(l)) / (r))
           else
-            ! assume chla Qy 14900, Qx ?
-            ! chlc relative from spectrum?
-            ! car s2 20,000 s1 14,900?
-            ! lookup fcp spectroscopy
-            Jij(i, j) = osc(i)
+            ! calculate transition dipole moments for each pigment
+            mu(1, i) = mu(1, i) + tresp_i(k) * coords_i(1, k)
+            mu(2, i) = mu(2, i) + tresp_i(k) * coords_i(2, k)
+            mu(3, i) = mu(3, i) + tresp_i(k) * coords_i(3, k)
           end if
 
         end do l_loop
@@ -158,6 +173,7 @@ program coupling_calc
   ! not sure if this is correct or not
   Jij = Jij * e2kb * kc
   Jeig = Jij
+  mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
 
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
@@ -174,6 +190,8 @@ program coupling_calc
   open(unit=10, file="out/J_ij.out")
   open(unit=11, file="out/J_eig.out")
   open(unit=12, file="out/lambda.out")
+  open(unit=13, file="out/mu_site.out")
+  open(unit=14, file="out/mu_exciton.out")
   do i = 1, control_len
     do j = 1, control_len
       ! can write these with implied do loops
@@ -185,6 +203,8 @@ program coupling_calc
     write(10,*) ! blank line between rows!
     write(11,*)
     write(12, *) lambda(i)
+    write(13, *) mu(1, i), mu(2, i), mu(3, i)
+    write(14, *) mu_ex(1, i), mu_ex(2, i), mu_ex(3, i)
   end do
   close(10)
   close(11)
@@ -197,6 +217,9 @@ program coupling_calc
   deallocate(Jij)
   deallocate(work)
   deallocate(lambda)
+  deallocate(ei)
+  deallocate(mu)
+  deallocate(mu_ex)
 
   call cpu_time(end_time)
   write (*,*) "Time taken: ", end_time - start_time, " seconds."
