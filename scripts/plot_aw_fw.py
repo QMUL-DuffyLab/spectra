@@ -3,22 +3,26 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot(x, y, filename, **kwargs):
+def plot(filename, *args, **kwargs):
+    print(kwargs)
     fig, ax = plt.subplots()
     plt.grid()
     if 'xlabel' in kwargs:
         plt.xlabel(kwargs['xlabel'])
 
     if 'ylabel' in kwargs:
-        plt.ylabel(kwargs['ylabel'], labelpad=-4)
+        plt.ylabel(kwargs['ylabel'])
 
-    if 'label' in kwargs:
-        plt.plot(x, y, label=kwargs['label'])
-        plt.legend()
-    else:
-        plt.plot(x, y)
+    for i in range(0, len(args) - 1, 2):
+        if 'label' in kwargs:
+            plt.plot(args[i], args[i + 1], label=kwargs['label'][i//2])
+        else:
+            plt.plot(args[i], args[i + 1])
 
     fig.tight_layout()
+    if 'label' in kwargs:
+        plt.legend()
+
     plt.savefig(filename, bbox_inches='tight')
     plt.close()
 
@@ -46,23 +50,10 @@ fw = fw[fw[:, 0].argsort()]
 exp_file = "in/{0}_exp.dat".format(args.ligand)
 aw_exp = np.loadtxt(exp_file)
 
-fig, ax = plt.subplots()
-plt.grid()
-plt.xlabel('$ \omega $')
-plt.ylabel(r'$ A(\omega) $')
-# plt.xlim((-2000.0, 2000.0))
-plt.plot(aw[:, 0] + 2600, (aw[:, 1] - np.min(aw[:, 1])), label="My result", lw=2.5)
-plt.plot(aw_exp[:, 0], 1.7*aw_exp[:, 1], label="Exp result", lw=1.5)
-plt.legend()
-plt.savefig(args.output_aw_file)
-plt.close()
-
-fig, ax = plt.subplots()
-plt.grid()
-plt.xlabel('$ \omega $')
-plt.ylabel(r'$ F(\omega) $')
-# plt.xlim((-1000.0, 1000.0))
-plt.plot(fw[:, 0], fw[:, 1], label="My result")
-plt.legend()
-plt.savefig(args.output_fw_file)
-plt.close()
+plot(args.output_aw_file, aw[:, 0], (aw[:, 1] - np.min(aw[:, 1])),
+        aw_exp[:, 0], (aw_exp[:, 1] - np.min(aw_exp[:, 1])),
+        xlabel=r'$ \omega $', ylabel=r'$ A(\omega) $',
+        label=[r'My result', r'Exp. result'])
+plot(args.output_fw_file, fw[:, 0], (fw[:, 1] - np.min(fw[:, 1])),
+        xlabel=r'$ \omega $', ylabel=r'$ F(\omega) $',
+        label=[r'My result', r'Exp. result'])
