@@ -94,6 +94,16 @@ main(int argc, char** argv)
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
     }
 
+    FILE *fp = fopen(p.at_file, "w");
+
+    for (unsigned long i = 0; i < pr.ns; i++) {
+    	/* the 6.4 here is from an N in the python code */
+	fprintf(fp, " %18.10f %18.10f %18.10f\n",
+		(float) i, creal(Atv[i] * pf_norm * 6.4),
+		cimag(Atv[i] * pf_norm * 6.4));
+    }
+    fclose(fp);
+
     fprintf(stdout, "Performing FFT.\n");
 
     /* this assignment is very ugly but trying to copy Chris's code */
@@ -109,13 +119,12 @@ main(int argc, char** argv)
     	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(plan); 
 
-    FILE *fp = fopen(p.aw_file, "w");
+    fp = fopen(p.aw_file, "w");
 
     for (unsigned long i = 0; i < pr.ns; i++) {
     	/* unpack the ordering used by FFTW */
     	double k = i * 2. * M_PI / (pr.ns);
     	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
-    	/* the 6.4 here is from an N in the python code */
 	fprintf(fp, " %18.10f %18.10f\n",
 		freq / pf, out[i][0] * pf_norm * 6.4);
     }

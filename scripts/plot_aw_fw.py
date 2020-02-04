@@ -28,17 +28,21 @@ def plot(filename, *args, **kwargs):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--ligand", help="ligand code")
-parser.add_argument("-a", "--aw_file", help="A(w) input file")
-parser.add_argument("-f", "--fw_file", help="F(w) input file")
-parser.add_argument("-oa", "--output_aw_file", help="Output A(w) file")
-parser.add_argument("-of", "--output_fw_file", help="Output F(w) file")
+parser.add_argument("-aw", "--aw_file", help="A(w) input file")
+parser.add_argument("-fw", "--fw_file", help="F(w) input file")
+parser.add_argument("-at", "--at_file", help="A(w) input file")
+parser.add_argument("-ft", "--ft_file", help="F(w) input file")
+parser.add_argument("-ag", "--aw_graph", help="Output A(w) file")
+parser.add_argument("-fg", "--fw_graph", help="Output F(w) file")
 args = parser.parse_args()
 
 if (args.ligand is not None):
-    args.aw_file = "out/{}_Aw_file.dat".format(args.ligand)
-    args.fw_file = "out/{}_Fw_file.dat".format(args.ligand)
-    args.output_aw_file = "out/{}_Aw.pdf".format(args.ligand)
-    args.output_fw_file = "out/{}_Fw.pdf".format(args.ligand)
+    args.aw_file = "out/{}_Aw.dat".format(args.ligand)
+    args.fw_file = "out/{}_Fw.dat".format(args.ligand)
+    args.at_file = "out/{}_At.dat".format(args.ligand)
+    args.ft_file = "out/{}_Ft.dat".format(args.ligand)
+    args.aw_graph = "out/{}_Aw.pdf".format(args.ligand)
+    args.fw_graph = "out/{}_Fw.pdf".format(args.ligand)
 else:
     args.ligand = args.aw_file[4:7]
 

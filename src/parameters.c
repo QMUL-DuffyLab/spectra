@@ -107,6 +107,10 @@ getParameters(char *filename)
 	    strcpy(p.aw_file, val);
 	} else if (strcmp(key, "Fw_file") == 0) {
 	    strcpy(p.fw_file, val);
+	} else if (strcmp(key, "At_file") == 0) {
+	    strcpy(p.at_file, val);
+	} else if (strcmp(key, "Ft_file") == 0) {
+	    strcpy(p.ft_file, val);
 	} 
 
 	/* future file names */

@@ -56,8 +56,10 @@ for i in range(len(perm)):
         p[d_keys[j]] = perm[i][j]
         label = label + "{}_{}_".format(d_keys[j], perm[i][j])
     
-    p['Aw_file'] = os.path.join(prefix, label + "Aw_file.out")
-    p['Fw_file'] = os.path.join(prefix, label + "Fw_file.out")
+    p['Aw_file'] = os.path.join(prefix, label + "Aw.dat")
+    p['Fw_file'] = os.path.join(prefix, label + "Fw.dat")
+    p['At_file'] = os.path.join(prefix, label + "At.dat")
+    p['Ft_file'] = os.path.join(prefix, label + "Ft.dat")
 
     temp_file = os.path.join(os.getcwd(),
                 os.path.dirname(npd['input_file']), label + "params")
