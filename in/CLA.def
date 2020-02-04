@@ -1,6 +1,8 @@
 # parameter file for CLA lineshape
-Aw_file = out/CLA_Aw_file.dat
-Fw_file = out/CLA_Fw_file.dat
+At_file = out/CLA_At.dat
+Ft_file = out/CLA_Ft.dat
+Aw_file = out/CLA_Aw.dat
+Fw_file = out/CLA_Fw.dat
 l0 = 0.0
 l1 = 0.0
 l2 = 0.0

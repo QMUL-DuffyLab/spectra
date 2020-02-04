@@ -58,7 +58,7 @@ getParameters(char *filename)
     	fprintf(stdout, "Ligand name read as %s; using ODO "
     		"spectral density\n", filename);
     	p.ligand = 2;
-    } else if (strstr(filename, "CAR") != NULL
+    } else if (strstr(filename, "A86") != NULL
     	    || strstr(filename, "DD6") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using carotenoid "
     		"spectral density\n", filename);
