@@ -28,13 +28,28 @@ comments on following excitation energies:
     fuco and diadino :shrug:, although enriquez 2010 gives
     diadino S1 at about 14170
 '''
-
-ei_strengths = {
+ei = {
         'Chla_Qy': 14900.0, 'Chla_Qx': 16300.0,
         'Chlc_Qy': 15970.0, 'Chlc_Qx': 17330.0,
         'Fuco_S2': 20000.0, 'Diad_S2': 20000.0,
         'Fuco_S1': 14900.0, 'Diad_S1': 14900.0
                  }
+
+# reorganisation energies - i tried calculating these but they came out weird?
+# reorgs = {
+#         'Chla_Qy': 14900.0, 'Chla_Qx': 16300.0,
+#         'Chlc_Qy': 15970.0, 'Chlc_Qx': 17330.0,
+#         'Fuco_S2': 20000.0, 'Diad_S2': 20000.0,
+#         'Fuco_S1': 14900.0, 'Diad_S1': 14900.0
+#                 }
+
+# excited state lifetimes to put into the exponentials later
+# lifetimes = {
+#         'Chla_Qy': 14900.0, 'Chla_Qx': 16300.0,
+#         'Chlc_Qy': 15970.0, 'Chlc_Qx': 17330.0,
+#         'Fuco_S2': 20000.0, 'Diad_S2': 20000.0,
+#         'Fuco_S1': 14900.0, 'Diad_S1': 14900.0
+#                  }
 
 '''
 these lists are ugly; they come from naming conventions for pdb/tresp files.
@@ -64,15 +79,14 @@ for s in args.states:
 
 
 # need to flatten the lists for the loop below
-pdb_list = [y for x in pdb_list for y in x]
-tresp_list = [y for x in tresp_list for y in x]
-state = [y for x in state for y in x]
+for l in [pdb_list, tresp_list, state]:
+    l = [y for x in l for y in x]
 
 f = open(control_file, "w")
 g = open(ei_file, "w")
 for i, var in enumerate(pdb_list):
     print("{} {}".format(pdb_list[i], tresp_list[i]), file=f)
-    print(ei_strengths["{}_{}".format(var[7:11], state[i])], file=g)
+    print(ei["{}_{}".format(var[7:11], state[i])], file=g)
 
 f.close()
 g.close()

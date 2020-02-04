@@ -14,6 +14,14 @@ program coupling_calc
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j,&
   Jij, Jeig, mu, mu_ex
 
+  ! thinking about this for future use
+  ! state not pigment bc e.g. qy has different params than qx
+  type State
+    character(3) :: lig
+    real(kind=8) :: reorg
+    real(kind=8) :: lifetime
+  end type State
+
   verbose = .false.
   call cpu_time(start_time)
   coord_fmt = '(A31 F8.3 F8.3 F8.3 A)'
