@@ -20,6 +20,9 @@ args = parser.parse_args()
 
 control_file = "J_control.txt"
 ei_file = "ei.txt"
+lambda_file = "lambda.txt"
+gnt_file = "gnt.txt"
+lineshape_dir = "/Users/cgray/code/lineshape"
 
 '''
 comments on following excitation energies:
@@ -35,7 +38,8 @@ ei = {
         'Fuco_S1': 14900.0, 'Diad_S1': 14900.0
                  }
 
-# reorganisation energies - i tried calculating these but they came out weird?
+# reorganisation energies - these are specific to the parameters used
+# in the spectral density functions
 # reorgs = {
 #         'Chla_Qy': 14900.0, 'Chla_Qx': 16300.0,
 #         'Chlc_Qy': 15970.0, 'Chlc_Qx': 17330.0,
@@ -44,12 +48,12 @@ ei = {
 #                 }
 
 # excited state lifetimes to put into the exponentials later
-# lifetimes = {
-#         'Chla_Qy': 14900.0, 'Chla_Qx': 16300.0,
-#         'Chlc_Qy': 15970.0, 'Chlc_Qx': 17330.0,
-#         'Fuco_S2': 20000.0, 'Diad_S2': 20000.0,
-#         'Fuco_S1': 14900.0, 'Diad_S1': 14900.0
-#                  }
+lifetimes = {
+        'Chla_Qy': 4E-9, 'Chla_Qx': 4E-9,
+        'Chlc_Qy': 4E-9, 'Chlc_Qx': 4E-9,
+        'Fuco_S2': 10E-12, 'Diad_S2': 10E-12,
+        'Fuco_S1': 10E-12, 'Diad_S1': 10E-12
+            }
 
 '''
 these lists are ugly; they come from naming conventions for pdb/tresp files.
@@ -64,29 +68,66 @@ car_pdb_list = ["coords/{}.pdb".format(p) for p in car_list]
 chl_tresp_list = ["{}_anion".format(p[0:-4]) if "Chlc" in p else p[0:-3] for p in chl_list]
 car_tresp_list = [p[0:-4] for p in car_list]
 
+chl_lig_list = ["CLA" if "Chla" in p else "CLC" for p in chl_list]
+car_lig_list = ["A86" if "Fuco" in p else "DD6" for p in car_list]
+chl_lambda_list = ["{}/out/{}_lambda.dat".format(lineshape_dir, p) for p in chl_lig_list]
+car_lambda_list = ["{}/out/{}_lambda.dat".format(lineshape_dir, p) for p in car_lig_list]
+chl_gnt_list = ["{}/out/{}_At.dat".format(lineshape_dir, p) for p in chl_lig_list]
+car_gnt_list = ["{}/out/{}_At.dat".format(lineshape_dir, p) for p in car_lig_list]
+
+# the lambdas are just one number - read them in here, makes it easier in the fortran
+for i, l in enumerate(chl_lambda_list):
+    with open(l) as f:
+        # ugly but ¯\_(ツ)_/¯
+        chl_lambda_list[i] = float((f.readline()).split()[0])
+        print("lambda_i = {}".format(chl_lambda_list[i]))
+
+for i, l in enumerate(car_lambda_list):
+    with open(l) as f:
+        car_lambda_list[i] = float((f.readline()).split()[0])
+        print("lambda_i = {}".format(car_lambda_list[i]))
+
 pdb_list = []
 tresp_list = []
+lambda_list = []
+gnt_list = []
 state = []
 for s in args.states:
     if 'Q' in s:
         pdb_list.append(chl_pdb_list)
+        lambda_list.append(chl_lambda_list)
+        gnt_list.append(chl_gnt_list)
         tresp_list.append(["tresp/{0}_{1}_TrESP.txt".format(tr, s) for tr in chl_tresp_list])
         state.append([s for p in chl_pdb_list])
     elif 'S' in s:
         pdb_list.append(car_pdb_list)
+        lambda_list.append(car_lambda_list)
+        gnt_list.append(car_gnt_list)
         tresp_list.append(["tresp/{0}_{1}_TrESP.txt".format(tr, s) for tr in car_tresp_list])
         state.append([s for p in car_pdb_list])
 
 
 # need to flatten the lists for the loop below
-for l in [pdb_list, tresp_list, state]:
-    l = [y for x in l for y in x]
+# there must be a way of doing these all at once
+flatten = lambda l : [y for x in l for y in x]
+pdb_list = flatten(pdb_list)
+lambda_list = flatten(lambda_list)
+gnt_list = flatten(gnt_list)
+tresp_list = flatten(tresp_list)
+state = flatten(state)
 
+print(pdb_list)
 f = open(control_file, "w")
 g = open(ei_file, "w")
+h = open(lambda_file, "w")
+j = open(gnt_file, "w")
 for i, var in enumerate(pdb_list):
     print("{} {}".format(pdb_list[i], tresp_list[i]), file=f)
     print(ei["{}_{}".format(var[7:11], state[i])], file=g)
+    print("{}".format(lambda_list[i]), file=h)
+    print("{}".format(gnt_list[i]), file=j)
 
 f.close()
 g.close()
+h.close()
+j.close()

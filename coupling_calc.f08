@@ -3,23 +3,28 @@ program coupling_calc
   implicit none
   logical :: verbose
   character(31) :: pdb_temp
-  character(50) :: coord_fmt, control_file, ei_file
+  character(50) :: coord_fmt, control_file, ei_file, lambda_file, gnt_file
   character(200) :: line
-  character(100), dimension(:), allocatable :: coord_files, tresp_files
-  integer :: i, j, k, l, posit, coord_stat, control_len
+  character(100), dimension(:), allocatable :: coord_files, tresp_files,&
+  gnt_files
+  integer :: i, j, k, l, posit, coord_stat, control_len, tau
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
   real(kind=8) :: rx, ry, rz, r, e2kb, kc
-  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work, lambda, ei
+  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work,&
+  eigvals, ei, lambda
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j,&
   Jij, Jeig, mu, mu_ex
+  complex(kind=16), dimension(:,:), allocatable :: gnt
 
   ! thinking about this for future use
   ! state not pigment bc e.g. qy has different params than qx
   type State
     character(3) :: lig
-    real(kind=8) :: reorg
-    real(kind=8) :: lifetime
+    real(kind=8) :: eigvals_n
+    real(kind=8) :: gamma_n
+    real(kind=8) :: mu_n
+    complex(kind=8), dimension(:), allocatable :: g_n
   end type State
 
   verbose = .false.
@@ -34,9 +39,15 @@ program coupling_calc
   e2kb = 1.2955E-5
   kc = 8.988E9 * 0.5
 
+ ! tau is the number of femtoseconds i calculated lineshapes for.
+ ! don't like hardcoding but it shouldn't need to be dynamic, really
+  tau = 2000
+
   ! this way we automatically deal with varying numbers of pigments
   control_file = "J_control.txt"
   ei_file = "ei.txt"
+  lambda_file = "lambda.txt"
+  gnt_file = "gnt.txt"
   control_len = get_file_length(control_file)
 
   if (verbose) then
@@ -49,14 +60,17 @@ program coupling_calc
   ! the coordinate and tresp arrays later on in the main loop
   allocate(coord_files(control_len))
   allocate(tresp_files(control_len))
+  allocate(gnt_files(control_len))
   allocate(coord_lengths(control_len))
   allocate(tresp_lengths(control_len))
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
   allocate(mu(3, control_len)) ! fortran is column major
   allocate(mu_ex(3, control_len))
+  allocate(eigvals(control_len))
   allocate(lambda(control_len))
   allocate(ei(control_len))
+  allocate(gnt(control_len, tau))
 
   coord_lengths = 0
   tresp_lengths = 0
@@ -64,8 +78,10 @@ program coupling_calc
   Jeig = 0.0
   mu = 0.0
   mu_ex = 0.0
+  eigvals = 0.0
   lambda = 0.0
   ei = 0.0
+  gnt = (0.0, 0.0)
 
   ! in principle we could probably do the reading in as
   ! part of the main loop below, but the time taken to
@@ -73,9 +89,13 @@ program coupling_calc
   ! negligible and it reads much nicer this way, I think.
   open(unit=10, file=control_file)
   open(unit=11, file=ei_file)
+  open(unit=12, file=lambda_file)
+  open(unit=13, file=gnt_file)
   do i = 1, control_len
 
     read(11, *) ei(i)
+    read(12, *) lambda(i)
+    read(13, '(a)') gnt_files(i)
     read(10, '(a)') line
     posit = scan(line, ' ')
     coord_files(i) = line(1:posit - 1)
@@ -92,6 +112,8 @@ program coupling_calc
   end do
   close(10)
   close(11)
+  close(12)
+  close(13)
 
   ! we multiply the whole Jij matrix later on to convert
   ! to wavenumbers; the read in excitation energies are already
@@ -111,6 +133,12 @@ program coupling_calc
     allocate(tresp_i(tresp_lengths(i)))
     open(unit=10, file=trim(adjustl(coord_files(i))))
     open(unit=11, file=trim(adjustl(tresp_files(i))))
+    open(unit=12, file=trim(adjustl(gnt_files(i))))
+    do k = 1, tau
+      read (12, '(F18.10, 1X, F18.10, 1X, F18.10)') r, gnt(i, k)
+    end do
+    close(12)
+
     read(11, *) ! first line in tresp files is a comment
     do k = 1, coord_lengths(i)
       read(10, fmt=coord_fmt) pdb_temp,&
@@ -182,24 +210,27 @@ program coupling_calc
   Jij = Jij * e2kb * kc
   Jeig = Jij
   mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
+  gnt = matmul(Jeig, gnt) ! mix lineshape functions
+  lambda = matmul(Jeig, lambda) ! mix lineshape functions
 
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
   call dsyev('V', 'U', control_len, Jeig, control_len,&
-              lambda, r, -1, coord_stat)
+              eigvals, r, -1, coord_stat)
   write(*,*) "Optimal size of work array = ", int(r)
   allocate(work(int(r)))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
-              lambda, work, int(r), coord_stat)
+              eigvals, work, int(r), coord_stat)
   write(*,*) "LAPACK INFO (should be 0) = ",coord_stat
   write(*, *) Jeig(1,1), Jeig(1,2)
 
   open(unit=10, file="out/J_ij.out")
   open(unit=11, file="out/J_eig.out")
-  open(unit=12, file="out/lambda.out")
+  open(unit=12, file="out/eigvals.out")
   open(unit=13, file="out/mu_site.out")
   open(unit=14, file="out/mu_exciton.out")
+  open(unit=15, file="out/lambda_exciton.out")
   do i = 1, control_len
     do j = 1, control_len
       ! can write these with implied do loops
@@ -210,9 +241,10 @@ program coupling_calc
     end do
     write(10,*) ! blank line between rows!
     write(11,*)
-    write(12, *) lambda(i)
+    write(12, *) eigvals(i)
     write(13, *) mu(1, i), mu(2, i), mu(3, i)
     write(14, *) mu_ex(1, i), mu_ex(2, i), mu_ex(3, i)
+    write(15, *) lambda(i)
   end do
   close(10)
   close(11)
@@ -224,7 +256,7 @@ program coupling_calc
   deallocate(tresp_lengths)
   deallocate(Jij)
   deallocate(work)
-  deallocate(lambda)
+  deallocate(eigvals)
   deallocate(ei)
   deallocate(mu)
   deallocate(mu_ex)
