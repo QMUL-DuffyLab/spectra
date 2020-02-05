@@ -3,6 +3,7 @@ At_file = out/CLC_At.dat
 Ft_file = out/CLC_Ft.dat
 Aw_file = out/CLC_Aw.dat
 Fw_file = out/CLC_Fw.dat
+lambda_file = out/CLC_lambda.dat
 l0 = 115.0
 l1 = 0.0
 l2 = 0.0

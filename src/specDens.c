@@ -60,6 +60,9 @@ main(int argc, char** argv)
     gsl_integration_qagiu(&gsl_reorg, 0., 1e-4, 1e-7, 1000,
 			  work, &reorg_res, &reorg_err);
     fprintf(stdout, "Reorganisation energy lambda = %12.8f\n",reorg_res);
+    FILE *fp = fopen(p.lambda_file, "w");
+    fprintf(fp, "%18.10f %18.10f\n", reorg_res, reorg_err);
+    fclose(fp);
 
     gsl_re.function = &trig_re;
     gsl_im.function = &trig_im;
@@ -94,7 +97,7 @@ main(int argc, char** argv)
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
     }
 
-    FILE *fp = fopen(p.at_file, "w");
+    fp = fopen(p.at_file, "w");
 
     for (unsigned long i = 0; i < pr.ns; i++) {
     	/* the 6.4 here is from an N in the python code */

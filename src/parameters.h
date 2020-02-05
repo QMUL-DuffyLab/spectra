@@ -18,7 +18,7 @@ typedef struct {
     double (* cw)(double, void *);
     char ligand; /* 1 for chlorophyll, 0 for carotenoid */
     char aw_file[200], at_file[200];
-    char fw_file[200], ft_file[200];
+    char fw_file[200], ft_file[200], lambda_file[200];
 } Parameters;
 
 Parameters getParameters(char* filename);

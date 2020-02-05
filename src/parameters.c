@@ -111,6 +111,8 @@ getParameters(char *filename)
 	    strcpy(p.at_file, val);
 	} else if (strcmp(key, "Ft_file") == 0) {
 	    strcpy(p.ft_file, val);
+	} else if (strcmp(key, "lambda_file") == 0) {
+	    strcpy(p.lambda_file, val);
 	} 
 
 	/* future file names */
