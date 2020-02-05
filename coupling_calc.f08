@@ -262,14 +262,18 @@ program coupling_calc
 
   deallocate(coord_files)
   deallocate(tresp_files)
+  deallocate(gnt_files)
   deallocate(coord_lengths)
   deallocate(tresp_lengths)
   deallocate(Jij)
+  deallocate(Jeig)
   deallocate(work)
   deallocate(eigvals)
   deallocate(ei)
   deallocate(mu)
   deallocate(mu_ex)
+  deallocate(lambda)
+  deallocate(gnt)
 
   call cpu_time(end_time)
   write (*,*) "Time taken: ", end_time - start_time, " seconds."
