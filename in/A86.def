@@ -1,6 +1,5 @@
 # parameters for fucoxanthin
-At_file = out/A86_At.dat
-Ft_file = out/A86_Ft.dat
+gt_file = out/A86_gt.dat
 Aw_file = out/A86_Aw.dat
 Fw_file = out/A86_Fw.dat
 lambda_file = out/A86_lambda.dat

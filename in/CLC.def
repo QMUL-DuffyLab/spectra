@@ -1,6 +1,5 @@
 # parameter file for CLC lineshape
-At_file = out/CLC_At.dat
-Ft_file = out/CLC_Ft.dat
+gt_file = out/CLC_gt.dat
 Aw_file = out/CLC_Aw.dat
 Fw_file = out/CLC_Fw.dat
 lambda_file = out/CLC_lambda.dat

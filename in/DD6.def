@@ -1,6 +1,5 @@
 # parameters for diadinoxanthin
-At_file = out/DD6_At.dat
-Ft_file = out/DD6_Ft.dat
+gt_file = out/DD6_gt.dat
 Aw_file = out/DD6_Aw.dat
 Fw_file = out/DD6_Fw.dat
 lambda_file = out/DD6_lambda.dat

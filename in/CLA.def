@@ -1,6 +1,5 @@
 # parameter file for CLA lineshape
-At_file = out/CLA_At.dat
-Ft_file = out/CLA_Ft.dat
+gt_file = out/CLA_gt.dat
 Aw_file = out/CLA_Aw.dat
 Fw_file = out/CLA_Fw.dat
 lambda_file = out/CLA_lambda.dat

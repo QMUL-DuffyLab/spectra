@@ -108,9 +108,7 @@ getParameters(char *filename)
 	} else if (strcmp(key, "Fw_file") == 0) {
 	    strcpy(p.fw_file, val);
 	} else if (strcmp(key, "At_file") == 0) {
-	    strcpy(p.at_file, val);
-	} else if (strcmp(key, "Ft_file") == 0) {
-	    strcpy(p.ft_file, val);
+	    strcpy(p.gt_file, val);
 	} else if (strcmp(key, "lambda_file") == 0) {
 	    strcpy(p.lambda_file, val);
 	} 
