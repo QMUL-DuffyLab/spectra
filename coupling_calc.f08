@@ -3,7 +3,8 @@ program coupling_calc
   implicit none
   logical :: verbose
   character(31) :: pdb_temp
-  character(50) :: coord_fmt, control_file, ei_file, lambda_file, gnt_file
+  character(50) :: coord_fmt, control_file, ei_file,&
+  lambda_file, gnt_file, g_i_count
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files,&
   gnt_files
@@ -245,6 +246,15 @@ program coupling_calc
     write(13, *) mu(1, i), mu(2, i), mu(3, i)
     write(14, *) mu_ex(1, i), mu_ex(2, i), mu_ex(3, i)
     write(15, *) lambda(i)
+
+    ! now write out all the g_i(tau)s
+    write(unit=g_i_count,fmt='(I0.2)') i
+    open(unit=16, file="out/g_i_" // trim(adjustl(g_i_count)) // ".dat")
+    do j = 1, tau
+      write(16, '(F18.10, 1X, F18.10)') gnt(i, j)
+    end do
+    close(16)
+
   end do
   close(10)
   close(11)
