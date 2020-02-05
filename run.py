@@ -72,8 +72,8 @@ chl_lig_list = ["CLA" if "Chla" in p else "CLC" for p in chl_list]
 car_lig_list = ["A86" if "Fuco" in p else "DD6" for p in car_list]
 chl_lambda_list = ["{}/out/{}_lambda.dat".format(lineshape_dir, p) for p in chl_lig_list]
 car_lambda_list = ["{}/out/{}_lambda.dat".format(lineshape_dir, p) for p in car_lig_list]
-chl_gnt_list = ["{}/out/{}_At.dat".format(lineshape_dir, p) for p in chl_lig_list]
-car_gnt_list = ["{}/out/{}_At.dat".format(lineshape_dir, p) for p in car_lig_list]
+chl_gnt_list = ["{}/out/{}_gt.dat".format(lineshape_dir, p) for p in chl_lig_list]
+car_gnt_list = ["{}/out/{}_gt.dat".format(lineshape_dir, p) for p in car_lig_list]
 
 # the lambdas are just one number - read them in here, makes it easier in the fortran
 for i, l in enumerate(chl_lambda_list):
