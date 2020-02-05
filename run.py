@@ -80,12 +80,10 @@ for i, l in enumerate(chl_lambda_list):
     with open(l) as f:
         # ugly but ¯\_(ツ)_/¯
         chl_lambda_list[i] = float((f.readline()).split()[0])
-        print("lambda_i = {}".format(chl_lambda_list[i]))
 
 for i, l in enumerate(car_lambda_list):
     with open(l) as f:
         car_lambda_list[i] = float((f.readline()).split()[0])
-        print("lambda_i = {}".format(car_lambda_list[i]))
 
 pdb_list = []
 tresp_list = []
@@ -116,7 +114,6 @@ gnt_list = flatten(gnt_list)
 tresp_list = flatten(tresp_list)
 state = flatten(state)
 
-print(pdb_list)
 f = open(control_file, "w")
 g = open(ei_file, "w")
 h = open(lambda_file, "w")
