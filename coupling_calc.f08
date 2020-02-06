@@ -4,7 +4,7 @@ program coupling_calc
   logical :: verbose
   character(31) :: pdb_temp
   character(50) :: coord_fmt, control_file, ei_file,&
-  lambda_file, gnt_file, g_i_count
+  lambda_file, gnt_file, lifetimes_file, g_i_count
   character(200) :: line
   character(100), dimension(:), allocatable :: coord_files, tresp_files,&
   gnt_files
@@ -13,7 +13,7 @@ program coupling_calc
   real :: start_time, end_time
   real(kind=8) :: rx, ry, rz, r, e2kb, kc
   real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work,&
-  eigvals, ei, lambda
+  eigvals, ei, lambda, lifetimes
   real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j,&
   Jij, Jeig, mu, mu_ex
   complex(kind=16), dimension(:,:), allocatable :: gnt
@@ -49,6 +49,7 @@ program coupling_calc
   ei_file = "ei.txt"
   lambda_file = "lambda.txt"
   gnt_file = "gnt.txt"
+  lifetimes_file = "lifetimes.txt"
   control_len = get_file_length(control_file)
 
   if (verbose) then
@@ -70,6 +71,7 @@ program coupling_calc
   allocate(mu_ex(3, control_len))
   allocate(eigvals(control_len))
   allocate(lambda(control_len))
+  allocate(lifetimes(control_len))
   allocate(ei(control_len))
   allocate(gnt(control_len, tau))
 
@@ -81,6 +83,7 @@ program coupling_calc
   mu_ex = 0.0
   eigvals = 0.0
   lambda = 0.0
+  lifetimes = 0.0
   ei = 0.0
   gnt = (0.0, 0.0)
 
@@ -92,11 +95,13 @@ program coupling_calc
   open(unit=11, file=ei_file)
   open(unit=12, file=lambda_file)
   open(unit=13, file=gnt_file)
+  open(unit=14, file=lifetimes_file)
   do i = 1, control_len
 
     read(11, *) ei(i)
     read(12, *) lambda(i)
     read(13, '(a)') gnt_files(i)
+    read(14, *) lifetimes(i)
     read(10, '(a)') line
     posit = scan(line, ' ')
     coord_files(i) = line(1:posit - 1)
@@ -213,6 +218,7 @@ program coupling_calc
   mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
   gnt = matmul(Jeig, gnt) ! mix lineshape functions
   lambda = matmul(Jeig, lambda) ! mix lineshape functions
+  lifetimes = matmul(Jeig, lifetimes) ! mix lineshape functions
 
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
@@ -232,6 +238,7 @@ program coupling_calc
   open(unit=13, file="out/mu_site.out")
   open(unit=14, file="out/mu_exciton.out")
   open(unit=15, file="out/lambda_exciton.out")
+  open(unit=16, file="out/lifetimes_exciton.out")
   do i = 1, control_len
     do j = 1, control_len
       ! can write these with implied do loops
@@ -246,19 +253,24 @@ program coupling_calc
     write(13, *) mu(1, i), mu(2, i), mu(3, i)
     write(14, *) mu_ex(1, i), mu_ex(2, i), mu_ex(3, i)
     write(15, *) lambda(i)
+    write(16, *) lifetimes(i)
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
-    open(unit=16, file="out/g_i_" // trim(adjustl(g_i_count)) // ".dat")
+    open(unit=17, file="out/g_i_" // trim(adjustl(g_i_count)) // ".dat")
     do j = 1, tau
-      write(16, '(F18.10, 1X, F18.10)') gnt(i, j)
+      write(17, '(F18.10, 1X, F18.10)') gnt(i, j)
     end do
-    close(16)
+    close(17)
 
   end do
   close(10)
   close(11)
   close(12)
+  close(13)
+  close(14)
+  close(15)
+  close(16)
 
   deallocate(coord_files)
   deallocate(tresp_files)
@@ -273,6 +285,7 @@ program coupling_calc
   deallocate(mu)
   deallocate(mu_ex)
   deallocate(lambda)
+  deallocate(lifetimes)
   deallocate(gnt)
 
   call cpu_time(end_time)

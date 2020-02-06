@@ -22,6 +22,7 @@ control_file = "J_control.txt"
 ei_file = "ei.txt"
 lambda_file = "lambda.txt"
 gnt_file = "gnt.txt"
+lifetimes_file = "lifetimes.txt"
 lineshape_dir = "/Users/cgray/code/lineshape"
 
 '''
@@ -48,11 +49,12 @@ ei = {
 #                 }
 
 # excited state lifetimes to put into the exponentials later
+# these are in nanoseconds!
 lifetimes = {
-        'Chla_Qy': 4E-9, 'Chla_Qx': 4E-9,
-        'Chlc_Qy': 4E-9, 'Chlc_Qx': 4E-9,
-        'Fuco_S2': 10E-12, 'Diad_S2': 10E-12,
-        'Fuco_S1': 10E-12, 'Diad_S1': 10E-12
+        'Chla_Qy': 4, 'Chla_Qx': 4,
+        'Chlc_Qy': 4, 'Chlc_Qx': 4,
+        'Fuco_S2': 0.01, 'Diad_S2': 0.01,
+        'Fuco_S1': 0.01, 'Diad_S1': 0.01
             }
 
 '''
@@ -118,9 +120,11 @@ f = open(control_file, "w")
 g = open(ei_file, "w")
 h = open(lambda_file, "w")
 j = open(gnt_file, "w")
+k = open(lifetimes_file, "w")
 for i, var in enumerate(pdb_list):
     print("{} {}".format(pdb_list[i], tresp_list[i]), file=f)
     print(ei["{}_{}".format(var[7:11], state[i])], file=g)
+    print(lifetimes["{}_{}".format(var[7:11], state[i])], file=k)
     print("{}".format(lambda_list[i]), file=h)
     print("{}".format(gnt_list[i]), file=j)
 
@@ -128,3 +132,4 @@ f.close()
 g.close()
 h.close()
 j.close()
+k.close()
