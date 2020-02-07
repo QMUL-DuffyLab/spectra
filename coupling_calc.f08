@@ -1,6 +1,7 @@
 program coupling_calc
   use iso_fortran_env
   implicit none
+  integer, parameter :: sp = REAL32
   logical :: verbose
   character(31) :: pdb_temp
   character(50) :: coord_fmt, control_file, ei_file,&
@@ -11,12 +12,12 @@ program coupling_calc
   integer :: i, j, k, l, posit, coord_stat, control_len, tau
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
-  real(kind=8) :: rx, ry, rz, r, e2kb, kc
-  real(kind=8), dimension(:), allocatable :: tresp_i, tresp_j, work,&
+  real(sp) :: rx, ry, rz, r, e2kb, kc
+  real(sp), dimension(:), allocatable :: tresp_i, tresp_j, work,&
   eigvals, ei, lambda, lifetimes
-  real(kind=8), dimension(:,:), allocatable :: coords_i, coords_j,&
+  real(sp), dimension(:,:), allocatable :: coords_i, coords_j,&
   Jij, Jeig, mu, mu_ex
-  complex(kind=16), dimension(:,:), allocatable :: gnt
+  complex(sp), dimension(:,:), allocatable :: gnt
 
   ! thinking about this for future use
   ! state not pigment bc e.g. qy has different params than qx
@@ -68,7 +69,7 @@ program coupling_calc
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
   allocate(mu(3, control_len)) ! fortran is column major
-  allocate(mu_ex(3, control_len))
+  allocate(mu_ex(3, control_len)) ! fortran is column major
   allocate(eigvals(control_len))
   allocate(lambda(control_len))
   allocate(lifetimes(control_len))
@@ -215,10 +216,6 @@ program coupling_calc
   ! not sure if this is correct or not
   Jij = Jij * e2kb * kc
   Jeig = Jij
-  mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
-  gnt = matmul(Jeig, gnt) ! mix lineshape functions
-  lambda = matmul(Jeig, lambda) ! mix lineshape functions
-  lifetimes = matmul(Jeig, lifetimes) ! mix lineshape functions
 
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
@@ -229,8 +226,12 @@ program coupling_calc
   allocate(work(int(r)))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
               eigvals, work, int(r), coord_stat)
-  write(*,*) "LAPACK INFO (should be 0) = ",coord_stat
-  write(*, *) Jeig(1,1), Jeig(1,2)
+  write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
+
+  mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
+  gnt = matmul(Jeig**4, gnt) ! mix lineshape functions
+  lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
+  lifetimes = matmul(Jeig, lifetimes) ! mix relaxation times
 
   open(unit=10, file="out/J_ij.out")
   open(unit=11, file="out/J_eig.out")
@@ -271,6 +272,11 @@ program coupling_calc
   close(14)
   close(15)
   close(16)
+
+
+  ! here would be the place to use iso_c_binding and call the GSL
+  ! integration routines; might as well just do it now instead of
+  ! writing something separate to read everything back in again
 
   deallocate(coord_files)
   deallocate(tresp_files)
@@ -340,5 +346,36 @@ program coupling_calc
     read(line, *) res
 
   end function parse_tresp_line
+
+
+  ! subroutine absorption(n, tau, Jeig, eigvals, mu,&
+  !   lambda, lifetimes, gnt)
+  !   use iso_c_binding
+  !   implicit none
+  !   integer, intent(in) :: n, tau
+  !   integer :: i, t
+  !   real(kind=8), dimension(n), intent(in) :: eigvals, ei,&
+  !   lambda, lifetimes
+  !   real(kind=8), dimension(n,n), intent(in) :: Jeig
+  !   real(kind=8), dimension(3,n), intent(in) :: mu
+  !   complex(kind=16), dimension(n,tau), intent(in) :: gnt
+  !   type(C_PTR) :: func
+  !   complex :: im
+  !   complex(kind=16), dimension(tau):: integrand, sum
+
+  !   im = (0.0, 1.0)
+
+  !   ! not ready yet - need to figure out equivalent of the c func
+  !   ! and function pointer for GSL integration
+  !   ! do i = 1,n
+  !   !   do t = 1, tau
+  !   !     integrand = exp(im * (w - eigvals(i)) - gnt(i, t) &
+  !   !                 - 0.5 * lifetimes(i) * t)
+  !   !   end do
+  !   ! end do
+
+
+  ! end subroutine absorption
+
 
 end program coupling_calc
