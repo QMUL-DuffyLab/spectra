@@ -1,22 +1,21 @@
 program coupling_calc
   use iso_fortran_env
   implicit none
-  integer, parameter :: sp = REAL32
+  integer, parameter :: sp = REAL64
   logical :: verbose
-  character(31) :: pdb_temp
-  character(50) :: coord_fmt, control_file, ei_file,&
+  character(50) :: coord_fmt, ei_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: output_dir
-  character(200) :: line, input_file, jij_file,&
+  character(200) :: input_file, jij_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file
-  character(100), dimension(:), allocatable :: coord_files, tresp_files,&
+  character(100), dimension(:), allocatable :: coord_files,&
   gnt_files
-  integer :: i, j, k, l, posit, coord_stat, control_len, tau, lwork
-  integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
+  integer :: i, j, k, coord_stat, control_len, tau
+  integer, dimension(:), allocatable :: coord_lengths
   real :: start_time, end_time
-  real(sp) :: rx, ry, rz, r, e2kb, kc
-  real(sp), dimension(:), allocatable :: tresp_i, tresp_j, work,&
+  real(sp) :: r, e2kb, kc
+  real(sp), dimension(:), allocatable :: work,&
   eigvals, ei, lambda, lifetimes
   real(sp), dimension(:,:), allocatable :: coords_i, coords_j,&
   Jij, Jeig, mu, mu_ex
@@ -159,7 +158,7 @@ program coupling_calc
     end do
     close(10)
 
-    j_loop: do j = 1, control_len
+    j_loop: do j = i, control_len
 
       allocate(coords_j(4, coord_lengths(j)))
       open(unit=10, file=trim(adjustl(coord_files(j))))
@@ -185,93 +184,6 @@ program coupling_calc
     deallocate(coords_i)
   end do i_loop
 
-  ! we can also speed this up by only taking the j loop from
-  ! i, control_len instead of 1, control_len, since the
-  ! matrix J_ij is symmetric by construction. It'll require an
-  ! extra few lines when writing output which I haven't bothered
-  ! to write yet, hence why I'm still doing it the slow way here.
-  ! i_loop: do i = 1, control_len
-
-  !   ! number of atoms/tresp charges per pigment isn't known at
-  !   ! compile time, so allocate at run time once we've got them
-  !   allocate(coords_i(3, coord_lengths(i)))
-  !   allocate(tresp_i(tresp_lengths(i)))
-  !   open(unit=10, file=trim(adjustl(coord_files(i))))
-  !   open(unit=11, file=trim(adjustl(tresp_files(i))))
-  !   open(unit=12, file=trim(adjustl(gnt_files(i))))
-  !   do k = 1, tau
-  !     read (12, '(F18.10, 1X, F18.10, 1X, F18.10)') r, gnt(i, k)
-  !   end do
-  !   close(12)
-
-  !   read(11, *) ! first line in tresp files is a comment
-  !   do k = 1, coord_lengths(i)
-  !     read(10, fmt=coord_fmt) pdb_temp,&
-  !     coords_i(1, k), coords_i(2, k), coords_i(3, k), pdb_temp
-  !   end do
-  !   do k = 1, tresp_lengths(i) - 1
-  !     read(11, '(a)') line
-  !     ! had to write a separate function to parse the tresp input
-  !     ! because fortran was being funny about the hard tabs
-  !     tresp_i(k) = parse_tresp_line(line)
-  !   end do
-  !   close(10)
-  !   close(11)
-
-  !   j_loop: do j = 1, control_len
-
-  !     allocate(coords_j(3, coord_lengths(j)))
-  !     allocate(tresp_j(tresp_lengths(j)))
-  !     open(unit=10, file=trim(adjustl(coord_files(j))))
-  !     open(unit=11, file=trim(adjustl(tresp_files(j))))
-  !     read(11, *)
-  !     do k = 1, coord_lengths(j)
-  !       read(10, fmt=coord_fmt) pdb_temp, &
-  !       coords_j(1, k), coords_j(2, k), coords_j(3, k), pdb_temp
-  !     end do
-  !     do k = 1, tresp_lengths(j) - 1
-  !       read(11, '(a)') line
-  !       tresp_j(k) = parse_tresp_line(line)
-  !     end do
-  !     close(10)
-  !     close(11)
-
-  !     ! only need to do this once; doesn't have to be in kl loops
-  !     ! diagonal elements are the excitation energies
-  !     if (i.eq.j) then
-  !       Jij(i, j) = ei(i)
-  !     end if
-
-  !     k_loop: do k = 1, coord_lengths(i)
-  !       l_loop: do l = 1, coord_lengths(j)
-
-  !         if (i.ne.j) then
-  !           rx = coords_i(1, k) - coords_j(1, l)
-  !           ry = coords_i(2, k) - coords_j(2, l)
-  !           rz = coords_i(3, k) - coords_j(3, l)
-  !           r = sqrt(rx**2 + ry**2 + rz**2)
-  !           Jij(i, j) = Jij(i, j) + ((tresp_i(k) * tresp_j(l)) / (r))
-  !         else
-  !           ! calculate transition dipole moments for each pigment
-  !           mu(1, i) = mu(1, i) + tresp_i(k) * coords_i(1, k)
-  !           mu(2, i) = mu(2, i) + tresp_i(k) * coords_i(2, k)
-  !           mu(3, i) = mu(3, i) + tresp_i(k) * coords_i(3, k)
-  !         end if
-
-  !       end do l_loop
-  !     end do k_loop
-
-  !     deallocate(coords_j)
-  !     deallocate(tresp_j)
-      
-  !   end do j_loop
-
-  !   deallocate(coords_i)
-  !   deallocate(tresp_i)
-
-  ! end do i_loop
-
-  ! not sure if this is correct or not
   Jij = Jij * e2kb * kc
   Jeig = Jij
 
@@ -280,13 +192,17 @@ program coupling_calc
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
+  ! crashes everything atm. not sure why
   ! call dsyev('V', 'U', control_len, Jeig, control_len,&
-  !             eigvals, lwork, -1, coord_stat)
+  !             eigvals, r, -1, coord_stat)
   ! write(*,*) "Optimal size of work array = ", int(lwork)
-  allocate(work(100))
+  r = 100.0
+  allocate(work(int(r)))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
-              eigvals, work, 100, coord_stat)
+              eigvals, work, int(r), coord_stat)
   write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
+
+  write(*,*) Jeig
 
   mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
   gnt = matmul(Jeig**4, gnt) ! mix lineshape functions
@@ -407,12 +323,12 @@ program coupling_calc
 
   function J_calc(p1, p2, len1, len2) result(res)
     implicit none
-    integer, parameter :: sp = real32
+    integer, parameter :: sp = real64
     integer, intent(in) :: len1, len2
     integer :: i, j
     real(sp), dimension(4, len1) :: p1
     real(sp), dimension(4, len2) :: p2
-    real :: s, rx, ry, rz, r, res
+    real(sp) :: s, rx, ry, rz, r, res
 
     s = 0.0
     do i = 1, len1
@@ -430,7 +346,7 @@ program coupling_calc
 
   function mu_calc(p, len) result(res)
     implicit none
-    integer, parameter :: sp = real32
+    integer, parameter :: sp = real64
     integer, intent(in) :: len
     integer :: i, j
     real(sp), dimension(4, len) :: p
@@ -445,35 +361,5 @@ program coupling_calc
     res = mu
     
   end function mu_calc
-
-  ! subroutine absorption(n, tau, Jeig, eigvals, mu,&
-  !   lambda, lifetimes, gnt)
-  !   use iso_c_binding
-  !   implicit none
-  !   integer, intent(in) :: n, tau
-  !   integer :: i, t
-  !   real(kind=8), dimension(n), intent(in) :: eigvals, ei,&
-  !   lambda, lifetimes
-  !   real(kind=8), dimension(n,n), intent(in) :: Jeig
-  !   real(kind=8), dimension(3,n), intent(in) :: mu
-  !   complex(kind=16), dimension(n,tau), intent(in) :: gnt
-  !   type(C_PTR) :: func
-  !   complex :: im
-  !   complex(kind=16), dimension(tau):: integrand, sum
-
-  !   im = (0.0, 1.0)
-
-  !   ! not ready yet - need to figure out equivalent of the c func
-  !   ! and function pointer for GSL integration
-  !   ! do i = 1,n
-  !   !   do t = 1, tau
-  !   !     integrand = exp(im * (w - eigvals(i)) - gnt(i, t) &
-  !   !                 - 0.5 * lifetimes(i) * t)
-  !   !   end do
-  !   ! end do
-
-
-  ! end subroutine absorption
-
 
 end program coupling_calc
