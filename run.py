@@ -9,6 +9,7 @@ Also, should generate the diagonal of the matrix using oscillator strengths for 
 import os
 import argparse
 import subprocess
+import pigment_data
 
 parser = argparse.ArgumentParser(description="Generate control and osc. strength files")
 parser.add_argument("-i", "--input_dir", default='LHCII',
@@ -28,20 +29,27 @@ def get_pigments(input_dir):
     return pigment_dirs
 
 
-def construct_input_file(pigment_dirs, output_dir, snapshot_number):
+def construct_input_files(pigment_dirs, output_dir, snapshot_number):
     # fortran won't create the directory; do it here
     os.makedirs("{}/{}".format(output_dir, snapshot_number), exist_ok=True)
     input_file = "pigments.{}".format(snapshot_number) 
+    energy_file = "ei.txt"
+    lifetimes_file = "lifetimes.txt"
+    lambda_file = "lambda.txt"
     f = open(input_file, "w")
+    g = open(energy_file, "w")
+    h = open(lifetimes_file, "w")
+    j = open(lambda_file, "w")
     for p in pigment_dirs:
-        print("{}/frame{}.csv".format(p, snapshot_number), file=f)
+        print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
+        print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
+        print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
+        print(pigment_data.pigment_data[p[0:3]]["S1"]["reorg"], file=j)
 
     f.close()
-    # f = open("parameters.{}".format(snapshot_number), "w")
-    # print('''
-    # pigment_file = {0}
-    # output_dir = {1}
-    # '''.format(), file=f)
+    g.close()
+    h.close()
+    j.close()
     return input_file
 
 input_dir = os.path.join(os.getcwd(), args.input_dir)
@@ -49,6 +57,6 @@ output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 
 pigment_dirs = get_pigments(input_dir)
-input_file = construct_input_file(pigment_dirs, output_dir, snapshot_number)
+input_file = construct_input_files(pigment_dirs, output_dir, snapshot_number)
 
 # subprocess.popen(exe, input_file, output_dir)

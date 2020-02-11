@@ -6,10 +6,13 @@ program coupling_calc
   character(31) :: pdb_temp
   character(50) :: coord_fmt, control_file, ei_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
-  character(200) :: line, input_file, output_dir
+  character(100) :: output_dir
+  character(200) :: line, input_file, jij_file,&
+    eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
+    gamma_i_file
   character(100), dimension(:), allocatable :: coord_files, tresp_files,&
   gnt_files
-  integer :: i, j, k, l, posit, coord_stat, control_len, tau
+  integer :: i, j, k, l, posit, coord_stat, control_len, tau, lwork
   integer, dimension(:), allocatable :: coord_lengths, tresp_lengths
   real :: start_time, end_time
   real(sp) :: rx, ry, rz, r, e2kb, kc
@@ -29,9 +32,9 @@ program coupling_calc
     complex(kind=8), dimension(:), allocatable :: g_n
   end type State
 
-  verbose = .false.
+  verbose = .true.
   call cpu_time(start_time)
-  coord_fmt = '(A31 F8.3 F8.3 F8.3 A)'
+  coord_fmt = '(F09.6 1X F09.6 1X F09.6 1X F09.6)'
 
   if (command_argument_count().ne.2) then
     write (*,*) "Wrong number of arguments. Try again."
@@ -39,6 +42,15 @@ program coupling_calc
     call get_command_argument(1, input_file)
     call get_command_argument(2, output_dir)
   end if
+  write(*,*) "Input file = ", input_file
+  write(*,*) "Output dir = ", output_dir
+  jij_file      = trim(adjustl(output_dir)) // "/J_ij.out"
+  eigvecs_file  = trim(adjustl(output_dir)) // "/eigvecs.out"
+  eigvals_file  = trim(adjustl(output_dir)) // "/eigvals.out"
+  mu_n_file     = trim(adjustl(output_dir)) // "/mu_site.out"
+  mu_i_file     = trim(adjustl(output_dir)) // "/mu_exciton.out"
+  lambda_i_file = trim(adjustl(output_dir)) // "/lambda_exciton.out"
+  gamma_i_file  = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;
@@ -56,6 +68,7 @@ program coupling_calc
   lambda_file = "lambda.txt"
   gnt_file = "gnt.txt"
   lifetimes_file = "lifetimes.txt"
+
   ! this way we automatically deal with varying numbers of pigments
   control_len = get_file_length(input_file)
 
@@ -81,7 +94,6 @@ program coupling_calc
   allocate(gnt(control_len, tau))
 
   coord_lengths = 0
-  tresp_lengths = 0
   Jij = 0.0
   Jeig = 0.0
   mu = 0.0
@@ -96,7 +108,7 @@ program coupling_calc
   ! part of the main loop below, but the time taken to
   ! read in the control file and parse the filenames is
   ! negligible and it reads much nicer this way, I think.
-  open(unit=10, file=control_file)
+  open(unit=10, file=input_file)
   open(unit=11, file=ei_file)
   open(unit=12, file=lambda_file)
   open(unit=13, file=gnt_file)
@@ -151,9 +163,9 @@ program coupling_calc
 
       allocate(coords_j(4, coord_lengths(j)))
       open(unit=10, file=trim(adjustl(coord_files(j))))
-      do k = 1, coord_lengths(i)
-        read(10, fmt=coord_fmt) coords_i(1, k), coords_i(2, k),&
-                                coords_i(3, k), coords_i(4, k)
+      do k = 1, coord_lengths(j)
+        read(10, fmt=coord_fmt) coords_j(1, k), coords_j(2, k),&
+                                coords_j(3, k), coords_j(4, k)
       end do
       close(10)
 
@@ -161,13 +173,16 @@ program coupling_calc
       ! diagonal elements are the excitation energies
       if (i.eq.j) then
         Jij(i, j) = ei(i)
-        mu(i) = mu_calc(coords_i, coord_lengths(i))
+        mu(:,i) = mu_calc(coords_i, coord_lengths(i))
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
       end if
+
+      deallocate(coords_j)
       
     end do j_loop
+    deallocate(coords_i)
   end do i_loop
 
   ! we can also speed this up by only taking the j loop from
@@ -260,15 +275,17 @@ program coupling_calc
   Jij = Jij * e2kb * kc
   Jeig = Jij
 
+  write(*,*) Jij
+
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
+  ! call dsyev('V', 'U', control_len, Jeig, control_len,&
+  !             eigvals, lwork, -1, coord_stat)
+  ! write(*,*) "Optimal size of work array = ", int(lwork)
+  allocate(work(100))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
-              eigvals, r, -1, coord_stat)
-  write(*,*) "Optimal size of work array = ", int(r)
-  allocate(work(int(r)))
-  call dsyev('V', 'U', control_len, Jeig, control_len,&
-              eigvals, work, int(r), coord_stat)
+              eigvals, work, 100, coord_stat)
   write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
 
   mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
@@ -276,13 +293,13 @@ program coupling_calc
   lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig, lifetimes) ! mix relaxation times
 
-  open(unit=10, file="out/J_ij.out")
-  open(unit=11, file="out/J_eig.out")
-  open(unit=12, file="out/eigvals.out")
-  open(unit=13, file="out/mu_site.out")
-  open(unit=14, file="out/mu_exciton.out")
-  open(unit=15, file="out/lambda_exciton.out")
-  open(unit=16, file="out/lifetimes_exciton.out")
+  open(unit=10, file=jij_file)
+  open(unit=11, file=eigvecs_file)
+  open(unit=12, file=eigvals_file)
+  open(unit=13, file=mu_n_file)
+  open(unit=14, file=mu_i_file)
+  open(unit=15, file=lambda_i_file)
+  open(unit=16, file=gamma_i_file)
   do i = 1, control_len
     do j = 1, control_len
       ! can write these with implied do loops
@@ -322,10 +339,8 @@ program coupling_calc
   ! writing something separate to read everything back in again
 
   deallocate(coord_files)
-  deallocate(tresp_files)
   deallocate(gnt_files)
   deallocate(coord_lengths)
-  deallocate(tresp_lengths)
   deallocate(Jij)
   deallocate(Jeig)
   deallocate(work)
@@ -424,7 +439,8 @@ program coupling_calc
     mu = 0.0
     do i = 1, len
       do j = 1, 3
-      mu(j) = p(j, i) * p(4, i)
+        mu(j) = p(j, i) * p(4, i)
+      end do
     end do
     res = mu
     
