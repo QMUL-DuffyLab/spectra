@@ -45,12 +45,12 @@ program coupling_calc
  ! don't like hardcoding but it shouldn't need to be dynamic, really
   tau = 2000
 
-  ! this way we automatically deal with varying numbers of pigments
   control_file = "J_control.txt"
   ei_file = "ei.txt"
   lambda_file = "lambda.txt"
   gnt_file = "gnt.txt"
   lifetimes_file = "lifetimes.txt"
+  ! this way we automatically deal with varying numbers of pigments
   control_len = get_file_length(control_file)
 
   if (verbose) then
@@ -347,6 +347,45 @@ program coupling_calc
 
   end function parse_tresp_line
 
+  function J_calc(p1, p2, len1, len2) result(res)
+    implicit none
+    integer, parameter :: sp = real32
+    integer, intent(in) :: len1, len2
+    integer :: i, j
+    real(sp), dimension(4, len1) :: p1
+    real(sp), dimension(4, len2) :: p2
+    real :: s, rx, ry, rz, r, res
+
+    s = 0.0
+    do i = 1, len1
+      do j = 1, len2
+        rx = p1(1, i) - p2(1, j)
+        ry = p1(2, i) - p2(2, j)
+        rz = p1(3, i) - p2(3, j)
+        r = sqrt(rx**2 + ry**2 + rz**2)
+        s = s + (p1(4, i) * p2(4, j)) / r
+      end do
+    end do
+    res = s
+    
+  end function J_calc
+
+  function mu_calc(p, len) result(res)
+    implicit none
+    integer, parameter :: sp = real32
+    integer, intent(in) :: len
+    integer :: i, j
+    real(sp), dimension(4, len) :: p
+    real(sp), dimension(3) :: mu, res
+
+    mu = 0.0
+    do i = 1, len
+      do j = 1, 3
+      mu(j) = p(j, i) * p(4, i)
+    end do
+    res = mu
+    
+  end function mu_calc
 
   ! subroutine absorption(n, tau, Jeig, eigvals, mu,&
   !   lambda, lifetimes, gnt)
