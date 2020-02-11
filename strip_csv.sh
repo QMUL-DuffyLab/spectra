@@ -1,4 +1,8 @@
 #!/bin/bash
 
 # sed -e 's/[\[\]\"]//g' -e 's/,/\\n/g' -e 's/\s\+/,/g' $1
-tr -d '\[\]"' < $1 | tr ',' '\n' | awk '{ printf "%09.6g %09.6g %09.6g %09.6g\n", $1 + 0, $2 + 0, $3 + 0, $4 + 0}'
+for file in LHCII/**/*; do
+  cp $file ${file}_temp
+  tr -d '[]"' < ${file}_temp | tr ',' '\n' > $file;
+  rm ${file}_temp
+done

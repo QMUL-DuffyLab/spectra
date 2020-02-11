@@ -33,7 +33,7 @@ program coupling_calc
 
   verbose = .true.
   call cpu_time(start_time)
-  coord_fmt = '(F09.6 1X F09.6 1X F09.6 1X F09.6)'
+  coord_fmt = '(F015.8 1X F015.8 1X F015.8 1X F015.8)'
 
   if (command_argument_count().ne.2) then
     write (*,*) "Wrong number of arguments. Try again."
@@ -41,8 +41,12 @@ program coupling_calc
     call get_command_argument(1, input_file)
     call get_command_argument(2, output_dir)
   end if
-  write(*,*) "Input file = ", input_file
-  write(*,*) "Output dir = ", output_dir
+
+  if (verbose) then
+    write(*,*) "Input file = ", input_file
+    write(*,*) "Output dir = ", output_dir
+  end if
+
   jij_file      = trim(adjustl(output_dir)) // "/J_ij.out"
   eigvecs_file  = trim(adjustl(output_dir)) // "/eigvecs.out"
   eigvals_file  = trim(adjustl(output_dir)) // "/eigvals.out"
@@ -72,7 +76,7 @@ program coupling_calc
   control_len = get_file_length(input_file)
 
   if (verbose) then
-    write(*,*) "Control length = ", control_len
+    write(*,*) "Number of pigments = ", control_len
   end if
 
   ! coord/tresp_length arrays allow for varying numbers of
@@ -119,9 +123,6 @@ program coupling_calc
     read(13, '(a)') gnt_files(i)
     read(14, *) lifetimes(i)
     read(10, '(a)') coord_files(i)
-    ! posit = scan(line, ' ')
-    ! coord_files(i) = line(1:posit - 1)
-    ! tresp_files(i) = line(posit:)
 
     coord_lengths(i) = get_file_length(coord_files(i))
 
@@ -142,8 +143,8 @@ program coupling_calc
 
   i_loop: do i = 1, control_len
 
-    ! number of atoms/tresp charges per pigment isn't known at
-    ! compile time, so allocate at run time once we've got them
+    ! number of atoms per pigment isn't known at
+    ! compile time, so allocate at run time
     allocate(coords_i(4, coord_lengths(i)))
     open(unit=10, file=trim(adjustl(coord_files(i))))
     open(unit=12, file=trim(adjustl(gnt_files(i))))
@@ -168,8 +169,8 @@ program coupling_calc
       end do
       close(10)
 
-      ! only need to do this once; doesn't have to be in kl loops
-      ! diagonal elements are the excitation energies
+      ! diagonal elements of Jij are the excitation energies
+      ! we also want to calculate transition dipole moments
       if (i.eq.j) then
         Jij(i, j) = ei(i)
         mu(:,i) = mu_calc(coords_i, coord_lengths(i))
@@ -192,11 +193,9 @@ program coupling_calc
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
-  ! crashes everything atm. not sure why
-  ! call dsyev('V', 'U', control_len, Jeig, control_len,&
-  !             eigvals, r, -1, coord_stat)
-  ! write(*,*) "Optimal size of work array = ", int(lwork)
-  r = 100.0
+  call dsyev('V', 'U', control_len, Jeig, control_len,&
+              eigvals, r, -1, coord_stat)
+  write(*,*) "Optimal size of work array = ", int(r)
   allocate(work(int(r)))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
               eigvals, work, int(r), coord_stat)
