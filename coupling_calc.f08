@@ -6,7 +6,7 @@ program coupling_calc
   character(31) :: pdb_temp
   character(50) :: coord_fmt, control_file, ei_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
-  character(200) :: line
+  character(200) :: line, input_file, output_dir
   character(100), dimension(:), allocatable :: coord_files, tresp_files,&
   gnt_files
   integer :: i, j, k, l, posit, coord_stat, control_len, tau
@@ -33,6 +33,13 @@ program coupling_calc
   call cpu_time(start_time)
   coord_fmt = '(A31 F8.3 F8.3 F8.3 A)'
 
+  if (command_argument_count().ne.2) then
+    write (*,*) "Wrong number of arguments. Try again."
+  else
+    call get_command_argument(1, input_file)
+    call get_command_argument(2, output_dir)
+  end if
+
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;
   ! came from Chris. should probably sit down and figure it out lol
@@ -45,13 +52,12 @@ program coupling_calc
  ! don't like hardcoding but it shouldn't need to be dynamic, really
   tau = 2000
 
-  control_file = "J_control.txt"
   ei_file = "ei.txt"
   lambda_file = "lambda.txt"
   gnt_file = "gnt.txt"
   lifetimes_file = "lifetimes.txt"
   ! this way we automatically deal with varying numbers of pigments
-  control_len = get_file_length(control_file)
+  control_len = get_file_length(input_file)
 
   if (verbose) then
     write(*,*) "Control length = ", control_len
@@ -62,10 +68,8 @@ program coupling_calc
   ! per pigment; we need to know these numbers to allocate
   ! the coordinate and tresp arrays later on in the main loop
   allocate(coord_files(control_len))
-  allocate(tresp_files(control_len))
   allocate(gnt_files(control_len))
   allocate(coord_lengths(control_len))
-  allocate(tresp_lengths(control_len))
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
   allocate(mu(3, control_len)) ! fortran is column major
@@ -103,17 +107,15 @@ program coupling_calc
     read(12, *) lambda(i)
     read(13, '(a)') gnt_files(i)
     read(14, *) lifetimes(i)
-    read(10, '(a)') line
-    posit = scan(line, ' ')
-    coord_files(i) = line(1:posit - 1)
-    tresp_files(i) = line(posit:)
+    read(10, '(a)') coord_files(i)
+    ! posit = scan(line, ' ')
+    ! coord_files(i) = line(1:posit - 1)
+    ! tresp_files(i) = line(posit:)
 
     coord_lengths(i) = get_file_length(coord_files(i))
-    tresp_lengths(i) = get_file_length(tresp_files(i))
 
     if (verbose) then
       write(*, *) trim(adjustl(coord_files(i))), coord_lengths(i)
-      write(*, *) trim(adjustl(tresp_files(i))), tresp_lengths(i)
     end if
 
   end do
@@ -127,91 +129,132 @@ program coupling_calc
   ! in wavenumbers so do that conversion backwards here
   ei = ei / (e2kb * kc)
 
-  ! we can also speed this up by only taking the j loop from
-  ! i, control_len instead of 1, control_len, since the
-  ! matrix J_ij is symmetric by construction. It'll require an
-  ! extra few lines when writing output which I haven't bothered
-  ! to write yet, hence why I'm still doing it the slow way here.
   i_loop: do i = 1, control_len
 
     ! number of atoms/tresp charges per pigment isn't known at
     ! compile time, so allocate at run time once we've got them
-    allocate(coords_i(3, coord_lengths(i)))
-    allocate(tresp_i(tresp_lengths(i)))
+    allocate(coords_i(4, coord_lengths(i)))
     open(unit=10, file=trim(adjustl(coord_files(i))))
-    open(unit=11, file=trim(adjustl(tresp_files(i))))
     open(unit=12, file=trim(adjustl(gnt_files(i))))
     do k = 1, tau
       read (12, '(F18.10, 1X, F18.10, 1X, F18.10)') r, gnt(i, k)
     end do
     close(12)
 
-    read(11, *) ! first line in tresp files is a comment
     do k = 1, coord_lengths(i)
-      read(10, fmt=coord_fmt) pdb_temp,&
-      coords_i(1, k), coords_i(2, k), coords_i(3, k), pdb_temp
-    end do
-    do k = 1, tresp_lengths(i) - 1
-      read(11, '(a)') line
-      ! had to write a separate function to parse the tresp input
-      ! because fortran was being funny about the hard tabs
-      tresp_i(k) = parse_tresp_line(line)
+      read(10, fmt=coord_fmt) coords_i(1, k), coords_i(2, k),&
+                              coords_i(3, k), coords_i(4, k)
     end do
     close(10)
-    close(11)
 
     j_loop: do j = 1, control_len
 
-      allocate(coords_j(3, coord_lengths(j)))
-      allocate(tresp_j(tresp_lengths(j)))
+      allocate(coords_j(4, coord_lengths(j)))
       open(unit=10, file=trim(adjustl(coord_files(j))))
-      open(unit=11, file=trim(adjustl(tresp_files(j))))
-      read(11, *)
-      do k = 1, coord_lengths(j)
-        read(10, fmt=coord_fmt) pdb_temp, &
-        coords_j(1, k), coords_j(2, k), coords_j(3, k), pdb_temp
-      end do
-      do k = 1, tresp_lengths(j) - 1
-        read(11, '(a)') line
-        tresp_j(k) = parse_tresp_line(line)
+      do k = 1, coord_lengths(i)
+        read(10, fmt=coord_fmt) coords_i(1, k), coords_i(2, k),&
+                                coords_i(3, k), coords_i(4, k)
       end do
       close(10)
-      close(11)
 
       ! only need to do this once; doesn't have to be in kl loops
       ! diagonal elements are the excitation energies
       if (i.eq.j) then
         Jij(i, j) = ei(i)
+        mu(i) = mu_calc(coords_i, coord_lengths(i))
+      else
+        Jij(i, j) = J_calc(coords_i, coords_j,&
+                    coord_lengths(i), coord_lengths(j))
       end if
-
-      k_loop: do k = 1, coord_lengths(i)
-        l_loop: do l = 1, coord_lengths(j)
-
-          if (i.ne.j) then
-            rx = coords_i(1, k) - coords_j(1, l)
-            ry = coords_i(2, k) - coords_j(2, l)
-            rz = coords_i(3, k) - coords_j(3, l)
-            r = sqrt(rx**2 + ry**2 + rz**2)
-            Jij(i, j) = Jij(i, j) + ((tresp_i(k) * tresp_j(l)) / (r))
-          else
-            ! calculate transition dipole moments for each pigment
-            mu(1, i) = mu(1, i) + tresp_i(k) * coords_i(1, k)
-            mu(2, i) = mu(2, i) + tresp_i(k) * coords_i(2, k)
-            mu(3, i) = mu(3, i) + tresp_i(k) * coords_i(3, k)
-          end if
-
-        end do l_loop
-      end do k_loop
-
-      deallocate(coords_j)
-      deallocate(tresp_j)
       
     end do j_loop
-
-    deallocate(coords_i)
-    deallocate(tresp_i)
-
   end do i_loop
+
+  ! we can also speed this up by only taking the j loop from
+  ! i, control_len instead of 1, control_len, since the
+  ! matrix J_ij is symmetric by construction. It'll require an
+  ! extra few lines when writing output which I haven't bothered
+  ! to write yet, hence why I'm still doing it the slow way here.
+  ! i_loop: do i = 1, control_len
+
+  !   ! number of atoms/tresp charges per pigment isn't known at
+  !   ! compile time, so allocate at run time once we've got them
+  !   allocate(coords_i(3, coord_lengths(i)))
+  !   allocate(tresp_i(tresp_lengths(i)))
+  !   open(unit=10, file=trim(adjustl(coord_files(i))))
+  !   open(unit=11, file=trim(adjustl(tresp_files(i))))
+  !   open(unit=12, file=trim(adjustl(gnt_files(i))))
+  !   do k = 1, tau
+  !     read (12, '(F18.10, 1X, F18.10, 1X, F18.10)') r, gnt(i, k)
+  !   end do
+  !   close(12)
+
+  !   read(11, *) ! first line in tresp files is a comment
+  !   do k = 1, coord_lengths(i)
+  !     read(10, fmt=coord_fmt) pdb_temp,&
+  !     coords_i(1, k), coords_i(2, k), coords_i(3, k), pdb_temp
+  !   end do
+  !   do k = 1, tresp_lengths(i) - 1
+  !     read(11, '(a)') line
+  !     ! had to write a separate function to parse the tresp input
+  !     ! because fortran was being funny about the hard tabs
+  !     tresp_i(k) = parse_tresp_line(line)
+  !   end do
+  !   close(10)
+  !   close(11)
+
+  !   j_loop: do j = 1, control_len
+
+  !     allocate(coords_j(3, coord_lengths(j)))
+  !     allocate(tresp_j(tresp_lengths(j)))
+  !     open(unit=10, file=trim(adjustl(coord_files(j))))
+  !     open(unit=11, file=trim(adjustl(tresp_files(j))))
+  !     read(11, *)
+  !     do k = 1, coord_lengths(j)
+  !       read(10, fmt=coord_fmt) pdb_temp, &
+  !       coords_j(1, k), coords_j(2, k), coords_j(3, k), pdb_temp
+  !     end do
+  !     do k = 1, tresp_lengths(j) - 1
+  !       read(11, '(a)') line
+  !       tresp_j(k) = parse_tresp_line(line)
+  !     end do
+  !     close(10)
+  !     close(11)
+
+  !     ! only need to do this once; doesn't have to be in kl loops
+  !     ! diagonal elements are the excitation energies
+  !     if (i.eq.j) then
+  !       Jij(i, j) = ei(i)
+  !     end if
+
+  !     k_loop: do k = 1, coord_lengths(i)
+  !       l_loop: do l = 1, coord_lengths(j)
+
+  !         if (i.ne.j) then
+  !           rx = coords_i(1, k) - coords_j(1, l)
+  !           ry = coords_i(2, k) - coords_j(2, l)
+  !           rz = coords_i(3, k) - coords_j(3, l)
+  !           r = sqrt(rx**2 + ry**2 + rz**2)
+  !           Jij(i, j) = Jij(i, j) + ((tresp_i(k) * tresp_j(l)) / (r))
+  !         else
+  !           ! calculate transition dipole moments for each pigment
+  !           mu(1, i) = mu(1, i) + tresp_i(k) * coords_i(1, k)
+  !           mu(2, i) = mu(2, i) + tresp_i(k) * coords_i(2, k)
+  !           mu(3, i) = mu(3, i) + tresp_i(k) * coords_i(3, k)
+  !         end if
+
+  !       end do l_loop
+  !     end do k_loop
+
+  !     deallocate(coords_j)
+  !     deallocate(tresp_j)
+      
+  !   end do j_loop
+
+  !   deallocate(coords_i)
+  !   deallocate(tresp_i)
+
+  ! end do i_loop
 
   ! not sure if this is correct or not
   Jij = Jij * e2kb * kc

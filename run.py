@@ -13,7 +13,7 @@ import subprocess
 parser = argparse.ArgumentParser(description="Generate control and osc. strength files")
 parser.add_argument("-i", "--input_dir", default='LHCII',
         help="Relative path to input directory.")
-parser.add_argument("-o", "--output_dir", default='hamiltonians',
+parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
 
 args = parser.parse_args()
@@ -22,19 +22,19 @@ def get_pigments(input_dir):
     pigment_dirs = []
     # programatically get pigment name/numbers
     for item in os.scandir(input_dir):
-        if item.is_dir() and "_CSV" in item.name():
-            pigment_dirs.append(item.name())
+        if item.is_dir() and "_CSV" in item.name:
+            pigment_dirs.append(item.name)
 
     return pigment_dirs
 
 
 def construct_input_file(pigment_dirs, output_dir, snapshot_number):
     # fortran won't create the directory; do it here
-    os.makedirs("{}/{}".format(output_dir, snapshot_number))
+    os.makedirs("{}/{}".format(output_dir, snapshot_number), exist_ok=True)
     input_file = "pigments.{}".format(snapshot_number) 
     f = open(input_file, "w")
     for p in pigment_dirs:
-        print("{}/frame.{}".format(p, snapshot_number), file=f)
+        print("{}/frame{}.csv".format(p, snapshot_number), file=f)
 
     f.close()
     # f = open("parameters.{}".format(snapshot_number), "w")
@@ -44,11 +44,11 @@ def construct_input_file(pigment_dirs, output_dir, snapshot_number):
     # '''.format(), file=f)
     return input_file
 
-input_dir = os.path.join(os.cwd(), args.input_dir)
-output_dir = os.path.join(os.cwd(), args.output_dir)
+input_dir = os.path.join(os.getcwd(), args.input_dir)
+output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 
 pigment_dirs = get_pigments(input_dir)
 input_file = construct_input_file(pigment_dirs, output_dir, snapshot_number)
 
-subprocess.popen(exe, input_file, output_dir)
+# subprocess.popen(exe, input_file, output_dir)
