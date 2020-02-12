@@ -9,4 +9,4 @@ filelist = glob.glob('LHCII' + '/**/*.csv', recursive=True)
 for item in filelist:
     arr = np.loadtxt(item)
     print(item)
-    np.savetxt(item, arr, fmt='%016.8f')
+    np.savetxt(item, arr, fmt='%016.8e')

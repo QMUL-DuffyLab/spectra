@@ -29,9 +29,10 @@ def get_pigments(input_dir):
     return pigment_dirs
 
 
-def construct_input_files(pigment_dirs, output_dir, snapshot_number):
+def construct_input_files(pigment_dirs, output_path, snapshot_number):
     # fortran won't create the directory; do it here
-    os.makedirs("{}/{}".format(output_dir, snapshot_number), exist_ok=True)
+    output_dir = "{}/{}".format(output_path, snapshot_number)
+    os.makedirs(output_dir, exist_ok=True)
     input_file = "pigments.{}".format(snapshot_number) 
     energy_file = "ei.txt"
     lifetimes_file = "lifetimes.txt"
@@ -50,13 +51,13 @@ def construct_input_files(pigment_dirs, output_dir, snapshot_number):
     g.close()
     h.close()
     j.close()
-    return input_file
+    return (input_file, output_dir)
 
 input_dir = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 
 pigment_dirs = get_pigments(input_dir)
-input_file = construct_input_files(pigment_dirs, output_dir, snapshot_number)
+input_file, output_dir = construct_input_files(pigment_dirs, output_dir, snapshot_number)
 
-# subprocess.popen(exe, input_file, output_dir)
+os.system("./coupling_calc {} {}".format(input_file, output_dir))

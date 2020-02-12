@@ -33,7 +33,7 @@ program coupling_calc
 
   verbose = .true.
   call cpu_time(start_time)
-  coord_fmt = '(F015.8 1X F015.8 1X F015.8 1X F015.8)'
+  coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
   if (command_argument_count().ne.2) then
     write (*,*) "Wrong number of arguments. Try again."
