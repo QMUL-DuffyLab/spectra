@@ -21,16 +21,6 @@ program coupling_calc
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
-  ! thinking about this for future use
-  ! state not pigment bc e.g. qy has different params than qx
-  type State
-    character(3) :: lig
-    real(kind=8) :: eigvals_n
-    real(kind=8) :: gamma_n
-    real(kind=8) :: mu_n
-    complex(kind=8), dimension(:), allocatable :: g_n
-  end type State
-
   verbose = .true.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
