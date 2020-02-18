@@ -8,28 +8,46 @@
 int
 main(int *argc, char** argv)
 {
-    char* input_file;
-    unsigned int N, tau, i;
-    double integral;
-    double *ex, *wi, *gamma;
-    double **gi_array;
+  char* input_file;
+  unsigned int N, tau, i;
+  double *ex, *wi, *gamma, *mu, *lambda, *integral;
+  double **gi_array;
 
-    wi = malloc(N, sizeof(double));
-    gamma = malloc(N, sizeof(double));
+  /* need to read these in from files as well */
+  wi = calloc(N, sizeof(double));
+  gamma = calloc(N, sizeof(double));
+  mu = calloc(N, sizeof(double));
+  lambda = calloc(N, sizeof(double));
 
-    gi_array = malloc(N, sizeof(double));
+  gi_array = calloc(N, sizeof(double));
+  for (i = 0; i < N; i++) {
+    gi_array[i] = calloc(tau, sizeof(double));
+  }
+  gi_array = read_gi(input_file, N, tau);
+
+  /* does it make sense to do it like this? */
+  double omega_min = 0.0;
+  double omega_max = 30000.0;
+  double omega_step = 10.0;
+  int num_steps = (int)((omega_max - omega_min)/omega_step);
+
+  integral = calloc(N, sizeof(double));
+  for (i = 0; i < N; i++) {
+      integral[i] = calloc(num_steps, sizeof(double));
+  }
+
+  ex = calloc(tau, sizeof(double));
+  for (unsigned int j = 0; j < num_steps; j++) {
     for (i = 0; i < N; i++) {
-    	gi_array[i] = malloc(tau, sizeof(double));
+      w = omega_min + (j * omega_step);
+      ex = exponent(w, wi[i], gamma[i], tau, gi_array[i]);
+      /* integrate - tau is the number of steps in the integral */
+      integral[i][j] = 2.0 * creal(trapezoid(ex, tau)) * pow(mu[i], 2.0);
     }
-    gi_array = read_gi(input_file, N, tau);
-
-    ex = malloc(tau, sizeof(double));
-    for (i = 0; i < N; i++) {
-	ex = exponent(w, wi[i], gamma[i], tau, gi_array[i]);
-	/* integrate - tau is the number of steps in the integral */
-	integral = trapezoid(ex, tau);
-    }
-
+    /* this is probably a bad way of doing it actually -
+     * can put all N integrals in one array, sum by element, then
+     * multiply by omega outside the i loop here */
+  }
 }
 
 double**
@@ -56,7 +74,7 @@ read_gi(char *input_file, int N, int tau)
         gp = fopen(file_line, "r")
         for (i = 0; i < tau; i++) {
           fgets(line);
-          gi_array[j][i] += atof(line);
+          gi_array[j][i] = atof(line);
         }
         j++;
       }
