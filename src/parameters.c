@@ -59,6 +59,7 @@ getParameters(char *filename)
     		"spectral density\n", filename);
     	p.ligand = 2;
     } else if (strstr(filename, "A86") != NULL
+    	    || strstr(filename, "LUT") != NULL
     	    || strstr(filename, "DD6") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using carotenoid "
     		"spectral density\n", filename);
@@ -107,7 +108,7 @@ getParameters(char *filename)
 	    strcpy(p.aw_file, val);
 	} else if (strcmp(key, "Fw_file") == 0) {
 	    strcpy(p.fw_file, val);
-	} else if (strcmp(key, "At_file") == 0) {
+	} else if (strcmp(key, "gt_file") == 0) {
 	    strcpy(p.gt_file, val);
 	} else if (strcmp(key, "lambda_file") == 0) {
 	    strcpy(p.lambda_file, val);

@@ -96,12 +96,10 @@ main(int argc, char** argv)
 	re_res = re_res + small_t;
 	re_err = re_err + small_t_err;
 
-	for (unsigned long i = 0; i < pr.ns; i++) {
-	    /* the 6.4 here is from an N in the python code */
-	    fprintf(fp, "%18.10f %18.10f %18.10f\n",
-		    (float) i, re_res * pf_norm * 6.4,
-		    im_res * pf_norm * 6.4);
-	}
+	/* the 6.4 here is from an N in the python code */
+	fprintf(fp, "%18.10f %18.10f %18.10f\n",
+		(float) i, re_res * pf_norm * 6.4,
+		im_res * pf_norm * 6.4);
 
 	Atv[i] = At(w0, re_res, im_res, cmtime, p.l1, p.l2);
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
