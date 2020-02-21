@@ -31,10 +31,7 @@ main(int *argc, char** argv)
   double omega_step = 10.0;
   int num_steps = (int)((omega_max - omega_min)/omega_step);
 
-  integral = calloc(N, sizeof(double));
-  for (i = 0; i < N; i++) {
-      integral[i] = calloc(num_steps, sizeof(double));
-  }
+  integral = calloc(num_steps, sizeof(double));
 
   ex = calloc(tau, sizeof(double));
   for (unsigned int j = 0; j < num_steps; j++) {
@@ -42,12 +39,34 @@ main(int *argc, char** argv)
       w = omega_min + (j * omega_step);
       ex = exponent(w, wi[i], gamma[i], tau, gi_array[i]);
       /* integrate - tau is the number of steps in the integral */
-      integral[i][j] = 2.0 * creal(trapezoid(ex, tau)) * pow(mu[i], 2.0);
+      integral[j] += w * 2.0 * creal(trapezoid(ex, tau)) * pow(mu[i], 2.0);
     }
-    /* this is probably a bad way of doing it actually -
-     * can put all N integrals in one array, sum by element, then
-     * multiply by omega outside the i loop here */
   }
+
+  FILE *fp = fopen(aw_file, "w");
+  for (i = 0; i < num_steps; i++) {
+    fprintf(fp, "%16.8e %16.8e\n", omega_min + (i * omega_step), integral[i]);
+  }
+
+  /* should this maybe be an FFT instead of a trapezoid thing????
+   * need to sit down and write it out maybe. have a think */
+
+  in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
+
+  for (unsigned long i = 0; i < tau; i++) {
+      in[i][0] = creal(Atv[i]);
+      in[i][1] = cimag(Atv[i]);
+  }
+
+  out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
+  plan = fftw_plan_dft_1d(tau, 
+  	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
+  fftw_execute(plan); 
+  /* unpack the ordering used by FFTW */
+  double k = i * 2. * M_PI / (tau);
+  double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
+
+  exit(EXIT_SUCCESS);
 }
 
 double**

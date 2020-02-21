@@ -223,7 +223,8 @@ program coupling_calc
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
-    open(unit=17, file="out/g_i_" // trim(adjustl(g_i_count)) // ".dat")
+    write (*,*) trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
+    open(unit=17, file=trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
     do j = 1, tau
       write(17, '(F18.10, 1X, F18.10)') gnt(i, j)
     end do

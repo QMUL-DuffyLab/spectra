@@ -7,6 +7,7 @@ Also, should generate the diagonal of the matrix using oscillator strengths for 
 """
 
 import os
+import numpy as np # this is extremely wasteful to read in one float but i want to make sure everything else works first
 import argparse
 import subprocess
 import pigment_data
@@ -37,15 +38,20 @@ def construct_input_files(pigment_dirs, output_path, snapshot_number):
     energy_file = "ei.txt"
     lifetimes_file = "lifetimes.txt"
     lambda_file = "lambda.txt"
+    gnt_file = "gnt.txt"
     f = open(input_file, "w")
     g = open(energy_file, "w")
     h = open(lifetimes_file, "w")
     j = open(lambda_file, "w")
+    k = open(gnt_file, "w")
     for p in pigment_dirs:
+        reorg = np.loadtxt("/Users/cgray/code/lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
+        gn = "/Users/cgray/code/lineshape/out/{}_gn.dat".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
         print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
         print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
-        print(pigment_data.pigment_data[p[0:3]]["S1"]["reorg"], file=j)
+        print(reorg, file=j)
+        print(gn, file=k)
 
     f.close()
     g.close()
@@ -60,4 +66,5 @@ snapshot_number = 1 # replace this with for loop to iterate obv
 pigment_dirs = get_pigments(input_dir)
 input_file, output_dir = construct_input_files(pigment_dirs, output_dir, snapshot_number)
 
+print("./coupling_calc {} {}".format(input_file, output_dir))
 os.system("./coupling_calc {} {}".format(input_file, output_dir))
