@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import argparse
 import numpy as np
@@ -21,7 +22,7 @@ def plot(filename, *args, **kwargs):
 
     fig.tight_layout()
     if 'label' in kwargs:
-        plt.legend()
+        plt.legend(fontsize=10)
 
     plt.savefig(filename, bbox_inches='tight')
     plt.close()
@@ -54,10 +55,10 @@ fw = fw[fw[:, 0].argsort()]
 exp_file = "in/{0}_exp.dat".format(args.ligand)
 aw_exp = np.loadtxt(exp_file)
 
-plot(args.output_aw_file, aw[:, 0], (aw[:, 1] - np.min(aw[:, 1])),
+plot(args.aw_graph, aw[:, 0], (aw[:, 1] - np.min(aw[:, 1])),
         aw_exp[:, 0], (aw_exp[:, 1] - np.min(aw_exp[:, 1])),
         xlabel=r'$ \omega $', ylabel=r'$ A(\omega) $',
         label=[r'My result', r'Exp. result'])
-plot(args.output_fw_file, fw[:, 0], (fw[:, 1] - np.min(fw[:, 1])),
+plot(args.fw_graph, fw[:, 0], (fw[:, 1] - np.min(fw[:, 1])),
         xlabel=r'$ \omega $', ylabel=r'$ F(\omega) $',
         label=[r'My result', r'Exp. result'])
