@@ -8,11 +8,20 @@
 int
 main(int *argc, char** argv)
 {
-  char* input_file;
+  char[100] gi_file, mu_file, gamma_file,
+            lambda_file, wi_file, aw_file, fw_file;
   unsigned int N, tau, i;
   double musq, w;
   double *ex, *wi, *gamma, *lambda, *integral;
   double **mu, **gi_array;
+
+  mu_file = srtlcat(argv[1], "/mu_exciton.out");
+  gamma_file = srtlcat(argv[1], "/gamma_exciton.out");
+  lambda_file = srtlcat(argv[1], "/lambda_exciton.out");
+  wi_file = srtlcat(argv[1], "/wi_exciton.out");
+  /* this won't work - could strlcat the filenames in
+   * the function below or make this file with a list */
+  gi_file = srtlcat(argv[1], "/gi_file.out");
 
   /* need to read these in from files as well */
   wi = calloc(N, sizeof(double));
@@ -25,7 +34,11 @@ main(int *argc, char** argv)
     gi_array[i] = calloc(tau, sizeof(double));
     mu[i] = calloc(3, sizeof(double));
   }
-  gi_array = read_gi(input_file, N, tau);
+  gi_array = read_gi(gi_file, N, tau);
+  mu = read_mu(mu_file, N);
+  gamma = read(gamma_file, N);
+  lambda = read(lambda_file, N);
+  wi = read(wi_file, N);
 
   /* does it make sense to do it like this? */
   double omega_min = 10000.0;
