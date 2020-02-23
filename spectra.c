@@ -10,23 +10,25 @@ main(int *argc, char** argv)
 {
   char* input_file;
   unsigned int N, tau, i;
-  double *ex, *wi, *gamma, *mu, *lambda, *integral;
-  double **gi_array;
+  double musq, w;
+  double *ex, *wi, *gamma, *lambda, *integral;
+  double **mu, **gi_array;
 
   /* need to read these in from files as well */
   wi = calloc(N, sizeof(double));
   gamma = calloc(N, sizeof(double));
-  mu = calloc(N, sizeof(double));
   lambda = calloc(N, sizeof(double));
 
+  mu = calloc(N, sizeof(double));
   gi_array = calloc(N, sizeof(double));
   for (i = 0; i < N; i++) {
     gi_array[i] = calloc(tau, sizeof(double));
+    mu[i] = calloc(3, sizeof(double));
   }
   gi_array = read_gi(input_file, N, tau);
 
   /* does it make sense to do it like this? */
-  double omega_min = 0.0;
+  double omega_min = 10000.0;
   double omega_max = 30000.0;
   double omega_step = 10.0;
   int num_steps = (int)((omega_max - omega_min)/omega_step);
@@ -34,12 +36,13 @@ main(int *argc, char** argv)
   integral = calloc(num_steps, sizeof(double));
 
   ex = calloc(tau, sizeof(double));
-  for (unsigned int j = 0; j < num_steps; j++) {
-    for (i = 0; i < N; i++) {
+  for (i = 0; i < N; i++) {
+    musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
+    for (unsigned int j = 0; j < num_steps; j++) {
       w = omega_min + (j * omega_step);
       ex = exponent(w, wi[i], gamma[i], tau, gi_array[i]);
       /* integrate - tau is the number of steps in the integral */
-      integral[j] += w * 2.0 * creal(trapezoid(ex, tau)) * pow(mu[i], 2.0);
+      integral[j] += w * musq * 2.0 * creal(trapezoid(ex, tau));
     }
   }
 
@@ -70,6 +73,59 @@ main(int *argc, char** argv)
 }
 
 double**
+read(char *input_file, int N)
+{
+  double *arr;
+  FILE *fp;
+  char[200] line;
+  unsigned int i;
+  arr = calloc(N, sizeof(double));
+
+  fp = fopen(input_file, "r");
+  if (fp == NULL) {
+    fprintf(stdout, "Unable to open input file in read function. ",
+        "File name was %s\n", input_file);
+    exit(EXIT_FAILURE);
+  } else {
+    for (i = 0; i < N; i++) {
+      fgets(line, 199, gp);
+      arr[i] = atof(line);
+    }
+  }
+  return arr;
+}
+
+double**
+read_mu(char *input_file, int N)
+{
+  double **mu;
+  FILE *fp;
+  char[200] line;
+  unsigned int i;
+  mu = calloc(N, sizeof(double));
+
+  for (i = 0; i < N; i++) {
+    mu[i] = calloc(3, sizeof(double));
+  }
+
+  i = 0;
+  fp = fopen(input_file, "r");
+  if (fp == NULL) {
+    fprintf(stdout, "Unable to open input file in read_gi.\n");
+    exit(EXIT_FAILURE);
+  } else {
+    for (i = 0; i < N; i++) {
+      fgets(line, 199, gp);
+      /* not right yet */
+      mu[i][0] = atof(line);
+      mu[i][1] = atof(line);
+      mu[i][2] = atof(line);
+    }
+  }
+  return mu;
+}
+
+double**
 read_gi(char *input_file, int N, int tau)
 {
   double **gi;
@@ -82,7 +138,9 @@ read_gi(char *input_file, int N, int tau)
   }
   j = 0;
 
-  /* read lines from input file. each one is a filename with a
+  /* need to check N lines are read in to file_line, i.e. that 
+   * the number of g_i's we're reading in is correct.
+   * read lines from input file. each one is a filename with a
    * line-broadening function saved in it. open each one and sum */
    fp = fopen(input_file, "r");
    if (fp == NULL) {
@@ -92,7 +150,7 @@ read_gi(char *input_file, int N, int tau)
       while (fgets(file_line, 199, fp) != NULL) {
         gp = fopen(file_line, "r")
         for (i = 0; i < tau; i++) {
-          fgets(line);
+          fgets(line, 199, gp);
           gi_array[j][i] = atof(line);
         }
         j++;
