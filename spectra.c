@@ -15,13 +15,15 @@ main(int *argc, char** argv)
   double *ex, *wi, *gamma, *lambda, *integral;
   double **mu, **gi_array;
 
-  mu_file = srtlcat(argv[1], "/mu_exciton.out");
-  gamma_file = srtlcat(argv[1], "/gamma_exciton.out");
-  lambda_file = srtlcat(argv[1], "/lambda_exciton.out");
-  wi_file = srtlcat(argv[1], "/wi_exciton.out");
+  N = atoi(argv[1]);
+  tau = 2000; /* again probably shouldn't hardcode this but oh well */
+  mu_file     = srtlcat(argv[2], "/mu_exciton.out");
+  gamma_file  = srtlcat(argv[2], "/gamma_exciton.out");
+  lambda_file = srtlcat(argv[2], "/lambda_exciton.out");
+  wi_file     = srtlcat(argv[2], "/eigvals.out");
   /* this won't work - could strlcat the filenames in
    * the function below or make this file with a list */
-  gi_file = srtlcat(argv[1], "/gi_file.out");
+  gi_file     = srtlcat(argv[2], "/gi_file.out");
 
   /* need to read these in from files as well */
   wi = calloc(N, sizeof(double));

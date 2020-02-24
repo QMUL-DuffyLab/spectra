@@ -1,5 +1,7 @@
 program coupling_calc
   use iso_fortran_env
+  use c_interface
+  use, intrinsic :: iso_c_binding
   implicit none
   integer, parameter :: sp = REAL64
   logical :: verbose
@@ -197,6 +199,17 @@ program coupling_calc
   gnt = matmul(Jeig**4, gnt) ! mix lineshape functions
   lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig, lifetimes) ! mix relaxation times
+
+  do i = 1, control_len
+    do j = 1, control_len
+      wij = (eigvals(i) - lambda(i)) - (eigvals(j) - lambda(j))
+      do n = 1, control_len
+        ! this should be C_n(wij) but C_n?????
+        ! should be possible to call the C functions from
+        ! fortran but would require building the structs
+        k(i, j) = Jeig(i, n)**2 * Jeig(j, n)**2 * wij
+    end do
+  end do
 
   open(unit=10, file=jij_file)
   open(unit=11, file=eigvecs_file)
