@@ -9,7 +9,7 @@ module c_interface
   ! written the whole thing in C, but I didn't, because I hate C.
   type, bind(C) :: Params_f
     real(kind=C_DOUBLE) :: s0, s1, s2, g0, g1, g2,&
-      l0, l1, l2, w1, w2, T
+      l0, l1, l2, w1, w2, ti, T
     type(C_FUNPTR) :: cw
     integer(kind=C_INT) :: ligand
     character(kind=C_CHAR), dimension(200) :: aw_file, gt_file,&

@@ -5,3 +5,5 @@ out/
 LHCII/
 pigme*
 *.txt
+*.mod
+*.o
