@@ -54,7 +54,7 @@ trig_re(double w, void* params)
     /* (H * C)/KB in cm = 1.439 */
     double hbeta = 1.439 / p->T;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.)))
-	   * (1 - cos(w * p->t))
+	   * (1 - cos(w * p->ti))
 	   * (1. / tanh(0.5 * w * hbeta));
 }
 
@@ -63,7 +63,7 @@ trig_im(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
     return p->cw(w, p) * (1. / (M_PI * pow(w, 2.)))
-    	   * (sin(w * p->t) - w * p->t);
+    	   * (sin(w * p->ti) - w * p->ti);
 }
 
 double

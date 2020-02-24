@@ -44,7 +44,7 @@ getParameters(char *filename)
     p.g0 = 0.0; p.g1 = 0.0; p.g2 = 0.0;
     p.l0 = 0.0; p.l1 = 0.0; p.l2 = 0.0;
     p.l0 = 0.0; p.w1 = 0.0; p.w2 = 0.0;
-    p.T = 0.0;
+    p.ti = 0.0; p.T = 0.0;
     p.cw = NULL;
 
     /* try and do something clever: check via the filename

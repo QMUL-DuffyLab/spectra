@@ -81,6 +81,7 @@ main(int argc, char** argv)
 	double cmtime = ((double) i) * pf;
 	times[i] = cmtime;
 
+        p.ti = cmtime;
 	gsl_re.params = &p;
 	gsl_im.params = &p;
 
