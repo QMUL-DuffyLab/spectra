@@ -24,11 +24,11 @@ module c_interface
       TYPE(C_PTR), value :: par
     end function cw
 
-    subroutine getParameters(filename) bind(C)
+    subroutine get_parameters(filename) bind(C)
       use, intrinsic :: iso_c_binding
       import :: Params_f
       character(kind=C_CHAR), dimension(*), intent(in) :: filename
-    end subroutine getParameters
+    end subroutine get_parameters
 
   end interface
 
@@ -55,7 +55,8 @@ program test_c_interface
   test_csv = "/Users/cgray/code/couplings/FCP/CLA401_CSV/frame1.csv"
   code = get_ligand_code(trim(adjustl(test_csv)))
   write (*,*) "Ligand code is ", code
-  call getParameters(C_CHAR_"/Users/cgray/code/lineshape/in/"//code//".def"//C_NULL_CHAR)
+  write (*,*) "string for get_parameters is ",C_CHAR_"lineshape/in/"//code//".def"
+  call get_parameters(C_CHAR_"lineshape/in/"//code//".def"//C_NULL_CHAR)
 
   write (*,*) "Params l0 = ",params%l0
   write (*,*) "Params g0 = ",params%g0

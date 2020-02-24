@@ -28,8 +28,8 @@ main(int argc, char** argv)
     /* TESTING */
     gsl_set_error_handler_off();
 
-    p = getParameters(argv[2]);
-    Protocol pr = getProtocol(argv[1]);
+    p = get_parameters(argv[2]);
+    Protocol pr = get_protocol(argv[1]);
     /* this is ugly but need T in parameters
      * might just get rid of protocol file */
     p.T = pr.T;

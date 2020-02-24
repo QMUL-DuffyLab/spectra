@@ -21,7 +21,7 @@ typedef struct {
     char fw_file[200], lambda_file[200];
 } Parameters;
 
-Parameters getParameters(char* filename);
-Protocol getProtocol(char* filename);
+Parameters get_parameters(char* filename);
+Protocol get_protocol(char* filename);
 
 #endif

@@ -1,7 +1,7 @@
 #include "parameters.h"
 
 Protocol
-getProtocol(char *filename)
+get_protocol(char *filename)
 {
     FILE *fp;
     Protocol p;
@@ -35,7 +35,7 @@ getProtocol(char *filename)
 }
 
 Parameters
-getParameters(char *filename)
+get_parameters(char *filename)
 {
     FILE *fp;
     Parameters p;
