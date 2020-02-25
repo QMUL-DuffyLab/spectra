@@ -24,13 +24,13 @@ module c_interface
       TYPE(C_PTR), value :: par
     end function cw
 
-    subroutine fortran_wrapper(ligand) bind(C, name="fortran_wrapper")
+    type(C_PTR) function fortran_wrapper(ligand) bind(C, name="fortran_wrapper")
       use, intrinsic :: iso_c_binding
       import :: Params_f
       type(Params_f) :: p
       integer(kind=C_INT) :: ligand
-    end subroutine fortran_wrapper
-
+    end function fortran_wrapper
+    
   end interface
 
   contains
@@ -84,16 +84,18 @@ program test_c_interface
   implicit none
   character(200) :: test_csv
   integer(kind=C_INT) :: ligand
-  type(Params_f) :: params
+  type(C_PTR) :: cptr
+  type(Params_f), pointer :: par
 
   test_csv = "/Users/cgray/code/couplings/FCP/CLA401_CSV/frame1.csv"
   ligand = get_ligand_code(trim(adjustl(test_csv)))
   write (*,*) "Ligand number is ", ligand
-  call fortran_wrapper(ligand)
+  cptr = fortran_wrapper(ligand)
+  call C_F_POINTER(cptr, par)
 
-  write (*,*) "Params l0 = ",params%l0
-  write (*,*) "Params g0 = ",params%g0
-  write (*,*) "Params s0 = ",params%s0
+  write (*,*) "Params l0 = ",par%l0
+  write (*,*) "Params g0 = ",par%g0
+  write (*,*) "Params s0 = ",par%s0
 
   stop
 

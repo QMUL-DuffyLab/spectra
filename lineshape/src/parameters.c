@@ -34,13 +34,13 @@ get_protocol(char *filename)
     return p;
 }
 
-Parameters
+Parameters*
 fortran_wrapper(int ligand)
 {
   /* this is ugly af but i cannot for the life of me get
    * fortran to pass a string to get_parameters correctly.
    * hence, pick a ligand code in the fortran and then switch */
-  Parameters p;
+  Parameters *p;
 
   /* 
    * lookup table:
@@ -83,18 +83,18 @@ fortran_wrapper(int ligand)
   return p;
 }
 
-Parameters
+Parameters*
 get_parameters(char *filename)
 {
     FILE *fp;
-    Parameters p;
+    Parameters *p;
     char line[200], key[200], val[200];
-    p.s0 = 0.0; p.s1 = 0.0; p.s2 = 0.0;
-    p.g0 = 0.0; p.g1 = 0.0; p.g2 = 0.0;
-    p.l0 = 0.0; p.l1 = 0.0; p.l2 = 0.0;
-    p.l0 = 0.0; p.w1 = 0.0; p.w2 = 0.0;
-    p.ti = 0.0; p.T = 0.0;
-    p.cw = NULL;
+    p->s0 = 0.0; p->s1 = 0.0; p->s2 = 0.0;
+    p->g0 = 0.0; p->g1 = 0.0; p->g2 = 0.0;
+    p->l0 = 0.0; p->l1 = 0.0; p->l2 = 0.0;
+    p->l0 = 0.0; p->w1 = 0.0; p->w2 = 0.0;
+    p->ti = 0.0; p->T = 0.0;
+    p->cw = NULL;
     fprintf(stdout, "File name read in was %s.\n", filename);
 
     /* try and do something clever: check via the filename
@@ -103,17 +103,17 @@ get_parameters(char *filename)
      || strstr(filename, "CHL") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
     		"spectral density\n", filename);
-    	p.ligand = 1;
+    	p->ligand = 1;
     } else if (strstr(filename, "CLC") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using ODO "
     		"spectral density\n", filename);
-    	p.ligand = 2;
+    	p->ligand = 2;
     } else if (strstr(filename, "A86") != NULL
     	    || strstr(filename, "LUT") != NULL
     	    || strstr(filename, "DD6") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using carotenoid "
     		"spectral density\n", filename);
-	p.ligand = 0;
+	p->ligand = 0;
     } else {
     	fprintf(stdout, "Not sure what kind of spectral density"
     		" function to use. File name read in was %s. Try again.\n",
@@ -132,37 +132,37 @@ get_parameters(char *filename)
 	if (strcmp(key, "#") == 0) {
 	    continue;
 	} else if (strcmp(key, "s0") == 0) {
-	    p.s0 = atof(val);
+	    p->s0 = atof(val);
 	} else if (strcmp(key, "s1") == 0) {
-	    p.s1 = atof(val);
+	    p->s1 = atof(val);
 	} else if (strcmp(key, "s2") == 0) {
-	    p.s2 = atof(val);
+	    p->s2 = atof(val);
 	} else if (strcmp(key, "g0") == 0) {
-	    p.g0 = atof(val);
+	    p->g0 = atof(val);
 	} else if (strcmp(key, "g1") == 0) {
-	    p.g1 = atof(val);
+	    p->g1 = atof(val);
 	} else if (strcmp(key, "g2") == 0) {
-	    p.g2 = atof(val);
+	    p->g2 = atof(val);
 	} else if (strcmp(key, "l0") == 0) {
-	    p.l0 = atof(val);
+	    p->l0 = atof(val);
 	} else if (strcmp(key, "l1") == 0) {
-	    p.l1 = atof(val);
+	    p->l1 = atof(val);
 	} else if (strcmp(key, "l2") == 0) {
-	    p.l2 = atof(val);
+	    p->l2 = atof(val);
 	} else if (strcmp(key, "w1") == 0) {
-	    p.w1 = atof(val);
+	    p->w1 = atof(val);
 	} else if (strcmp(key, "w2") == 0) {
-	    p.w2 = atof(val);
+	    p->w2 = atof(val);
 	} else if (strcmp(key, "T") == 0) {
-	    p.T = atof(val);
+	    p->T = atof(val);
 	} else if (strcmp(key, "Aw_file") == 0) {
-	    strcpy(p.aw_file, val);
+	    strcpy(p->aw_file, val);
 	} else if (strcmp(key, "Fw_file") == 0) {
-	    strcpy(p.fw_file, val);
+	    strcpy(p->fw_file, val);
 	} else if (strcmp(key, "gt_file") == 0) {
-	    strcpy(p.gt_file, val);
+	    strcpy(p->gt_file, val);
 	} else if (strcmp(key, "lambda_file") == 0) {
-	    strcpy(p.lambda_file, val);
+	    strcpy(p->lambda_file, val);
 	} 
 
 	/* future file names */

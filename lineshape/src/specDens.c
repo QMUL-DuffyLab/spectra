@@ -10,7 +10,7 @@ main(int argc, char** argv)
 {
     time_t start_time, end_time;
     time(&start_time);
-    Parameters p;
+    Parameters p, *pt;
     double *times;
     double complex *Atv, *Ftv;
     fftw_complex *out, *in;
@@ -28,7 +28,8 @@ main(int argc, char** argv)
     /* TESTING */
     gsl_set_error_handler_off();
 
-    p = get_parameters(argv[2]);
+    pt = get_parameters(argv[2]);
+    p = &pt; /* lazy */
     Protocol pr = get_protocol(argv[1]);
     /* this is ugly but need T in parameters
      * might just get rid of protocol file */
