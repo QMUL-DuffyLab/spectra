@@ -24,12 +24,12 @@ module c_interface
       TYPE(C_PTR), value :: par
     end function cw
 
-    subroutine get_parameters(filename) bind(C, name="get_parameters")
+    subroutine fortran_wrapper(ligand) bind(C, name="fortran_wrapper")
       use, intrinsic :: iso_c_binding
       import :: Params_f
-      character(len=1, kind=C_CHAR), intent(in) :: filename(*)
-      ! type(C_PTR) :: filename
-    end subroutine get_parameters
+      type(Params_f) :: p
+      integer(kind=C_INT) :: ligand
+    end subroutine fortran_wrapper
 
   end interface
 
@@ -37,28 +37,44 @@ module c_interface
 
   function get_ligand_code(filename) result(res)
     character(len=*), intent(in) :: filename
-    character(3) :: res
-    integer :: i
+    character(3) :: code
+    integer :: i, res
     i = index(filename, "_CSV")
-    res = filename(i - 6 : i - 4)
+    code = filename(i - 6 : i - 4)
+
+    ! 
+    ! lookup table:
+    ! CLA (Chlorophyll a)  = 0
+    ! CHL (Chlorophyll b)  = 1
+    ! KC1 (Chlorophyll c1) = 2
+    ! KC2 (Chlorophyll c2) = 3
+    ! A86 (fucoxanthin)    = 4
+    ! DD6 (diadinoxanthin) = 5
+    ! LUT (lutein)         = 6
+    ! 
+
+    select case (code)
+      case ('CLA')
+        res = 0
+      case('CHL')
+        res = 1
+      case ('KC1')
+        res = 2
+      case ('KC2')
+        res = 3
+      case('A86')
+        res = 4
+      case ('DD6')
+        res = 5
+      case ('LUT')
+        res = 6
+      case default
+        res = -1
+        write (*,*) "Invalid ligand code.", code, ". Try again"
+        stop
+      end select
+
   end function get_ligand_code
-
-  ! taken from http://fortranwiki.org/fortran/show/Generating+C+Interfaces
-  ! apparently necessary because doing str // C_NULL_CHAR is bugged
-  PURE FUNCTION F_C_STRING_FUNC (F_STRING) RESULT (C_STRING)
-    USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_CHAR, C_NULL_CHAR
-    IMPLICIT NONE
-    CHARACTER(LEN=*), INTENT(IN) :: F_STRING
-    CHARACTER(LEN=1,KIND=C_CHAR) :: C_STRING(LEN_TRIM(F_STRING)+1)
-    INTEGER                      :: N, I
-
-    N = LEN_TRIM(F_STRING)
-    DO I = 1, N
-      C_STRING(I) = F_STRING(I:I)
-    END DO
-    C_STRING(N + 1) = C_NULL_CHAR
-
-  END FUNCTION F_C_STRING_FUNC
 
 end module c_interface
 
@@ -67,20 +83,13 @@ program test_c_interface
   use c_interface
   implicit none
   character(200) :: test_csv
-  character(3) :: code
+  integer(kind=C_INT) :: ligand
   type(Params_f) :: params
-  character(len=20) :: test_str
-  character(kind=C_CHAR), target :: c_str(21)
-  type(c_ptr) :: str_ptr
 
   test_csv = "/Users/cgray/code/couplings/FCP/CLA401_CSV/frame1.csv"
-  code = get_ligand_code(trim(adjustl(test_csv)))
-  test_str = "lineshape/in/"//code//".def"
-  c_str = F_C_STRING_FUNC(test_str)
-  write (*,*) "Ligand code is ", code
-  write (*,*) "test_str = ", test_str
-  write (*,*) "c_str = ", c_str
-  call get_parameters(c_str)
+  ligand = get_ligand_code(trim(adjustl(test_csv)))
+  write (*,*) "Ligand number is ", ligand
+  call fortran_wrapper(ligand)
 
   write (*,*) "Params l0 = ",params%l0
   write (*,*) "Params g0 = ",params%g0

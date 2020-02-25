@@ -55,25 +55,25 @@ fortran_wrapper(int ligand)
 
   switch(ligand) {
   case 0:
-    p = get_parameters("in/CLA.def");
+    p = get_parameters("lineshape/in/CLA.def");
     break;
   case 1:
-    p = get_parameters("in/CHL.def");
+    p = get_parameters("lineshape/in/CHL.def");
     break;
   case 2:
-    p = get_parameters("in/KC1.def");
+    p = get_parameters("lineshape/in/KC1.def");
     break;
   case 3:
-    p = get_parameters("in/KC2.def");
+    p = get_parameters("lineshape/in/KC2.def");
     break;
   case 4:
-    p = get_parameters("in/A86.def");
+    p = get_parameters("lineshape/in/A86.def");
     break;
   case 5:
-    p = get_parameters("in/DD6.def");
+    p = get_parameters("lineshape/in/DD6.def");
     break;
   case 6:
-    p = get_parameters("in/LUT.def");
+    p = get_parameters("lineshape/in/LUT.def");
     break;
   default:
     fprintf(stdout, "Unknown ligand code %d received from "
