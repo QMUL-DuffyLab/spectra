@@ -35,6 +35,55 @@ get_protocol(char *filename)
 }
 
 Parameters
+fortran_wrapper(int ligand)
+{
+  /* this is ugly af but i cannot for the life of me get
+   * fortran to pass a string to get_parameters correctly.
+   * hence, pick a ligand code in the fortran and then switch */
+  Parameters p;
+
+  /* 
+   * lookup table:
+   * CLA (Chlorophyll a)  = 0
+   * CHL (Chlorophyll b)  = 1
+   * KC1 (Chlorophyll c1) = 2
+   * KC2 (Chlorophyll c2) = 3
+   * A86 (fucoxanthin)    = 4
+   * DD6 (diadinoxanthin) = 5
+   * LUT (lutein)         = 6
+   */
+
+  switch(ligand) {
+  case 0:
+    p = get_parameters("in/CLA.def");
+    break;
+  case 1:
+    p = get_parameters("in/CHL.def");
+    break;
+  case 2:
+    p = get_parameters("in/KC1.def");
+    break;
+  case 3:
+    p = get_parameters("in/KC2.def");
+    break;
+  case 4:
+    p = get_parameters("in/A86.def");
+    break;
+  case 5:
+    p = get_parameters("in/DD6.def");
+    break;
+  case 6:
+    p = get_parameters("in/LUT.def");
+    break;
+  default:
+    fprintf(stdout, "Unknown ligand code %d received from "
+        "fortran. Try again.\n", ligand);
+    exit(EXIT_FAILURE);
+  }
+  return p;
+}
+
+Parameters
 get_parameters(char *filename)
 {
     FILE *fp;
@@ -46,6 +95,7 @@ get_parameters(char *filename)
     p.l0 = 0.0; p.w1 = 0.0; p.w2 = 0.0;
     p.ti = 0.0; p.T = 0.0;
     p.cw = NULL;
+    fprintf(stdout, "File name read in was %s.\n", filename);
 
     /* try and do something clever: check via the filename
      * whether we're simulating a chlorophyll or a carotenoid */
@@ -66,7 +116,8 @@ get_parameters(char *filename)
 	p.ligand = 0;
     } else {
     	fprintf(stdout, "Not sure what kind of spectral density"
-    		" function to use. Try again.\n");
+    		" function to use. File name read in was %s. Try again.\n",
+    		filename);
     	exit(EXIT_FAILURE);
     }
 

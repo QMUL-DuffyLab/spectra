@@ -23,5 +23,6 @@ typedef struct {
 
 Parameters get_parameters(char* filename);
 Protocol get_protocol(char* filename);
+Parameters fortran_wrapper(int ligand);
 
 #endif
