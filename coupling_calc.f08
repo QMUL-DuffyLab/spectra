@@ -216,11 +216,11 @@ program coupling_calc
   open(unit=20, file=spectra_input_file)
   ! stuff to read into spectra.c
   write(20, *) control_len
-  write(20, *) trim(adjustl(eigvecs_file))
-  write(20, *) trim(adjustl(eigvals_file))
-  write(20, *) trim(adjustl(mu_i_file))
-  write(20, *) trim(adjustl(lambda_i_file))
-  write(20, *) trim(adjustl(gamma_i_file))
+  write(20, '(a)') adjustl(trim(adjustl(eigvecs_file)))
+  write(20, '(a)') adjustl(trim(adjustl(eigvals_file)))
+  write(20, '(a)') adjustl(trim(adjustl(mu_i_file)))
+  write(20, '(a)') adjustl(trim(adjustl(lambda_i_file)))
+  write(20, '(a)') adjustl(trim(adjustl(gamma_i_file)))
 
   open(unit=10, file=jij_file)
   open(unit=11, file=eigvecs_file)
@@ -240,17 +240,19 @@ program coupling_calc
     end do
     write(10,*) ! blank line between rows!
     write(11,*)
-    write(12, *) eigvals(i)
-    write(13, *) mu(1, i), mu(2, i), mu(3, i)
-    write(14, *) mu_ex(1, i), mu_ex(2, i), mu_ex(3, i)
-    write(15, *) lambda(i)
-    write(16, *) lifetimes(i)
+    write(13, '(F18.10, 1X, F18.10, 1X, F18.10)') mu(1, i),&
+      mu(2, i), mu(3, i)
+    write(14, '(F18.10, 1X, F18.10, 1X, F18.10)') mu_ex(1, i),&
+      mu_ex(2, i), mu_ex(3, i)
+    write(12, '(F18.10)') eigvals(i)
+    write(15, '(F18.10)') lambda(i)
+    write(16, '(F18.10)') lifetimes(i)
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
     write (*,*) trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     open(unit=17, file=trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
-    write(20, *) trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
+    write(20, '(a)') trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     do j = 1, tau
       write(17, '(F18.10, 1X, F18.10)') gnt(i, j)
     end do

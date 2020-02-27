@@ -8,11 +8,13 @@
 /* #include <gsl/gsl_errno.h> */
 #include <fftw3.h>
 
+#define MAX_PIGMENT_NUMBER 200
+
 typedef struct {
   int N;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200];
-  char gi_files[100][200];
+  char gi_files[MAX_PIGMENT_NUMBER][200];
 } Parameters;
 
 double*
@@ -43,9 +45,10 @@ read_mu(char *input_file, int N)
 {
   double **mu;
   FILE *fp;
-  char *line, *token;
+  char *token;
   unsigned int i, j;
   mu = calloc(N, sizeof(double));
+  token = malloc(22 * sizeof(char));
 
   for (i = 0; i < N; i++) {
     mu[i] = calloc(3, sizeof(double));
@@ -54,65 +57,60 @@ read_mu(char *input_file, int N)
   i = 0;
   fp = fopen(input_file, "r");
   if (fp == NULL) {
-    fprintf(stdout, "Unable to open input file in read_gi.\n");
+    fprintf(stdout, "Unable to open input file in read_mu."
+        "Input file name was %s\n", input_file);
     exit(EXIT_FAILURE);
   } else {
     for (i = 0; i < N; i++) {
-      fgets(line, 199, fp);
-      /* not right yet */
-      fprintf(stdout, "mu[%d] = ", i);
-      j = 0;
-      while ((token = strsep(&line, " "))) {
-        mu[i][j] = atof(token);
-        fprintf(stdout, "%8.5f ", mu[i][j]);
-        j++;
-      }
-      fprintf(stdout, "\n");
-      /* mu[i][0] = atof(line); */
-      /* mu[i][1] = atof(line); */
-      /* mu[i][2] = atof(line); */
+      fgets(token, 19, fp);
+      mu[i][0] = atof(token); 
+      fgets(token, 20, fp);
+      mu[i][1] = atof(token); 
+      fgets(token, 22, fp); /* make sure we get to the newline! */
+      mu[i][2] = atof(token); 
     }
   }
   return mu;
 }
 
-double**
-read_gi(char **input_files, int N, int tau)
+double complex**
+read_gi(char input_files[MAX_PIGMENT_NUMBER][200], int N, int tau)
 {
-  double **gi;
-  FILE *fp, *gp;
+  double complex **gi;
+  FILE *fp;
   unsigned int i, j;
-  char line, file_line;
+  double real, imag;
+  char *line, *token;
   gi = calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {
     gi[i] = calloc(tau, sizeof(double));
   }
   j = 0;
+  line = malloc(200 * sizeof(char));
+  token = malloc(22 * sizeof(char));
 
-  /* need to check N lines are read in to file_line, i.e. that 
-   * the number of g_i's we're reading in is correct.
-   * read lines from input file. each one is a filename with a
-   * line-broadening function saved in it. open each one and sum */
-   fp = fopen(input_file, "r");
-   if (fp == NULL) {
-     fprintf(stdout, "Unable to open input file in read_gi.\n");
-     exit(EXIT_FAILURE);
-   } else {
-      while (fgets(file_line, 199, fp) != NULL) {
-        gp = fopen(file_line, "r");
-        for (i = 0; i < tau; i++) {
-          fgets(line, 199, gp);
-          gi[j][i] = atof(line);
-        }
-        j++;
+  for (i = 0; i < N; i++) {
+    fp = fopen(input_files[i], "r");
+    if (fp == NULL) {
+      fprintf(stdout, "Unable to open input file in read_gi."
+          "Input file was %s\n", input_files[i]);
+      exit(EXIT_FAILURE);
+    } else {
+      for (j = 0; j < tau; j++) {
+        fgets(token, 19, fp);
+        real = atof(token); 
+        fgets(token, 22, fp); /* make sure we get to the newline! */
+        imag = atof(token); 
+        gi[i][j] = real + I * imag;
       }
-   }
-   return gi;
+    }
+  }
+  return gi;
 }
 
 double complex*
 exponent(double w, double w_i, double gamma_i,
-	 unsigned int tau, double* gi)
+	 unsigned int tau, double complex* gi)
 {
   double complex *exponent;
   exponent = calloc(tau, sizeof(double complex));
@@ -142,7 +140,7 @@ read_input_file(char* filename)
   Parameters p;
   unsigned int i;
   char line[200];
-  fp = fopen(filename, "w");
+  fp = fopen(filename, "r");
   if (fp == NULL) {
     fprintf(stdout, "Unable to open input file.\n");
     exit(EXIT_FAILURE);
@@ -150,17 +148,24 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     p.N = atoi(line);
     fgets(line, 199, fp);
+    /* from stackoverflow - sets the newline to a null char */
+    line[strcspn(line, "\n")] = 0;
     strcpy(p.eigvecs_file, line);
     fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
     strcpy(p.eigvals_file, line);
     fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
     strcpy(p.mu_file, line);
     fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
     strcpy(p.lambda_file, line);
     fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
     strcpy(p.gamma_file, line);
     for (i = 0; i < p.N; i++) {
       fgets(line, 199, fp);
+      line[strcspn(line, "\n")] = 0;
       strcpy(p.gi_files[i], line);
     }
   }
@@ -172,36 +177,34 @@ main(int argc, char** argv)
 {
   unsigned int N, tau, i;
   double musq, w;
-  double *ex, *wi, *gamma, *lambda, *integral;
-  double **mu, **gi_array;
+  double complex *ex, *integral, **gi_array;
+  double *wi, *gamma, *lambda, **mu;
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
 
   Parameters p = read_input_file(argv[1]);
-  /* mu_file     = srtlcat(argv[2], "/mu_exciton.out"); */
-  /* gamma_file  = srtlcat(argv[2], "/gamma_exciton.out"); */
-  /* lambda_file = srtlcat(argv[2], "/lambda_exciton.out"); */
-  /* wi_file     = srtlcat(argv[2], "/eigvals.out"); */
-  /* this won't work - could strlcat the filenames in */
-  /* the function below or make this file with a list */
-  /* gi_file     = srtlcat(argv[2], "/gi_file.out"); */
 
   /* need to read these in from files as well */
-  wi = calloc(N, sizeof(double));
-  gamma = calloc(N, sizeof(double));
-  lambda = calloc(N, sizeof(double));
+  wi = calloc(p.N, sizeof(double));
+  gamma = calloc(p.N, sizeof(double));
+  lambda = calloc(p.N, sizeof(double));
 
-  mu = calloc(N, sizeof(double));
-  gi_array = calloc(N, sizeof(double));
+  mu = calloc(p.N, sizeof(double));
+  gi_array = calloc(p.N, sizeof(double));
   for (i = 0; i < N; i++) {
     gi_array[i] = calloc(tau, sizeof(double));
     mu[i] = calloc(3, sizeof(double));
   }
-  gi_array = read_gi(p.gi_files, N, tau);
-  mu = read_mu(p.mu_file, N);
-  gamma = read(p.gamma_file, N);
-  lambda = read(p.lambda_file, N);
-  wi = read(p.eigvals_file, N);
+  gi_array = read_gi(p.gi_files, p.N, tau);
+  mu = read_mu(p.mu_file, p.N);
+  gamma = read(p.gamma_file, p.N);
+  lambda = read(p.lambda_file, p.N);
+  wi = read(p.eigvals_file, p.N);
+
+  for (i = 0; i < p.N; i++) {
+    fprintf(stdout, "%18.10f %18.10f %18.10f\n", mu[i][0], 
+        mu[i][1], mu[i][2]); 
+  }
 
   /* does it make sense to do it like this? */
   double omega_min = 10000.0;
@@ -212,7 +215,7 @@ main(int argc, char** argv)
   integral = calloc(num_steps, sizeof(double));
 
   ex = calloc(tau, sizeof(double));
-  for (i = 0; i < N; i++) {
+  for (i = 0; i < p.N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
     for (unsigned int j = 0; j < num_steps; j++) {
       w = omega_min + (j * omega_step);
@@ -224,7 +227,8 @@ main(int argc, char** argv)
 
   FILE *fp = fopen("aw_test.dat", "w");
   for (i = 0; i < num_steps; i++) {
-    fprintf(fp, "%16.8e %16.8e\n", omega_min + (i * omega_step), integral[i]);
+    fprintf(fp, "%16.8e (%16.8e + %16.8ei)\n", omega_min + (i * omega_step), 
+        creal(integral[i]), cimag(integral[i]));
   }
 
   /* should this maybe be an FFT instead of a trapezoid thing????
