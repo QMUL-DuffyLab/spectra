@@ -59,6 +59,7 @@ program coupling_calc
  ! don't like hardcoding but it shouldn't need to be dynamic, really
   tau = 2000
 
+  ! these are the ones we read in from
   ei_file = "ei.txt"
   lambda_file = "lambda.txt"
   gnt_file = "gnt.txt"
@@ -218,6 +219,7 @@ program coupling_calc
   open(unit=14, file=mu_i_file)
   open(unit=15, file=lambda_i_file)
   open(unit=16, file=gamma_i_file)
+  open(unit=20, file=spectra_input_file)
   do i = 1, control_len
     do j = 1, control_len
       ! can write these with implied do loops
@@ -234,10 +236,19 @@ program coupling_calc
     write(15, *) lambda(i)
     write(16, *) lifetimes(i)
 
+    ! stuff to read into spectra.c
+    write(20, *) control_len
+    write(20, *) eigvecs_file
+    write(20, *) eigvals_file
+    write(20, *) mu_i_file
+    write(20, *) lambda_i_file
+    write(20, *) gamma_i_file
+
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
     write (*,*) trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     open(unit=17, file=trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
+    write(20, *) trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     do j = 1, tau
       write(17, '(F18.10, 1X, F18.10)') gnt(i, j)
     end do

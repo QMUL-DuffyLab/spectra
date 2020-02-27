@@ -99,4 +99,8 @@ program test_c_interface
 
   stop
 
+  ! idea: jut write out the list of files, read that in,
+  ! read in the eigvecs array to C, then we can do all the spectra
+  ! shit in C. Can just include lineshapes/src/functions.c etc.
+
 end program test_c_interface

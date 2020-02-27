@@ -15,15 +15,16 @@ main(int *argc, char** argv)
   double *ex, *wi, *gamma, *lambda, *integral;
   double **mu, **gi_array;
 
-  N = atoi(argv[1]);
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
-  mu_file     = srtlcat(argv[2], "/mu_exciton.out");
-  gamma_file  = srtlcat(argv[2], "/gamma_exciton.out");
-  lambda_file = srtlcat(argv[2], "/lambda_exciton.out");
-  wi_file     = srtlcat(argv[2], "/eigvals.out");
-  /* this won't work - could strlcat the filenames in
-   * the function below or make this file with a list */
-  gi_file     = srtlcat(argv[2], "/gi_file.out");
+
+  Parameters p = read_input_file(argv[1]);
+  /* mu_file     = srtlcat(argv[2], "/mu_exciton.out"); */
+  /* gamma_file  = srtlcat(argv[2], "/gamma_exciton.out"); */
+  /* lambda_file = srtlcat(argv[2], "/lambda_exciton.out"); */
+  /* wi_file     = srtlcat(argv[2], "/eigvals.out"); */
+  /* this won't work - could strlcat the filenames in */
+  /* the function below or make this file with a list */
+  /* gi_file     = srtlcat(argv[2], "/gi_file.out"); */
 
   /* need to read these in from files as well */
   wi = calloc(N, sizeof(double));
@@ -36,11 +37,11 @@ main(int *argc, char** argv)
     gi_array[i] = calloc(tau, sizeof(double));
     mu[i] = calloc(3, sizeof(double));
   }
-  gi_array = read_gi(gi_file, N, tau);
-  mu = read_mu(mu_file, N);
-  gamma = read(gamma_file, N);
-  lambda = read(lambda_file, N);
-  wi = read(wi_file, N);
+  gi_array = read_gi(p.gi_file, N, tau);
+  mu = read_mu(p.mu_file, N);
+  gamma = read(p.gamma_file, N);
+  lambda = read(p.lambda_file, N);
+  wi = read(p.eigvals_file, N);
 
   /* does it make sense to do it like this? */
   double omega_min = 10000.0;
@@ -115,7 +116,7 @@ read_mu(char *input_file, int N)
 {
   double **mu;
   FILE *fp;
-  char[200] line;
+  char[200] line, token;
   unsigned int i;
   mu = calloc(N, sizeof(double));
 
@@ -132,9 +133,17 @@ read_mu(char *input_file, int N)
     for (i = 0; i < N; i++) {
       fgets(line, 199, gp);
       /* not right yet */
-      mu[i][0] = atof(line);
-      mu[i][1] = atof(line);
-      mu[i][2] = atof(line);
+      fprintf(stdout, "mu[%d] = ", i);
+      j = 0;
+      while ((token = strsep(&line, " "))) {
+        mu[i][j] = atof(token);
+        fprintf(stdout, "%8.5f ", mu[i][j]);
+        j++;
+      }
+      fprintf(stdout, "\n");
+      /* mu[i][0] = atof(line); */
+      /* mu[i][1] = atof(line); */
+      /* mu[i][2] = atof(line); */
     }
   }
   return mu;
@@ -198,3 +207,43 @@ trapezoid(double complex *f, unsigned int n)
     }
     return sum;
 }
+
+Parameters
+read_input_file(char* filename)
+{
+  FILE *fp;
+  Parameters p;
+  char[200] line;
+  fp = fopen(filename, "w");
+  if (fp == NULL) {
+    fprintf(stdout, "Unable to open input file.\n");
+    exit(EXIT_FAILURE);
+  } else {
+       fgets(line, 199, fp);
+       p.N = atoi(line);
+       fgets(line, 199, fp);
+       p.eigvecs_file = line;
+       fgets(line, 199, fp);
+       p.eigvals_file = line;
+       fgets(line, 199, fp);
+       p.mu_i_file = line;
+       fgets(line, 199, fp);
+       p.lambda_i_file = line;
+       fgets(line, 199, fp);
+       p.gamma_i_file = line;
+       for (i = 0; i < p.N; i++) {
+         fgets(line, 199, fp);
+         p.gi_files[i] = line;
+       }
+       j++;
+     }
+  }
+  return p;
+}
+
+typedef Parameters {
+  int N;
+  char[200] eigvecs_file, eigvals_file, mu_file,
+  lambda_file, gamma_file;
+  char[N][200] gi_files;
+} struct;
