@@ -73,6 +73,40 @@ read_mu(char *input_file, int N)
   return mu;
 }
 
+double**
+read_eigvecs(char *input_file, int N)
+{
+  double **eig;
+  FILE *fp;
+  unsigned int i, j;
+  char *token;
+  eig = calloc(N, sizeof(double));
+  for (unsigned int i = 0; i < N; i++) {
+    eig[i] = calloc(N, sizeof(double));
+  }
+  j = 0;
+  token = malloc(22 * sizeof(char));
+
+  fp = fopen(input_file, "r");
+  if (fp == NULL) {
+    fprintf(stdout, "Unable to open input file in read_gi."
+        "Input file was %s\n", input_file);
+    exit(EXIT_FAILURE);
+  } else {
+    for (i = 0; i < N; i++) {
+        fgets(token, 19, fp);
+        eig[i][0] = atof(token); 
+        for (j = 1; j < N - 1; j++) {
+          fgets(token, 20, fp);
+          eig[i][j] = atof(token); 
+        }
+        fgets(token, 22, fp); /* make sure we get to the newline! */
+        eig[i][N - 1] = atof(token); 
+      }
+  }
+  return eig;
+}
+
 double complex**
 read_gi(char input_files[MAX_PIGMENT_NUMBER][200], int N, int tau)
 {
@@ -115,7 +149,13 @@ exponent(double w, double w_i, double gamma_i,
   double complex *exponent;
   exponent = calloc(tau, sizeof(double complex));
   for (unsigned int i = 0; i < tau; i++) {
+    /* see Kruger - should this be the line-broadening function
+     * or just the lineshape function? the broadening one is 
+     * divergent and it's the real part of this integral :S */
     exponent[i] = cexp(- I * i * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
+    /* if (i < 100) { */
+      /* fprintf(stdout, "%18.10f %18.10f\n", creal(exponent[i]), cimag(exponent[i])); */
+    /* } */
   }
   return exponent;
 }
@@ -175,10 +215,10 @@ read_input_file(char* filename)
 int
 main(int argc, char** argv)
 {
-  unsigned int N, tau, i;
+  unsigned int N, tau, i, j;
   double musq, w;
   double complex *ex, *integral, **gi_array;
-  double *wi, *gamma, *lambda, **mu;
+  double *wi, *gamma, *lambda, **mu, **eig;
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
 
@@ -191,19 +231,22 @@ main(int argc, char** argv)
 
   mu = calloc(p.N, sizeof(double));
   gi_array = calloc(p.N, sizeof(double));
-  for (i = 0; i < N; i++) {
+  for (i = 0; i < p.N; i++) {
     gi_array[i] = calloc(tau, sizeof(double));
     mu[i] = calloc(3, sizeof(double));
   }
   gi_array = read_gi(p.gi_files, p.N, tau);
+  eig = read_eigvecs(p.eigvecs_file, p.N);
   mu = read_mu(p.mu_file, p.N);
   gamma = read(p.gamma_file, p.N);
   lambda = read(p.lambda_file, p.N);
   wi = read(p.eigvals_file, p.N);
 
   for (i = 0; i < p.N; i++) {
-    fprintf(stdout, "%18.10f %18.10f %18.10f\n", mu[i][0], 
-        mu[i][1], mu[i][2]); 
+    for (j = 0; j < p.N; j++) {
+      fprintf(stdout, "%18.10f ", eig[i][j]); 
+    }
+    fprintf(stdout, "\n"); 
   }
 
   /* does it make sense to do it like this? */
