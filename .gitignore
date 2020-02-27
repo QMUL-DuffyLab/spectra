@@ -2,6 +2,7 @@ coupling_calc
 coupling_calc.dSYM
 .DS_Store
 out/
+*/obj/*
 LHCII/
 pigme*
 *.txt

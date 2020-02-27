@@ -34,24 +34,28 @@ def construct_input_files(pigment_dirs, output_path, snapshot_number):
     # fortran won't create the directory; do it here
     output_dir = "{}/{}".format(output_path, snapshot_number)
     os.makedirs(output_dir, exist_ok=True)
-    input_file = "pigments.{}".format(snapshot_number) 
-    energy_file = "ei.txt"
-    lifetimes_file = "lifetimes.txt"
-    lambda_file = "lambda.txt"
-    gnt_file = "gnt.txt"
+    input_file = "in/pigments.{}".format(snapshot_number) 
+    energy_file = "in/ei.txt"
+    lifetimes_file = "in/lifetimes.txt"
+    lambda_file = "in/lambda.txt"
+    gnt_file = "in/gnt.txt"
+    lineshape_file = "in/lineshapes.{}".format(snapshot_number) 
     f = open(input_file, "w")
     g = open(energy_file, "w")
     h = open(lifetimes_file, "w")
     j = open(lambda_file, "w")
     k = open(gnt_file, "w")
+    l = open(lineshape_file, "w")
     for p in pigment_dirs:
-        reorg = np.loadtxt("/Users/cgray/code/lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
-        gn = "/Users/cgray/code/lineshape/out/{}_gn.dat".format(p[0:3])
+        reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
+        gn = "lineshape/out/{}_gn.dat".format(p[0:3])
+        lineshape = "lineshape/in/{}.def".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
         print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
         print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
         print(reorg, file=j)
         print(gn, file=k)
+        print(lineshape, file=l)
 
     f.close()
     g.close()

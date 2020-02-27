@@ -4,6 +4,8 @@
 #include <math.h>
 #include <complex.h>
 #include <string.h>
+#include "../../lineshape/src/parameters.h"
+#include "../../lineshape/src/functions.h"
 /* #include <gsl/gsl_integration.h> */
 /* #include <gsl/gsl_errno.h> */
 #include <fftw3.h>
@@ -11,14 +13,16 @@
 #define MAX_PIGMENT_NUMBER 200
 
 typedef struct {
-  int N;
+  unsigned int N;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200];
   char gi_files[MAX_PIGMENT_NUMBER][200];
-} Parameters;
+} Input;
+
+typedef double (*cw_funptr)(double, void*);
 
 double*
-read(char *input_file, int N)
+read(char *input_file, unsigned int N)
 {
   double *arr;
   FILE *fp;
@@ -41,12 +45,12 @@ read(char *input_file, int N)
 }
 
 double**
-read_mu(char *input_file, int N)
+read_mu(char *input_file, unsigned int N)
 {
   double **mu;
   FILE *fp;
   char *token;
-  unsigned int i, j;
+  unsigned int i;
   mu = calloc(N, sizeof(double));
   token = malloc(22 * sizeof(char));
 
@@ -74,7 +78,7 @@ read_mu(char *input_file, int N)
 }
 
 double**
-read_eigvecs(char *input_file, int N)
+read_eigvecs(char *input_file, unsigned int N)
 {
   double **eig;
   FILE *fp;
@@ -108,7 +112,8 @@ read_eigvecs(char *input_file, int N)
 }
 
 double complex**
-read_gi(char input_files[MAX_PIGMENT_NUMBER][200], int N, int tau)
+read_gi(char input_files[MAX_PIGMENT_NUMBER][200], 
+    unsigned int N, unsigned int tau)
 {
   double complex **gi;
   FILE *fp;
@@ -173,11 +178,11 @@ trapezoid(double complex *f, unsigned int n)
     return sum;
 }
 
-Parameters
+Input
 read_input_file(char* filename)
 {
   FILE *fp;
-  Parameters p;
+  Input p;
   unsigned int i;
   char line[200];
   fp = fopen(filename, "r");
@@ -212,48 +217,115 @@ read_input_file(char* filename)
   return p;
 }
 
+double**
+rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
+{
+  unsigned int i, j, k;
+  double **kij;
+  void *vptr;
+  kij = calloc(N, sizeof(double));
+  for (i = 0; i < N; i++) {
+    kij[i] = calloc(N, sizeof(double));
+  }
+
+  for (i = 0; i < N; i++) {
+    for (j = 0; j < N; j++) {
+      for (k = 0; k < N; k++) {
+        vptr = &p[k];
+        kij[i][j] = pow(eig[i][k], 4.) * pow(eig[j][k], 4.) *
+          p[k].cw(wij[i][j], vptr);
+      }
+    }
+  }
+  return kij;
+}
+
 int
 main(int argc, char** argv)
 {
-  unsigned int N, tau, i, j;
+  FILE *fp;
+  unsigned int tau, i, j;
+  char *line, **lineshape_files;
   double musq, w;
   double complex *ex, *integral, **gi_array;
-  double *wi, *gamma, *lambda, **mu, **eig;
+  double *eigvals, *gamma, *lambda, **wij, **kij, **mu, **eig;
+  Parameters *line_params;
+
+  if (argc != 3) {
+    fprintf(stdout, "Wrong number of arguments - should be 2: "
+        "Input file and list of lineshape defs\n");
+    exit(EXIT_FAILURE);
+  }
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
 
-  Parameters p = read_input_file(argv[1]);
+  Input p = read_input_file(argv[1]);
 
-  /* need to read these in from files as well */
-  wi = calloc(p.N, sizeof(double));
+  /* malloc 1d stuff, read them in */
+  eigvals = calloc(p.N, sizeof(double));
   gamma = calloc(p.N, sizeof(double));
   lambda = calloc(p.N, sizeof(double));
+  lineshape_files = malloc(p.N * sizeof(char));
+  line_params = malloc(p.N * sizeof(Parameters));
+  line = malloc(200 * sizeof(char));
+  gamma = read(p.gamma_file, p.N);
+  lambda = read(p.lambda_file, p.N);
+  eigvals = read(p.eigvals_file, p.N);
 
+  /* malloc 2d stuff */
   mu = calloc(p.N, sizeof(double));
   gi_array = calloc(p.N, sizeof(double));
+  eig = calloc(p.N, sizeof(double));
+  wij = calloc(p.N, sizeof(double));
+  kij = calloc(p.N, sizeof(double));
   for (i = 0; i < p.N; i++) {
+    lineshape_files[i] = malloc(200 * sizeof(char));
     gi_array[i] = calloc(tau, sizeof(double));
     mu[i] = calloc(3, sizeof(double));
+    eig[i] = calloc(p.N, sizeof(double));
+    wij[i] = calloc(p.N, sizeof(double));
+    kij[i] = calloc(p.N, sizeof(double));
+
   }
   gi_array = read_gi(p.gi_files, p.N, tau);
   eig = read_eigvecs(p.eigvecs_file, p.N);
   mu = read_mu(p.mu_file, p.N);
-  gamma = read(p.gamma_file, p.N);
-  lambda = read(p.lambda_file, p.N);
-  wi = read(p.eigvals_file, p.N);
 
+  fp = fopen(argv[2], "r"); /* read in list of lineshape files here */
   for (i = 0; i < p.N; i++) {
-    for (j = 0; j < p.N; j++) {
-      fprintf(stdout, "%18.10f ", eig[i][j]); 
+    /* now load in the parameters for each ligand */
+    fgets(line, 200, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(lineshape_files[i], line);
+    line_params[i] = get_parameters(lineshape_files[i]);
+    if (line_params[i].ligand == 0) {
+      line_params[i].cw = &cw_chl;
+    } else if (line_params[i].ligand == 1) {
+      line_params[i].cw = &cw_car;
+    } else if (line_params[i].ligand == 2) {
+      line_params[i].cw = &cw_odo;
+    } else {
+      fprintf(stdout, "Ligand number of params %d is %d."
+          "No idea what's happened here.\n",
+          i, line_params[i].ligand);
     }
-    fprintf(stdout, "\n"); 
+
+    for (j = 0; j < p.N; j++) {
+      wij[i][j] = (eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]);
+    }
   }
+  fclose(fp);
+
+  /* fill Parameters (not Input!) vector - need to get the
+   * relevant filenames for each pigment! then call rate_calc
+   * to the the k_{ij} matrix before we can calculate F(\omega) */
+  kij = rate_calc(p.N, eig, wij, line_params);
 
   /* does it make sense to do it like this? */
   double omega_min = 10000.0;
   double omega_max = 30000.0;
   double omega_step = 10.0;
-  int num_steps = (int)((omega_max - omega_min)/omega_step);
+  unsigned int num_steps = (int)((omega_max - omega_min)/omega_step);
 
   integral = calloc(num_steps, sizeof(double));
 
@@ -262,17 +334,18 @@ main(int argc, char** argv)
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
     for (unsigned int j = 0; j < num_steps; j++) {
       w = omega_min + (j * omega_step);
-      ex = exponent(w, wi[i], gamma[i], tau, gi_array[i]);
+      ex = exponent(w, eigvals[i], gamma[i], tau, gi_array[i]);
       /* integrate - tau is the number of steps in the integral */
       integral[j] += w * musq * 2.0 * creal(trapezoid(ex, tau));
     }
   }
 
-  FILE *fp = fopen("out/aw_test.dat", "w");
+  fp = fopen("out/aw_test.dat", "w");
   for (i = 0; i < num_steps; i++) {
     fprintf(fp, "%16.8e (%16.8e + %16.8ei)\n", omega_min + (i * omega_step), 
         creal(integral[i]), cimag(integral[i]));
   }
+  fclose(fp);
 
   /* should this maybe be an FFT instead of a trapezoid thing????
    * need to sit down and write it out maybe. have a think */
@@ -292,6 +365,8 @@ main(int argc, char** argv)
   /* double k = i * 2. * M_PI / (tau); */
   /* double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI)); */
 
+  free(line); free(lineshape_files); free(ex); free(integral);
+  free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
+  free(eig); free(wij); free(kij);
   exit(EXIT_SUCCESS);
 }
-
