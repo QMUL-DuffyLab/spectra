@@ -16,7 +16,7 @@ typedef struct {
   unsigned int N;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200];
-  char gi_files[MAX_PIGMENT_NUMBER][200];
+  char *gi_files[];
 } Input;
 
 typedef double (*cw_funptr)(double, void*);
@@ -112,7 +112,7 @@ read_eigvecs(char *input_file, unsigned int N)
 }
 
 double complex**
-read_gi(char input_files[MAX_PIGMENT_NUMBER][200], 
+read_gi(char *input_files[], 
     unsigned int N, unsigned int tau)
 {
   double complex **gi;
@@ -178,12 +178,12 @@ trapezoid(double complex *f, unsigned int n)
     return sum;
 }
 
-Input
+Input*
 read_input_file(char* filename)
 {
   FILE *fp;
-  Input p;
-  unsigned int i;
+  Input *p;
+  unsigned int i, N;
   char line[200];
   fp = fopen(filename, "r");
   if (fp == NULL) {
@@ -191,27 +191,31 @@ read_input_file(char* filename)
     exit(EXIT_FAILURE);
   } else {
     fgets(line, 199, fp);
-    p.N = atoi(line);
+    N = atoi(line);
+    /* now we know how much space we need for the list of g_is */
+    p = malloc(sizeof(Input) + N * 200 * sizeof(char));
+    p->N = N;
     fgets(line, 199, fp);
     /* from stackoverflow - sets the newline to a null char */
     line[strcspn(line, "\n")] = 0;
-    strcpy(p.eigvecs_file, line);
+    strcpy(p->eigvecs_file, line);
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
-    strcpy(p.eigvals_file, line);
+    strcpy(p->eigvals_file, line);
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
-    strcpy(p.mu_file, line);
+    strcpy(p->mu_file, line);
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
-    strcpy(p.lambda_file, line);
+    strcpy(p->lambda_file, line);
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
-    strcpy(p.gamma_file, line);
-    for (i = 0; i < p.N; i++) {
+    strcpy(p->gamma_file, line);
+    for (i = 0; i < p->N; i++) {
       fgets(line, 199, fp);
       line[strcspn(line, "\n")] = 0;
-      strcpy(p.gi_files[i], line);
+      p->gi_files[i] = strndup(line, 200);
+      fprintf(stdout, "%s\n", p->gi_files[i]);
     }
   }
   return p;
@@ -234,8 +238,13 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
         vptr = &p[k];
         kij[i][j] = pow(eig[i][k], 4.) * pow(eig[j][k], 4.) *
           p[k].cw(wij[i][j], vptr);
+        fprintf(stdout, "%d %d %d %18.10f", i, j, k,
+            p[k].cw(wij[i][j], vptr));
       }
+      /* fprintf(stdout, "%18.10f", kij[i][j]); */
+    fprintf(stdout, "\n");
     }
+    /* fprintf(stdout, "\n"); */
   }
   return kij;
 }
@@ -259,40 +268,40 @@ main(int argc, char** argv)
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
 
-  Input p = read_input_file(argv[1]);
+  Input *p = read_input_file(argv[1]);
 
   /* malloc 1d stuff, read them in */
-  eigvals = calloc(p.N, sizeof(double));
-  gamma = calloc(p.N, sizeof(double));
-  lambda = calloc(p.N, sizeof(double));
-  lineshape_files = malloc(p.N * sizeof(char));
-  line_params = malloc(p.N * sizeof(Parameters));
+  eigvals = calloc(p->N, sizeof(double));
+  gamma = calloc(p->N, sizeof(double));
+  lambda = calloc(p->N, sizeof(double));
+  lineshape_files = malloc(p->N * sizeof(char));
+  line_params = malloc(p->N * sizeof(Parameters));
+  gamma = read(p->gamma_file, p->N);
+  lambda = read(p->lambda_file, p->N);
+  eigvals = read(p->eigvals_file, p->N);
   line = malloc(200 * sizeof(char));
-  gamma = read(p.gamma_file, p.N);
-  lambda = read(p.lambda_file, p.N);
-  eigvals = read(p.eigvals_file, p.N);
 
   /* malloc 2d stuff */
-  mu = calloc(p.N, sizeof(double));
-  gi_array = calloc(p.N, sizeof(double));
-  eig = calloc(p.N, sizeof(double));
-  wij = calloc(p.N, sizeof(double));
-  kij = calloc(p.N, sizeof(double));
-  for (i = 0; i < p.N; i++) {
+  mu = calloc(p->N, sizeof(double));
+  gi_array = calloc(p->N, sizeof(double));
+  eig = calloc(p->N, sizeof(double));
+  wij = calloc(p->N, sizeof(double));
+  kij = calloc(p->N, sizeof(double));
+  for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
     gi_array[i] = calloc(tau, sizeof(double));
     mu[i] = calloc(3, sizeof(double));
-    eig[i] = calloc(p.N, sizeof(double));
-    wij[i] = calloc(p.N, sizeof(double));
-    kij[i] = calloc(p.N, sizeof(double));
+    eig[i] = calloc(p->N, sizeof(double));
+    wij[i] = calloc(p->N, sizeof(double));
+    kij[i] = calloc(p->N, sizeof(double));
 
   }
-  gi_array = read_gi(p.gi_files, p.N, tau);
-  eig = read_eigvecs(p.eigvecs_file, p.N);
-  mu = read_mu(p.mu_file, p.N);
+  gi_array = read_gi(p->gi_files, p->N, tau);
+  eig = read_eigvecs(p->eigvecs_file, p->N);
+  mu = read_mu(p->mu_file, p->N);
 
   fp = fopen(argv[2], "r"); /* read in list of lineshape files here */
-  for (i = 0; i < p.N; i++) {
+  for (i = 0; i < p->N; i++) {
     /* now load in the parameters for each ligand */
     fgets(line, 200, fp);
     line[strcspn(line, "\n")] = 0;
@@ -310,7 +319,7 @@ main(int argc, char** argv)
           i, line_params[i].ligand);
     }
 
-    for (j = 0; j < p.N; j++) {
+    for (j = 0; j < p->N; j++) {
       wij[i][j] = (eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]);
     }
   }
@@ -319,7 +328,7 @@ main(int argc, char** argv)
   /* fill Parameters (not Input!) vector - need to get the
    * relevant filenames for each pigment! then call rate_calc
    * to the the k_{ij} matrix before we can calculate F(\omega) */
-  kij = rate_calc(p.N, eig, wij, line_params);
+  kij = rate_calc(p->N, eig, wij, line_params);
 
   /* does it make sense to do it like this? */
   double omega_min = 10000.0;
@@ -330,7 +339,7 @@ main(int argc, char** argv)
   integral = calloc(num_steps, sizeof(double));
 
   ex = calloc(tau, sizeof(double));
-  for (i = 0; i < p.N; i++) {
+  for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
     for (unsigned int j = 0; j < num_steps; j++) {
       w = omega_min + (j * omega_step);
@@ -367,6 +376,6 @@ main(int argc, char** argv)
 
   free(line); free(lineshape_files); free(ex); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
-  free(eig); free(wij); free(kij);
+  free(eig); free(wij); free(kij); free(p); free(line_params);
   exit(EXIT_SUCCESS);
 }
