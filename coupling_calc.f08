@@ -10,7 +10,7 @@ program coupling_calc
   character(100) :: output_dir
   character(200) :: input_file, jij_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
-    gamma_i_file
+    gamma_i_file, spectra_input_file
   character(100), dimension(:), allocatable :: coord_files,&
   gnt_files
   integer :: i, j, k, coord_stat, control_len, tau
@@ -46,6 +46,7 @@ program coupling_calc
   mu_i_file     = trim(adjustl(output_dir)) // "/mu_exciton.out"
   lambda_i_file = trim(adjustl(output_dir)) // "/lambda_exciton.out"
   gamma_i_file  = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
+  spectra_input_file = "spectra_input.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;
@@ -201,16 +202,25 @@ program coupling_calc
   lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig, lifetimes) ! mix relaxation times
 
-  do i = 1, control_len
-    do j = 1, control_len
-      wij = (eigvals(i) - lambda(i)) - (eigvals(j) - lambda(j))
-      do n = 1, control_len
-        ! this should be C_n(wij) but C_n?????
-        ! should be possible to call the C functions from
-        ! fortran but would require building the structs
-        k(i, j) = Jeig(i, n)**2 * Jeig(j, n)**2 * wij
-    end do
-  end do
+  ! do i = 1, control_len
+  !   do j = 1, control_len
+  !     wij = (eigvals(i) - lambda(i)) - (eigvals(j) - lambda(j))
+  !     do n = 1, control_len
+  !       ! this should be C_n(wij) but C_n?????
+  !       ! should be possible to call the C functions from
+  !       ! fortran but would require building the structs
+  !       k(i, j) = Jeig(i, n)**2 * Jeig(j, n)**2 * wij
+  !   end do
+  ! end do
+
+  open(unit=20, file=spectra_input_file)
+  ! stuff to read into spectra.c
+  write(20, *) control_len
+  write(20, *) trim(adjustl(eigvecs_file))
+  write(20, *) trim(adjustl(eigvals_file))
+  write(20, *) trim(adjustl(mu_i_file))
+  write(20, *) trim(adjustl(lambda_i_file))
+  write(20, *) trim(adjustl(gamma_i_file))
 
   open(unit=10, file=jij_file)
   open(unit=11, file=eigvecs_file)
@@ -219,7 +229,7 @@ program coupling_calc
   open(unit=14, file=mu_i_file)
   open(unit=15, file=lambda_i_file)
   open(unit=16, file=gamma_i_file)
-  open(unit=20, file=spectra_input_file)
+
   do i = 1, control_len
     do j = 1, control_len
       ! can write these with implied do loops
@@ -235,14 +245,6 @@ program coupling_calc
     write(14, *) mu_ex(1, i), mu_ex(2, i), mu_ex(3, i)
     write(15, *) lambda(i)
     write(16, *) lifetimes(i)
-
-    ! stuff to read into spectra.c
-    write(20, *) control_len
-    write(20, *) eigvecs_file
-    write(20, *) eigvals_file
-    write(20, *) mu_i_file
-    write(20, *) lambda_i_file
-    write(20, *) gamma_i_file
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
