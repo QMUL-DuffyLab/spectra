@@ -9,3 +9,4 @@ pigme*
 *.o
 test
 in*
+exec*

@@ -46,7 +46,7 @@ program coupling_calc
   mu_i_file     = trim(adjustl(output_dir)) // "/mu_exciton.out"
   lambda_i_file = trim(adjustl(output_dir)) // "/lambda_exciton.out"
   gamma_i_file  = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
-  spectra_input_file = "spectra_input.dat"
+  spectra_input_file = "input_spectra.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;

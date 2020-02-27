@@ -225,7 +225,7 @@ main(int argc, char** argv)
     }
   }
 
-  FILE *fp = fopen("aw_test.dat", "w");
+  FILE *fp = fopen("out/aw_test.dat", "w");
   for (i = 0; i < num_steps; i++) {
     fprintf(fp, "%16.8e (%16.8e + %16.8ei)\n", omega_min + (i * omega_step), 
         creal(integral[i]), cimag(integral[i]));
