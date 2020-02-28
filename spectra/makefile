@@ -45,11 +45,11 @@ OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(notdir $(SOURCES)))
 
 # the "common" object files
 $(OBJDIR)/%.o : %.c
-	echo "creating $@ ..."
+	@echo "creating $@ ..."
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(EXEC): $(OBJECTS)
-	echo "building output ..."
+	@echo "building output ..."
 	$(CC) -o $(EXEC) $(OBJECTS) $(LFLAGS)
 
 

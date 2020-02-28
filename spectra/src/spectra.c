@@ -151,18 +151,19 @@ double complex*
 exponent(double w, double w_i, double gamma_i,
 	 unsigned int tau, double complex* gi)
 {
-  double complex *exponent;
-  exponent = calloc(tau, sizeof(double complex));
+  double complex *e;
+  e = calloc(tau, sizeof(double complex));
   for (unsigned int i = 0; i < tau; i++) {
     /* see Kruger - should this be the line-broadening function
      * or just the lineshape function? the broadening one is 
      * divergent and it's the real part of this integral :S */
-    exponent[i] = cexp(- I * i * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
+    e[i] = cexp(- I * i * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
     /* if (i < 100) { */
-      /* fprintf(stdout, "%18.10f %18.10f\n", creal(exponent[i]), cimag(exponent[i])); */
+    /*   fprintf(stdout, "%18.10e %18.10e %18.10e %18.10e %18.10e\n", */ 
+    /*       w, w_i, gamma_i, creal(exponent[i]), cimag(exponent[i])); */
     /* } */
   }
-  return exponent;
+  return e;
 }
 
 double complex
@@ -215,7 +216,6 @@ read_input_file(char* filename)
       fgets(line, 199, fp);
       line[strcspn(line, "\n")] = 0;
       p->gi_files[i] = strndup(line, 200);
-      fprintf(stdout, "%s\n", p->gi_files[i]);
     }
   }
   return p;
@@ -238,13 +238,11 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
         vptr = &p[k];
         kij[i][j] = pow(eig[i][k], 4.) * pow(eig[j][k], 4.) *
           p[k].cw(wij[i][j], vptr);
-        fprintf(stdout, "%d %d %d %18.10f", i, j, k,
+        fprintf(stdout, "%d %d %d %18.10f ", i, j, k,
             p[k].cw(wij[i][j], vptr));
       }
-      /* fprintf(stdout, "%18.10f", kij[i][j]); */
     fprintf(stdout, "\n");
     }
-    /* fprintf(stdout, "\n"); */
   }
   return kij;
 }
@@ -280,6 +278,13 @@ main(int argc, char** argv)
   lambda = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
   line = malloc(200 * sizeof(char));
+  /* test */
+  if (1) {
+  gamma[0] = 0.1;
+  gamma[1] = 4.0;
+  gamma[2] = 4.0;
+  gamma[3] = 4.0;
+  }
 
   /* malloc 2d stuff */
   mu = calloc(p->N, sizeof(double));
@@ -325,14 +330,11 @@ main(int argc, char** argv)
   }
   fclose(fp);
 
-  /* fill Parameters (not Input!) vector - need to get the
-   * relevant filenames for each pigment! then call rate_calc
-   * to the the k_{ij} matrix before we can calculate F(\omega) */
   kij = rate_calc(p->N, eig, wij, line_params);
 
   /* does it make sense to do it like this? */
-  double omega_min = 10000.0;
-  double omega_max = 30000.0;
+  double omega_min = -10000.0;
+  double omega_max = 10000.0;
   double omega_step = 10.0;
   unsigned int num_steps = (int)((omega_max - omega_min)/omega_step);
 
@@ -351,8 +353,8 @@ main(int argc, char** argv)
 
   fp = fopen("out/aw_test.dat", "w");
   for (i = 0; i < num_steps; i++) {
-    fprintf(fp, "%16.8e (%16.8e + %16.8ei)\n", omega_min + (i * omega_step), 
-        creal(integral[i]), cimag(integral[i]));
+    fprintf(fp, "%16.8e %16.8e\n", omega_min + (i * omega_step), 
+        creal(integral[i]));
   }
   fclose(fp);
 
