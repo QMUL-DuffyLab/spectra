@@ -151,16 +151,20 @@ double complex*
 exponent(double w, double w_i, double gamma_i,
 	 unsigned int tau, double complex* gi)
 {
-  double complex *e;
+  double complex c1, c2, c3, *e;
   e = calloc(tau, sizeof(double complex));
   for (unsigned int i = 0; i < tau; i++) {
     /* see Kruger - should this be the line-broadening function
      * or just the lineshape function? the broadening one is 
      * divergent and it's the real part of this integral :S */
+    c1 = cexp(- I * i * (w - w_i));
+    c2 = gi[i];
+    c3 = - 0.5 * gamma_i * i;
     e[i] = cexp(- I * i * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
     /* if (i < 100) { */
-    /*   fprintf(stdout, "%18.10e %18.10e %18.10e %18.10e %18.10e\n", */ 
-    /*       w, w_i, gamma_i, creal(exponent[i]), cimag(exponent[i])); */
+    /*   fprintf(stdout, "%d (%18.10e + %18.10ei) (%18.10e + %18.10ei) " */
+    /*       "(%18.10e + %18.10ei)\n", i, creal(c1), cimag(c1), */
+    /*        creal(c2), cimag(c2), creal(c3), cimag(c3)); */
     /* } */
   }
   return e;
@@ -236,7 +240,7 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        kij[i][j] = pow(eig[i][k], 4.) * pow(eig[j][k], 4.) *
+        kij[i][j] = pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(wij[i][j], vptr);
         fprintf(stdout, "%d %d %d %18.10f ", i, j, k,
             p[k].cw(wij[i][j], vptr));
@@ -254,8 +258,9 @@ main(int argc, char** argv)
   unsigned int tau, i, j;
   char *line, **lineshape_files;
   double musq, w;
-  double complex *ex, *integral, **gi_array;
-  double *eigvals, *gamma, *lambda, **wij, **kij, **mu, **eig;
+  double complex *ex, **gi_array;
+  double *eigvals, *gamma, *lambda, *integral,
+         **wij, **kij, **mu, **eig;
   Parameters *line_params;
 
   if (argc != 3) {
@@ -272,26 +277,27 @@ main(int argc, char** argv)
   eigvals = calloc(p->N, sizeof(double));
   gamma = calloc(p->N, sizeof(double));
   lambda = calloc(p->N, sizeof(double));
-  lineshape_files = malloc(p->N * sizeof(char));
   line_params = malloc(p->N * sizeof(Parameters));
   gamma = read(p->gamma_file, p->N);
   lambda = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
   line = malloc(200 * sizeof(char));
+
   /* test */
-  if (1) {
-  gamma[0] = 0.1;
-  gamma[1] = 4.0;
-  gamma[2] = 4.0;
-  gamma[3] = 4.0;
+  if (0) {
+    gamma[0] = 0.1;
+    gamma[1] = 4.0;
+    gamma[2] = 4.0;
+    gamma[3] = 4.0;
   }
 
   /* malloc 2d stuff */
-  mu = calloc(p->N, sizeof(double));
-  gi_array = calloc(p->N, sizeof(double));
-  eig = calloc(p->N, sizeof(double));
-  wij = calloc(p->N, sizeof(double));
-  kij = calloc(p->N, sizeof(double));
+  lineshape_files = malloc(p->N * sizeof(char*));
+  mu = calloc(p->N, sizeof(double*));
+  gi_array = calloc(p->N, sizeof(double*));
+  eig = calloc(p->N, sizeof(double*));
+  wij = calloc(p->N, sizeof(double*));
+  kij = calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
     gi_array[i] = calloc(tau, sizeof(double));
@@ -301,6 +307,7 @@ main(int argc, char** argv)
     kij[i] = calloc(p->N, sizeof(double));
 
   }
+
   gi_array = read_gi(p->gi_files, p->N, tau);
   eig = read_eigvecs(p->eigvecs_file, p->N);
   mu = read_mu(p->mu_file, p->N);
@@ -328,7 +335,12 @@ main(int argc, char** argv)
       wij[i][j] = (eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]);
     }
   }
-  fclose(fp);
+  int cl = fclose(fp);
+  if (cl != 0) {
+      fprintf(stdout, "Failed to close list of lineshape files %d.\n", cl);
+      exit(EXIT_FAILURE);
+  }
+
 
   kij = rate_calc(p->N, eig, wij, line_params);
 
@@ -347,16 +359,24 @@ main(int argc, char** argv)
       w = omega_min + (j * omega_step);
       ex = exponent(w, eigvals[i], gamma[i], tau, gi_array[i]);
       /* integrate - tau is the number of steps in the integral */
-      integral[j] += w * musq * 2.0 * creal(trapezoid(ex, tau));
+      integral[j] += musq * 2.0 * creal(trapezoid(ex, tau));
+      /* fprintf(stdout, "%d %18.10f %18.10f\n", i, w, integral[j]); */
     }
+  }
+  for (j = 0; j < tau; j++) {
+    integral[j] *= (omega_min + j * omega_step);
   }
 
   fp = fopen("out/aw_test.dat", "w");
   for (i = 0; i < num_steps; i++) {
     fprintf(fp, "%16.8e %16.8e\n", omega_min + (i * omega_step), 
-        creal(integral[i]));
+        integral[i]);
   }
-  fclose(fp);
+  cl = fclose(fp);
+  if (cl != 0) {
+      fprintf(stdout, "Failed to close A(w) output file %d.\n", cl);
+      exit(EXIT_FAILURE);
+  }
 
   /* should this maybe be an FFT instead of a trapezoid thing????
    * need to sit down and write it out maybe. have a think */

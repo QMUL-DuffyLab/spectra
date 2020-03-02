@@ -48,8 +48,8 @@ get_parameters(char *filename)
     p.cw = NULL;
     fprintf(stdout, "File name read in was %s.\n", filename);
 
-    /* try and do something clever: check via the filename
-     * whether we're simulating a chlorophyll or a carotenoid */
+    /* check filename to get ligand and spectral density ansatz.
+     * assign to p.ligand here because functions.h isn't included*/
     if (strstr(filename, "CLA") != NULL
      || strstr(filename, "CHL") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
@@ -115,28 +115,6 @@ get_parameters(char *filename)
 	} else if (strcmp(key, "lambda_file") == 0) {
 	    strcpy(p.lambda_file, val);
 	} 
-
-	/* future file names */
-	/* else if (strcmp(key, "mag") == 0) { */
-	/*     strcpy(config.magFile, val); */
-	/* } else if (strcmp(key, "stats") == 0) { */
-	/*     strcpy(config.statsFile, val); */
-	/* } */ 
-
-	/* future pigment switch */
-	/* else if (strcmp(key, "strain") == 0) { */
-	/*     /1* don't think you can assign string to enum? *1/ */
-	/*     if (strcmp(val, "NONE") == 0) { */
-	/*     	config.strain = NONE; */
-	/*     } else if (strcmp(val, "S100") == 0) { */
-	/*     	config.strain = S100; */
-	/*     } else if (strcmp(val, "S110") == 0) { */
-	/*     	config.strain = S110; */
-	/*     } else if (strcmp(val, "S111") == 0) { */
-	/*     	config.strain = S111; */
-	/*     } */
-	/* } */
-
     }
 
     int cl = fclose(fp);

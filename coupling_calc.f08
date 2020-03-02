@@ -198,7 +198,7 @@ program coupling_calc
   mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
   gnt = matmul(Jeig**4, gnt) ! mix lineshape functions
   lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
-  lifetimes = matmul(Jeig, lifetimes) ! mix relaxation times
+  lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
 
   ! do i = 1, control_len
   !   do j = 1, control_len
