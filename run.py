@@ -30,10 +30,10 @@ def get_pigments(input_dir):
     return pigment_dirs
 
 
-def construct_input_files(pigment_dirs, output_path, snapshot_number):
+def construct_input_files(pigment_dirs, direc, snapshot_number):
     # fortran won't create the directory; do it here
-    output_dir = "{}/{}".format(output_path, snapshot_number)
-    os.makedirs(output_dir, exist_ok=True)
+    output_path = "{}/{}".format(direc, snapshot_number)
+    os.makedirs(output_path, exist_ok=True)
     input_file = "in/pigments.{}".format(snapshot_number) 
     energy_file = "in/ei.txt"
     lifetimes_file = "in/lifetimes.txt"
@@ -61,14 +61,14 @@ def construct_input_files(pigment_dirs, output_path, snapshot_number):
     g.close()
     h.close()
     j.close()
-    return (input_file, output_dir)
+    return (input_file, output_path)
 
 input_dir = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 
-pigment_dirs = get_pigments(input_dir)
-input_file, output_dir = construct_input_files(pigment_dirs, output_dir, snapshot_number)
-
-print("./coupling_calc {} {}".format(input_file, output_dir))
-os.system("./coupling_calc {} {}".format(input_file, output_dir))
+for i in range(1000):
+    pigment_dirs = get_pigments(input_dir)
+    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i + 1)
+    print("Frame {} complete.".format(output_path))
+    os.system("./coupling_calc {} {}".format(input_file, output_path))

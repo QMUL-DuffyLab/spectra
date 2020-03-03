@@ -21,7 +21,7 @@ program coupling_calc
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
-  verbose = .true.
+  verbose = .false.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
@@ -180,36 +180,33 @@ program coupling_calc
   Jij = Jij * e2kb * kc
   Jeig = Jij
 
-  write(*,*) Jij
+  if (verbose) then
+    write(*,*) Jij
+  end if
 
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
   call dsyev('V', 'U', control_len, Jeig, control_len,&
               eigvals, r, -1, coord_stat)
-  write(*,*) "Optimal size of work array = ", int(r)
+  if (verbose) then
+    write(*,*) "Optimal size of work array = ", int(r)
+  end if
   allocate(work(int(r)))
   call dsyev('V', 'U', control_len, Jeig, control_len,&
               eigvals, work, int(r), coord_stat)
-  write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
+  if (verbose) then
+    write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
+  end if
 
-  write(*,*) Jeig
+  if (verbose) then
+    write(*,*) Jeig
+  end if
 
   mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
   gnt = matmul(Jeig**4, gnt) ! mix lineshape functions
   lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
-
-  ! do i = 1, control_len
-  !   do j = 1, control_len
-  !     wij = (eigvals(i) - lambda(i)) - (eigvals(j) - lambda(j))
-  !     do n = 1, control_len
-  !       ! this should be C_n(wij) but C_n?????
-  !       ! should be possible to call the C functions from
-  !       ! fortran but would require building the structs
-  !       k(i, j) = Jeig(i, n)**2 * Jeig(j, n)**2 * wij
-  !   end do
-  ! end do
 
   open(unit=20, file=spectra_input_file)
   ! stuff to read into spectra.c
@@ -248,7 +245,6 @@ program coupling_calc
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
-    write (*,*) trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     open(unit=17, file=trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
     write(20, '(a)') trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     do j = 1, tau
@@ -285,7 +281,9 @@ program coupling_calc
   deallocate(gnt)
 
   call cpu_time(end_time)
-  write (*,*) "Time taken: ", end_time - start_time, " seconds."
+  if (verbose) then
+    write (*,*) "Time taken: ", end_time - start_time, " seconds."
+  end if
 
   stop
 

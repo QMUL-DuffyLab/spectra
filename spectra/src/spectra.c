@@ -93,7 +93,7 @@ read_eigvecs(char *input_file, unsigned int N)
 
   fp = fopen(input_file, "r");
   if (fp == NULL) {
-    fprintf(stdout, "Unable to open input file in read_gi."
+    fprintf(stdout, "Unable to open input file in read_eigvecs."
         "Input file was %s\n", input_file);
     exit(EXIT_FAILURE);
   } else {
@@ -120,7 +120,7 @@ read_gi(char *input_files[],
   unsigned int i, j;
   double real, imag;
   char *line, *token;
-  gi = calloc(N, sizeof(double));
+  gi = calloc(N, sizeof(double*));
   for (unsigned int i = 0; i < N; i++) {
     gi[i] = calloc(tau, sizeof(double));
   }
@@ -140,7 +140,8 @@ read_gi(char *input_files[],
         real = atof(token); 
         fgets(token, 22, fp); /* make sure we get to the newline! */
         imag = atof(token); 
-        gi[i][j] = real + I * imag;
+        gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI));
+        fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]);
       }
     }
   }
@@ -158,7 +159,7 @@ exponent(double w, double w_i, double gamma_i,
      * or just the lineshape function? the broadening one is 
      * divergent and it's the real part of this integral :S */
     c1 = cexp(- I * i * (w - w_i));
-    c2 = gi[i];
+    c2 = - gi[i];
     c3 = - 0.5 * gamma_i * i;
     e[i] = cexp(- I * i * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
     /* if (i < 100) { */
