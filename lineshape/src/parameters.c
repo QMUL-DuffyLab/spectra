@@ -55,7 +55,8 @@ get_parameters(char *filename)
     	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
     		"spectral density\n", filename);
     	p.ligand = 1;
-    } else if (strstr(filename, "CLC") != NULL) {
+    } else if (strstr(filename, "KC1") != NULL
+    	    || strstr(filename, "KC2") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using ODO "
     		"spectral density\n", filename);
     	p.ligand = 2;

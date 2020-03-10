@@ -141,8 +141,9 @@ read_gi(char *input_files[],
         real = atof(token); 
         fgets(token, 22, fp); /* make sure we get to the newline! */
         imag = atof(token); 
-        gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI));
-        fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]);
+        gi[i][j] = (real + I * imag);
+        /* gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI)); */
+        /* fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]); */
       }
     }
   }
@@ -153,21 +154,13 @@ double complex*
 exponent(double w, double w_i, double gamma_i,
 	 unsigned int tau, double complex* gi)
 {
-  double complex c1, c2, c3, *e;
+  double complex *e;
   e = calloc(tau, sizeof(double complex));
   for (unsigned int i = 0; i < tau; i++) {
     /* see Kruger - should this be the line-broadening function
      * or just the lineshape function? the broadening one is 
      * divergent and it's the real part of this integral :S */
-    c1 = cexp(- I * i * (w - w_i));
-    c2 = - gi[i];
-    c3 = - 0.5 * gamma_i * i;
-    e[i] = cexp(- I * i * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
-    /* if (i < 100) { */
-    /*   fprintf(stdout, "%d (%18.10e + %18.10ei) (%18.10e + %18.10ei) " */
-    /*       "(%18.10e + %18.10ei)\n", i, creal(c1), cimag(c1), */
-    /*        creal(c2), cimag(c2), creal(c3), cimag(c3)); */
-    /* } */
+    e[i] = cexp(- I * i * CONV * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
   }
   return e;
 }
@@ -285,6 +278,11 @@ main(int argc, char** argv)
   eigvals = read(p->eigvals_file, p->N);
   line = malloc(200 * sizeof(char));
 
+  /* for (i = 0; i < p->N; i++) { */
+  /*   gamma[i] *= 1.E-9 / CONV; */
+  /*   fprintf(stdout, "%d %18.10e\n", i, gamma[i]); */
+  /* } */
+
   /* test */
   if (0) {
     gamma[0] = 0.1;
@@ -362,7 +360,7 @@ main(int argc, char** argv)
       ex = exponent(w, eigvals[i], gamma[i], tau, gi_array[i]);
       /* integrate - tau is the number of steps in the integral */
       integral[j] += musq * 2.0 * creal(trapezoid(ex, tau));
-      /* fprintf(stdout, "%d %18.10f %18.10f\n", i, w, integral[j]); */
+      fprintf(stdout, "%d %18.10f %18.10f\n", i, w, integral[j]);
     }
   }
   for (j = 0; j < tau; j++) {
