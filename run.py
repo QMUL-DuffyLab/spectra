@@ -66,9 +66,9 @@ def construct_input_files(pigment_dirs, direc, snapshot_number):
 input_dir = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
+pigment_dirs = get_pigments(input_dir)
+input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number)
+print("Frame {} complete.".format(output_path))
+os.system("./coupling_calc {} {}".format(input_file, output_path))
 
-for i in range(1000):
-    pigment_dirs = get_pigments(input_dir)
-    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i + 1)
-    print("Frame {} complete.".format(output_path))
-    os.system("./coupling_calc {} {}".format(input_file, output_path))
+# for i in range(1000):

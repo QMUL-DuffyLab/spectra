@@ -14,7 +14,19 @@ pigment_data = {
                 'reorg': 0.0,
                 }
             },
-        'CLC': {
+        'KC1': {
+            'S1': {
+                'energy': 15970.0,
+                'lifetime': 4.0,
+                'reorg': 0.0,
+                },
+            'S2': {
+                'energy': 17330.0,
+                'lifetime': 4.0,
+                'reorg': 0.0,
+                }
+            },
+        'KC2': {
             'S1': {
                 'energy': 15970.0,
                 'lifetime': 4.0,
