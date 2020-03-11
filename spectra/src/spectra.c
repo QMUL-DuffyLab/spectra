@@ -11,7 +11,13 @@
 #include <fftw3.h>
 
 #define MAX_PIGMENT_NUMBER 200
-#define CONV (2. * M_PI * CMS * 100. * 1E-15)
+#define EC 1.6022E-19
+#define E0 8.854E-12
+#define JPERINVCM 1.986E-23
+#define KCOUL (1. / (4. * M_PI * E0 * 0.5))
+/* #define CONV (2. * M_PI * CMS * 100. * 1E-15) */
+#define TOFS (2. * M_PI * CMS * 100. * 1E-15)
+#define TOCM1 ((1.295E3 * 8.988E9 * 0.5))
 
 typedef struct {
   unsigned int N;
@@ -19,6 +25,48 @@ typedef struct {
   lambda_file[200], gamma_file[200];
   char *gi_files[];
 } Input;
+
+Input*
+read_input_file(char* filename)
+{
+  FILE *fp;
+  Input *p;
+  unsigned int i, N;
+  char line[200];
+  fp = fopen(filename, "r");
+  if (fp == NULL) {
+    fprintf(stdout, "Unable to open input file.\n");
+    exit(EXIT_FAILURE);
+  } else {
+    fgets(line, 199, fp);
+    N = atoi(line);
+    /* now we know how much space we need for the list of g_is */
+    p = malloc(sizeof(Input) + N * 200 * sizeof(char));
+    p->N = N;
+    fgets(line, 199, fp);
+    /* from stackoverflow - sets the newline to a null char */
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->eigvecs_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->eigvals_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->mu_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->lambda_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->gamma_file, line);
+    for (i = 0; i < p->N; i++) {
+      fgets(line, 199, fp);
+      line[strcspn(line, "\n")] = 0;
+      p->gi_files[i] = strndup(line, 200);
+    }
+  }
+  return p;
+}
 
 typedef double (*cw_funptr)(double, void*);
 
@@ -39,7 +87,7 @@ read(char *input_file, unsigned int N)
   } else {
     for (i = 0; i < N; i++) {
       fgets(line, 199, fp);
-      arr[i] = CONV * atof(line);
+      arr[i] = atof(line);
     }
   }
   return arr;
@@ -100,13 +148,13 @@ read_eigvecs(char *input_file, unsigned int N)
   } else {
     for (i = 0; i < N; i++) {
         fgets(token, 19, fp);
-        eig[i][0] = CONV * atof(token); 
+        eig[i][0] = atof(token); 
         for (j = 1; j < N - 1; j++) {
           fgets(token, 20, fp);
-          eig[i][j] = CONV * atof(token); 
+          eig[i][j] = atof(token); 
         }
         fgets(token, 22, fp); /* make sure we get to the newline! */
-        eig[i][N - 1] = CONV * atof(token); 
+        eig[i][N - 1] = atof(token); 
       }
   }
   return eig;
@@ -151,16 +199,28 @@ read_gi(char *input_files[],
 }
 
 double complex*
-exponent(double w, double w_i, double gamma_i,
-	 unsigned int tau, double complex* gi)
+exponent(double w, double w_i, double gamma_i, double l1, double l2,
+	 unsigned int tau, unsigned int num_steps, double complex* gi)
 {
   double complex *e;
-  e = calloc(tau, sizeof(double complex));
-  for (unsigned int i = 0; i < tau; i++) {
-    /* see Kruger - should this be the line-broadening function
-     * or just the lineshape function? the broadening one is 
-     * divergent and it's the real part of this integral :S */
-    e[i] = cexp(- I * i * CONV * (w - w_i) - gi[i] - (0.5 * gamma_i * i));
+  e = calloc(num_steps, sizeof(double complex));
+  for (unsigned int i = 0; i < num_steps; i++) {
+    /* see Kruger - should this be the line-broadening
+     * function or just the lineshape function? :S */
+    /* e[i] = cexp(- I * i * CONV * (w - w_i) - gi[i] */
+    /*      - (0.5 * (gamma_i * 1E-9/CONV) * CONV * i)); */
+    /* e[i] = cexp(I * i * INVCONV * (w - w_i) - gi[i]); */
+    if (i < tau) {
+      e[i] = cexp(I * i * ((w - w_i) * TOFS) - gi[i] - 1E-15 * (0.5 * ((1. / (gamma_i * 1E6))) * i));
+    } else {
+      e[i] = cexp(I * i * ((w - w_i) * TOFS) - 1E-15 * (0.5 * ((1. / (gamma_i * 1E6))) * i));
+    }
+    /* if (i < 100) { */ 
+      /* fprintf(stdout, "%d, %18.10e, %18.10e, (%18.10e + %18.10ei), (%18.10e + %18.10ei), %18.10e\n", */
+      /*   i, (w - w_i), INVCONV, -I * i * ((w - w_i) * INVCONV), -gi[i], - (0.5 * (gamma_i * 1E-9/CONV) * CONV * i)); */
+      /* fprintf(stdout, "%d, (%18.10e + %18.10ei)\n", */
+      /*   i, I * i * ((w - w_i) * INVCONV) - gi[i] - (0.5 * ((1. / gamma_i) * 1E-9) * i * 1E-15)); */
+    /* } */
   }
   return e;
 }
@@ -178,48 +238,6 @@ trapezoid(double complex *f, unsigned int n)
     return sum;
 }
 
-Input*
-read_input_file(char* filename)
-{
-  FILE *fp;
-  Input *p;
-  unsigned int i, N;
-  char line[200];
-  fp = fopen(filename, "r");
-  if (fp == NULL) {
-    fprintf(stdout, "Unable to open input file.\n");
-    exit(EXIT_FAILURE);
-  } else {
-    fgets(line, 199, fp);
-    N = atoi(line);
-    /* now we know how much space we need for the list of g_is */
-    p = malloc(sizeof(Input) + N * 200 * sizeof(char));
-    p->N = N;
-    fgets(line, 199, fp);
-    /* from stackoverflow - sets the newline to a null char */
-    line[strcspn(line, "\n")] = 0;
-    strcpy(p->eigvecs_file, line);
-    fgets(line, 199, fp);
-    line[strcspn(line, "\n")] = 0;
-    strcpy(p->eigvals_file, line);
-    fgets(line, 199, fp);
-    line[strcspn(line, "\n")] = 0;
-    strcpy(p->mu_file, line);
-    fgets(line, 199, fp);
-    line[strcspn(line, "\n")] = 0;
-    strcpy(p->lambda_file, line);
-    fgets(line, 199, fp);
-    line[strcspn(line, "\n")] = 0;
-    strcpy(p->gamma_file, line);
-    for (i = 0; i < p->N; i++) {
-      fgets(line, 199, fp);
-      line[strcspn(line, "\n")] = 0;
-      p->gi_files[i] = strndup(line, 200);
-    }
-  }
-  return p;
-}
-
 double**
 rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
 {
@@ -235,10 +253,10 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        kij[i][j] = pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
-          p[k].cw(wij[i][j], vptr);
+        kij[i][j] = TOCM1 * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+          p[k].cw(TOCM1 * wij[i][j], vptr));
         fprintf(stdout, "%d %d %d %18.10f ", i, j, k,
-            p[k].cw(wij[i][j], vptr));
+            p[k].cw(TOCM1 * wij[i][j], vptr));
       }
     fprintf(stdout, "\n");
     }
@@ -332,7 +350,7 @@ main(int argc, char** argv)
     }
 
     for (j = 0; j < p->N; j++) {
-      wij[i][j] = CONV * ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
+      wij[i][j] = ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
     }
   }
   int cl = fclose(fp);
@@ -341,29 +359,35 @@ main(int argc, char** argv)
       exit(EXIT_FAILURE);
   }
 
-
   kij = rate_calc(p->N, eig, wij, line_params);
 
   /* does it make sense to do it like this? */
-  double omega_min = -10000.0;
-  double omega_max = 10000.0;
+  double omega_min = 14800.0;
+  double omega_max = 15010.0;
   double omega_step = 10.0;
   unsigned int num_steps = (int)((omega_max - omega_min)/omega_step);
 
   integral = calloc(num_steps, sizeof(double));
 
-  ex = calloc(tau, sizeof(double));
+  ex = calloc(num_steps, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
     for (unsigned int j = 0; j < num_steps; j++) {
-      w = CONV * (omega_min + (j * omega_step));
-      ex = exponent(w, eigvals[i], gamma[i], tau, gi_array[i]);
+      w = (omega_min + (j * omega_step));
+      ex = exponent(w, eigvals[i], gamma[i], 
+          line_params[i].l1, line_params[i].l2, 
+          tau, num_steps, gi_array[i]);
       /* integrate - tau is the number of steps in the integral */
-      integral[j] += musq * 2.0 * creal(trapezoid(ex, tau));
-      fprintf(stdout, "%d %18.10f %18.10f\n", i, w, integral[j]);
+      integral[j] += musq * 2.0 * creal(trapezoid(ex, num_steps));
+      fprintf(stdout, "%d %18.10e %18.10e\n", i, w, integral[j]);
+      /* if (j == 100) { */
+        for (unsigned int k = 0; k < num_steps; k++) {
+          fprintf(stdout, "%d (%18.10e %+18.10ei)\n", k, creal(ex[k]), cimag(ex[k]));
+        }
+      /* } */
     }
   }
-  for (j = 0; j < tau; j++) {
+  for (j = 0; j < num_steps; j++) {
     integral[j] *= (omega_min + j * omega_step);
   }
 
