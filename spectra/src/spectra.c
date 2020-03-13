@@ -20,11 +20,43 @@
 #define TOCM1 ((1.295E3 * 8.988E9 * 0.5))
 
 typedef struct {
+  unsigned int tau, i;
+  double complex **gi;
+  double *gamma, *eigvals, w;
+} gsl_params;
+
+typedef struct {
   unsigned int N;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200];
   char *gi_files[];
 } Input;
+
+
+double complex
+gsl_gi(int t, void* params)
+{
+   gsl_params *p = (gsl_params *) params;
+   if (t <= p->tau) {
+     return cexp(p->gi[p->i][t]);
+   } else {
+     return (0. + 0. * I);
+   }
+}
+
+double complex
+gsl_gammai(int t, void* params)
+{
+   gsl_params *p = (gsl_params *) params;
+   return cexp(-0.5 * (1E-6 / p->gamma[p->i]) * t);
+}
+
+double complex
+gsl_osc(int t, void* params)
+{
+   gsl_params *p = (gsl_params *) params;
+   return cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t);
+}
 
 Input*
 read_input_file(char* filename)
@@ -214,9 +246,11 @@ exponent(double w, double w_i, double gamma_i, double l1, double l2,
     /* see Kruger - should this be the line-broadening
      * function or just the lineshape function? :S */
     if (i < tau) {
-      e[i] = cexp(I * i * ((w - w_i) * TOFS) - 1. * gi[i] - (0.5 * ((1E-6 / (gamma_i))) * i));
+      e[i] = cexp(I * i * ((w - w_i) * TOFS) - 1. * gi[i]
+           - (0.5 * ((1E-6 / (gamma_i))) * i));
     } else {
-      e[i] = cexp(I * i * ((w - w_i) * TOFS) - (0.5 * ((1E-6 / (gamma_i))) * i));
+      e[i] = cexp(I * i * ((w - w_i) * TOFS)
+           - (0.5 * ((1E-6 / (gamma_i))) * i));
     }
     /* if (i < 100) { */ 
     /*   fprintf(stdout, "%d, %10.4e, %10.4e, (%10.4e + %10.4ei), (%10.4e + %10.4ei), (%10.4e + %10.4ei), (%10.4e + %10.4ei)\n", */
@@ -341,9 +375,9 @@ main(int argc, char** argv)
     strcpy(lineshape_files[i], line);
     line_params[i] = get_parameters(lineshape_files[i]);
     if (line_params[i].ligand == 0) {
-      line_params[i].cw = &cw_chl;
-    } else if (line_params[i].ligand == 1) {
       line_params[i].cw = &cw_car;
+    } else if (line_params[i].ligand == 1) {
+      line_params[i].cw = &cw_chl;
     } else if (line_params[i].ligand == 2) {
       line_params[i].cw = &cw_odo;
     } else {
@@ -366,9 +400,9 @@ main(int argc, char** argv)
 
   /* does it make sense to do it like this? */
   double omega_min = 14000.0;
-  double omega_max = 16010.0;
+  double omega_max = 18000.0;
   double omega_step = 10.0;
-  unsigned int num_steps = (int)((omega_max - omega_min)/omega_step);
+  unsigned int num_steps = (int)(1 + (omega_max - omega_min)/omega_step);
 
   integral = calloc(num_steps, sizeof(double));
 
@@ -385,14 +419,18 @@ main(int argc, char** argv)
       fprintf(stdout, "%d %18.10e %18.10e\n", i, w, integral[j]);
       if (j == 100) {
         for (unsigned int k = 0; k < tau; k++) {
-          fprintf(stdout, "%d (%18.10e %+18.10ei)\n", k, creal(ex[k]), cimag(ex[k]));
+          fprintf(stdout, "%d, (%14.10e %+14.10ei), "
+              "(%14.10e %+14.10ei), (%14.10e %+14.10ei), "
+              "(%14.10e %+14.10ei)\n", k, creal(ex[k]), cimag(ex[k]), 
+              I * k * (w - eigvals[i]) * TOFS, -gi_array[i][k],
+              -0.5 * (1E-6 / gamma[i]) * k);
         }
       }
     }
   }
   for (j = 0; j < num_steps; j++) {
     fprintf(stdout, "%d %18.10e\n", j, integral[j]);
-    integral[j] *= (omega_min + j * omega_step);
+    /* integral[j] *= (omega_min + j * omega_step); */
   }
 
   fp = fopen("out/aw_test.dat", "w");
