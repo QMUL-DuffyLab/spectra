@@ -133,7 +133,7 @@ read_eigvecs(char *input_file, unsigned int N)
   FILE *fp;
   unsigned int i, j;
   char *token;
-  eig = calloc(N, sizeof(double));
+  eig = calloc(N, sizeof(double*));
   for (unsigned int i = 0; i < N; i++) {
     eig[i] = calloc(N, sizeof(double));
   }
@@ -147,7 +147,7 @@ read_eigvecs(char *input_file, unsigned int N)
     exit(EXIT_FAILURE);
   } else {
     for (i = 0; i < N; i++) {
-        fgets(token, 19, fp);
+        fgets(token, 20, fp);
         eig[i][0] = atof(token); 
         for (j = 1; j < N - 1; j++) {
           fgets(token, 20, fp);
@@ -174,8 +174,8 @@ read_gi(char *input_files[],
     gi[i] = calloc(tau, sizeof(double));
   }
   j = 0;
-  line = malloc(200 * sizeof(char));
-  token = malloc(22 * sizeof(char));
+  line = malloc(200 * sizeof(char*));
+  token = malloc(22 * sizeof(char*));
 
   for (i = 0; i < N; i++) {
     fp = fopen(input_files[i], "r");
@@ -185,11 +185,17 @@ read_gi(char *input_files[],
       exit(EXIT_FAILURE);
     } else {
       for (j = 0; j < tau; j++) {
-        fgets(token, 19, fp);
+        /* NB: there is definitely a bug in here!!! 
+         * fgets will periodically lose its way a little bit
+         * and start reading garbage characters from somewhere */
+        fgets(token, 20, fp);
+        /* fprintf(stdout, "%d %d %s", i, j, token); */
         real = atof(token); 
         fgets(token, 22, fp); /* make sure we get to the newline! */
+        /* fprintf(stdout, " %s", token); */
         imag = atof(token); 
         gi[i][j] = (real + I * imag);
+        /* fprintf(stdout, " %12.6f %12.6f\n", real, imag); */
         /* gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI)); */
         /* fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]); */
       }
@@ -207,19 +213,16 @@ exponent(double w, double w_i, double gamma_i, double l1, double l2,
   for (unsigned int i = 0; i < num_steps; i++) {
     /* see Kruger - should this be the line-broadening
      * function or just the lineshape function? :S */
-    /* e[i] = cexp(- I * i * CONV * (w - w_i) - gi[i] */
-    /*      - (0.5 * (gamma_i * 1E-9/CONV) * CONV * i)); */
-    /* e[i] = cexp(I * i * INVCONV * (w - w_i) - gi[i]); */
     if (i < tau) {
-      e[i] = cexp(I * i * ((w - w_i) * TOFS) - gi[i] - 1E-15 * (0.5 * ((1. / (gamma_i * 1E6))) * i));
+      e[i] = cexp(I * i * ((w - w_i) * TOFS) - 1. * gi[i] - (0.5 * ((1E-6 / (gamma_i))) * i));
     } else {
-      e[i] = cexp(I * i * ((w - w_i) * TOFS) - 1E-15 * (0.5 * ((1. / (gamma_i * 1E6))) * i));
+      e[i] = cexp(I * i * ((w - w_i) * TOFS) - (0.5 * ((1E-6 / (gamma_i))) * i));
     }
     /* if (i < 100) { */ 
-      /* fprintf(stdout, "%d, %18.10e, %18.10e, (%18.10e + %18.10ei), (%18.10e + %18.10ei), %18.10e\n", */
-      /*   i, (w - w_i), INVCONV, -I * i * ((w - w_i) * INVCONV), -gi[i], - (0.5 * (gamma_i * 1E-9/CONV) * CONV * i)); */
-      /* fprintf(stdout, "%d, (%18.10e + %18.10ei)\n", */
-      /*   i, I * i * ((w - w_i) * INVCONV) - gi[i] - (0.5 * ((1. / gamma_i) * 1E-9) * i * 1E-15)); */
+    /*   fprintf(stdout, "%d, %10.4e, %10.4e, (%10.4e + %10.4ei), (%10.4e + %10.4ei), (%10.4e + %10.4ei), (%10.4e + %10.4ei)\n", */
+    /*     i, (w - w_i), TOFS, I * i * ((w - w_i) * TOFS), cexp(I * i * ((w - w_i) * TOFS)), -1. * gi[i] ,cexp(-0.5 * (1E-6/gamma_i) * i)); */
+    /*   /1* fprintf(stdout, "%d, (%18.10e + %18.10ei)\n", *1/ */
+    /*   /1*   i, I * i * ((w - w_i) * INVCONV) - gi[i] - (0.5 * ((1. / gamma_i) * 1E-9) * i * 1E-15)); *1/ */
     /* } */
   }
   return e;
@@ -362,8 +365,8 @@ main(int argc, char** argv)
   kij = rate_calc(p->N, eig, wij, line_params);
 
   /* does it make sense to do it like this? */
-  double omega_min = 14800.0;
-  double omega_max = 15010.0;
+  double omega_min = 14000.0;
+  double omega_max = 16010.0;
   double omega_step = 10.0;
   unsigned int num_steps = (int)((omega_max - omega_min)/omega_step);
 
@@ -380,14 +383,15 @@ main(int argc, char** argv)
       /* integrate - tau is the number of steps in the integral */
       integral[j] += musq * 2.0 * creal(trapezoid(ex, num_steps));
       fprintf(stdout, "%d %18.10e %18.10e\n", i, w, integral[j]);
-      /* if (j == 100) { */
-        for (unsigned int k = 0; k < num_steps; k++) {
+      if (j == 100) {
+        for (unsigned int k = 0; k < tau; k++) {
           fprintf(stdout, "%d (%18.10e %+18.10ei)\n", k, creal(ex[k]), cimag(ex[k]));
         }
-      /* } */
+      }
     }
   }
   for (j = 0; j < num_steps; j++) {
+    fprintf(stdout, "%d %18.10e\n", j, integral[j]);
     integral[j] *= (omega_min + j * omega_step);
   }
 
