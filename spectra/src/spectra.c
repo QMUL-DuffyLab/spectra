@@ -6,8 +6,8 @@
 #include <string.h>
 #include "../../lineshape/src/parameters.h"
 #include "../../lineshape/src/functions.h"
-/* #include <gsl/gsl_integration.h> */
-/* #include <gsl/gsl_errno.h> */
+#include <gsl/gsl_integration.h>
+#include <gsl/gsl_errno.h>
 #include <fftw3.h>
 
 #define MAX_PIGMENT_NUMBER 200
@@ -33,29 +33,59 @@ typedef struct {
 } Input;
 
 
-double complex
-gsl_gi(int t, void* params)
+double
+gsl_gi_func_re(double t, void* params)
 {
    gsl_params *p = (gsl_params *) params;
-   if (t <= p->tau) {
-     return cexp(p->gi[p->i][t]);
+   if ((int)t <= p->tau) {
+     return exp(creal(-1. * p->gi[p->i][(int)t]));
    } else {
-     return (0. + 0. * I);
+     return (0.);
    }
 }
 
-double complex
-gsl_gammai(int t, void* params)
+double
+gsl_gi_func_im(double t, void* params)
 {
    gsl_params *p = (gsl_params *) params;
-   return cexp(-0.5 * (1E-6 / p->gamma[p->i]) * t);
+   if ((int)t <= p->tau) {
+     return exp(cimag(-1. * p->gi[p->i][(int)t]));
+   } else {
+     return (0.);
+   }
 }
 
-double complex
-gsl_osc(int t, void* params)
+double
+gsl_gamma_func(double t, void* params)
 {
    gsl_params *p = (gsl_params *) params;
-   return cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t);
+   return exp(-0.5 * (1E-6 / p->gamma[p->i]) * t);
+}
+
+double
+gsl_osc_re(double t, void* params)
+{
+   gsl_params *p = (gsl_params *) params;
+   if ((unsigned int) t <= p->tau) {
+     return creal(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
+         - p->gi[p->i][(int)t] - 0.5 * (1E-6 / p->gamma[p->i] * t)));
+   } else {
+     return creal(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
+         - 0.5 * (1E-6 / p->gamma[p->i] * t)));
+   }
+}
+
+double
+gsl_osc_im(double t, void* params)
+{
+   gsl_params *p = (gsl_params *) params;
+   if ((unsigned int) t <= p->tau) {
+     return cimag(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
+         - p->gi[p->i][(int)t] - 0.5 * (1E-6 / p->gamma[p->i] * t)));
+   } else {
+     return cimag(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
+         - 0.5 * (1E-6 / p->gamma[p->i] * t)));
+   }
 }
 
 Input*
@@ -398,6 +428,24 @@ main(int argc, char** argv)
 
   kij = rate_calc(p->N, eig, wij, line_params);
 
+  /* gsl stuff */
+  gsl_set_error_handler_off();
+  gsl_params par;
+  par.gi = gi_array;
+  par.gamma = gamma;
+  par.eigvals = eigvals;
+  par.tau = tau;
+  double gi_int_re, gi_int_im, gi_err_re, gi_err_im;
+  double gamma_int, gamma_err;
+  gsl_integration_workspace *work = gsl_integration_workspace_alloc(1000);
+  gsl_function gsl_gi_re, gsl_gi_im, gsl_gamma;
+  gsl_gi_re.function = &gsl_gi_func_re;
+  gsl_gi_im.function = &gsl_gi_func_im;
+  gsl_gamma.function = &gsl_gamma_func;
+  gsl_gi_re.params = &par;
+  gsl_gi_im.params = &par;
+  gsl_gamma.params = &par;
+
   /* does it make sense to do it like this? */
   double omega_min = 14000.0;
   double omega_max = 18000.0;
@@ -409,8 +457,20 @@ main(int argc, char** argv)
   ex = calloc(num_steps, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
+    par.i = (float)i;
+    /* gsl_integrate the gi and gamma bits here - the j loop is for omega
+     * which only appears in the first term */
+    gsl_integration_qagiu(&gsl_gi_re, 0., 1e-8, 1e-8, 1000,
+        work, &gi_int_re, &gi_err_re);
+    gsl_integration_qagiu(&gsl_gi_im, 0., 1e-8, 1e-8, 1000,
+        work, &gi_int_im, &gi_err_im);
+    gsl_integration_qagiu(&gsl_gamma, 0., 1e-8, 1e-8, 1000,
+        work, &gamma_int, &gamma_err);
+    fprintf(stdout, "%d %14.10e %14.10e %14.10e %14.10e %14.10e %14.10e\n",
+        i, gi_int_re, gi_err_re, gi_int_im, gi_err_im, gamma_int, gamma_err);
     for (unsigned int j = 0; j < num_steps; j++) {
       w = (omega_min + (j * omega_step));
+      par.w = w;
       ex = exponent(w, eigvals[i], gamma[i], 
           line_params[i].l1, line_params[i].l2, 
           tau, num_steps, gi_array[i]);
