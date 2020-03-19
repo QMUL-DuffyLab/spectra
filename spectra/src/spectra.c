@@ -195,9 +195,6 @@ read_gi(char *input_files[],
           exit(EXIT_FAILURE);
         }
         gi[i][j] = (real + I * imag);
-        fprintf(stdout, "%18.10e %18.10e\n", real, imag);
-        /* gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI)); */
-        /* fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]); */
       }
     }
   }
@@ -259,8 +256,8 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
         vptr = &p[k];
         kij[i][j] = TOCM1 * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(TOCM1 * wij[i][j], vptr));
-        fprintf(stdout, "%d %d %d %18.10f ", i, j, k,
-            p[k].cw(TOCM1 * wij[i][j], vptr));
+        fprintf(stdout, "%d %d %d %d %13.10e %13.10e ", i, j, k, p[k].ligand,
+            wij[i][j], p[k].cw(wij[i][j], vptr));
       }
     fprintf(stdout, "\n");
     }
@@ -274,7 +271,7 @@ main(int argc, char** argv)
   FILE *fp;
   unsigned int tau, i, j;
   char *line, **lineshape_files;
-  double musq, kd, freq;
+  double musq, kd;
   double complex *ex, **gi_array;
   double *eigvals, *gamma, *lambda, *integral,
          **wij, **kij, **mu, **eig;
@@ -356,7 +353,6 @@ main(int argc, char** argv)
 
   integral = calloc(tau, sizeof(double));
 
-  double *integral2 = calloc(tau, sizeof(double));
   in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
   out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
   plan = fftw_plan_dft_1d(tau, 
@@ -385,7 +381,6 @@ main(int argc, char** argv)
   for (i = 0; i < tau; i++) {
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (tau);
-    /* freq = fmod(kd, M_PI) - (M_PI * floor(kd / M_PI)); */
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
         integral[i] * TOFS * (1./ sqrt(tau)) * 6.4);
   }

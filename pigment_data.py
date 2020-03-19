@@ -64,7 +64,7 @@ pigment_data = {
             },
         'LUT': {
             'S1': {
-                'energy': 14900.0,
+                'energy': 15100.0,
                 'lifetime': 0.01,
                 'reorg': 0.0,
                 },
