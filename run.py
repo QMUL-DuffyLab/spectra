@@ -48,13 +48,13 @@ def construct_input_files(pigment_dirs, direc, snapshot_number):
     l = open(lineshape_file, "w")
     for p in pigment_dirs:
         reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
-        gn = "lineshape/out/{}_gn.dat".format(p[0:3])
+        gt = "lineshape/out/{}_gt.dat".format(p[0:3])
         lineshape = "lineshape/in/{}.def".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
         print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
         print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
         print(reorg, file=j)
-        print(gn, file=k)
+        print(gt, file=k)
         print(lineshape, file=l)
 
     f.close()

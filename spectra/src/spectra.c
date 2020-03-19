@@ -195,6 +195,7 @@ read_gi(char *input_files[],
           exit(EXIT_FAILURE);
         }
         gi[i][j] = (real + I * imag);
+        fprintf(stdout, "%18.10e %18.10e\n", real, imag);
         /* gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI)); */
         /* fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]); */
       }
@@ -208,17 +209,17 @@ exponent(double w_i, double gamma_i, double l1, double l2,
 	 unsigned int tau, double complex* gi)
 {
   double t;
+  double complex exponent;
   double complex *e;
   e = calloc(tau, sizeof(double complex));
   for (unsigned int i = 0; i < tau; i++) {
     t = (double) i * TOFS;
     /* see Kruger - should this be the line-broadening
      * function or just the lineshape function? :S */
-    fprintf(stdout, "%d (%13.10e %+13.10ei)\n",
-            i, creal(gi[i]), cimag(gi[i]));
-    e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i]))
+    exponent = -I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i]))
          - I * t * (l1 + l2)
-         - (0.5 * (gamma_i) * t));
+         - (0.5 * (gamma_i) * t);
+    e[i] = cexp(exponent);
     /* e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i])) */
     /*      - I * t * (l1 + l2)); */
     /* e[i] = cexp(- (1. * gi[i] / (TOFS * 6.4)) */
@@ -355,6 +356,7 @@ main(int argc, char** argv)
 
   integral = calloc(tau, sizeof(double));
 
+  double *integral2 = calloc(tau, sizeof(double));
   in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
   out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
   plan = fftw_plan_dft_1d(tau, 
@@ -366,32 +368,25 @@ main(int argc, char** argv)
     ex = exponent(eigvals[i], gamma[i],
         line_params[i].l1, line_params[i].l2,
         tau, gi_array[i]);
+    fprintf(stdout, "%18.10e, %18.10e\n", line_params[i].l1, line_params[i].l2);
 
     for (unsigned int j = 0; j < tau; j++) {
-      in[j] = At(0.0, creal(gi_array[i][j]),
-            cimag(gi_array[i][j]), (double)j * TOFS,
-            line_params[i].l1, line_params[i].l2, gamma[i]);
-      /* fprintf(stdout, "%d (%18.10e %+18.10ei)" */
-      /*     " (%18.10e %+18.10ei)\n", j, creal(ex[j]), cimag(ex[j]), */
-      /*       creal(in[j]), cimag(in[j])); */
-      /* in[j] = ex[j]; */
+      in[j] = ex[j];
     } /* end j loop */
 
     fftw_execute(plan); 
     for (j = 0; j < tau; j++) {
-      /* fprintf(stdout, "%d %18.10e\n", j, integral[j]); */
-      /* fprintf(stdout, "%d (%18.10e %+18.10ei) (%18.10e %+18.10ei)\n", */
-      /*     j, creal(in[j]), cimag(in[j]), creal(out[j]), cimag(out[j])); */
       integral[j] = musq * 2.0 * creal(out[j]);
     }
+
   }
 
   fp = fopen("out/aw_test.dat", "w");
   for (i = 0; i < tau; i++) {
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (tau);
-    freq = fmod(kd, M_PI) - (M_PI * floor(kd / M_PI));
-    fprintf(fp, "%18.10f %18.10f\n", freq / TOFS, 
+    /* freq = fmod(kd, M_PI) - (M_PI * floor(kd / M_PI)); */
+    fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
         integral[i] * TOFS * (1./ sqrt(tau)) * 6.4);
   }
   cl = fclose(fp);
