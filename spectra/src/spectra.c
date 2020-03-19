@@ -168,9 +168,9 @@ read_gi(char *input_files[],
   unsigned int i, j;
   double real, imag;
   char *line, *token;
-  gi = calloc(N, sizeof(double*));
+  gi = calloc(N, sizeof(double complex*));
   for (unsigned int i = 0; i < N; i++) {
-    gi[i] = calloc(tau, sizeof(double));
+    gi[i] = calloc(tau, sizeof(double complex));
   }
   j = 0;
   line = malloc(200 * sizeof(char*));
@@ -187,14 +187,14 @@ read_gi(char *input_files[],
         /* NB: there is definitely a bug in here!!! 
          * fgets will periodically lose its way a little bit
          * and start reading garbage characters from somewhere */
-        fgets(token, 20, fp);
-        fprintf(stdout, "%d %d %s", i, j, token);
-        real = atof(token); 
-        fgets(token, 22, fp); /* make sure we get to the newline! */
-        fprintf(stdout, " %s", token);
-        imag = atof(token); 
+        /* fgets(line, 200, fp); */
+        int cl = fscanf(fp, "      %lf      %lf ", &real, &imag);
+        if(cl != 2) {
+          fprintf(stdout, "fscanf in read_gi failed with error code %d;"
+              " line number %d\n", cl, j);
+          exit(EXIT_FAILURE);
+        }
         gi[i][j] = (real + I * imag);
-        fprintf(stdout, " %12.6f %12.6f\n", real, imag);
         /* gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI)); */
         /* fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]); */
       }
