@@ -97,11 +97,13 @@ main(int argc, char** argv)
 	re_err = re_err + small_t_err;
 
 	/* the 6.4 here is from an N in the python code */
+	/* fprintf(fp, "%18.10f %18.10f %18.10f\n", */
+	/* 	(float) i, re_res * pf_norm * 6.4, */
+	/* 	im_res * pf_norm * 6.4); */
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
-		(float) i, re_res * pf_norm * 6.4,
-		im_res * pf_norm * 6.4);
+		(float) i, re_res, im_res);
 
-	Atv[i] = At(w0, re_res, im_res, cmtime, p.l1, p.l2);
+	Atv[i] = At(w0, re_res, im_res, cmtime, p.l1, p.l2, 0.0);
 	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
     }
     fclose(fp);

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <complex.h>
 #include <string.h>
 #include "../../lineshape/src/parameters.h"
 #include "../../lineshape/src/functions.h"
@@ -20,73 +19,11 @@
 #define TOCM1 ((1.295E3 * 8.988E9 * 0.5))
 
 typedef struct {
-  unsigned int tau, i;
-  double complex **gi;
-  double *gamma, *eigvals, w;
-} gsl_params;
-
-typedef struct {
   unsigned int N;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200];
   char *gi_files[];
 } Input;
-
-
-double
-gsl_gi_func_re(double t, void* params)
-{
-   gsl_params *p = (gsl_params *) params;
-   if ((int)t <= p->tau) {
-     return exp(creal(-1. * p->gi[p->i][(int)t]));
-   } else {
-     return (0.);
-   }
-}
-
-double
-gsl_gi_func_im(double t, void* params)
-{
-   gsl_params *p = (gsl_params *) params;
-   if ((int)t <= p->tau) {
-     return exp(cimag(-1. * p->gi[p->i][(int)t]));
-   } else {
-     return (0.);
-   }
-}
-
-double
-gsl_gamma_func(double t, void* params)
-{
-   gsl_params *p = (gsl_params *) params;
-   return exp(-0.5 * (1E-6 / p->gamma[p->i]) * t);
-}
-
-double
-gsl_osc_re(double t, void* params)
-{
-   gsl_params *p = (gsl_params *) params;
-   if ((unsigned int) t <= p->tau) {
-     return creal(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
-         - p->gi[p->i][(int)t] - 0.5 * (1E-6 / p->gamma[p->i] * t)));
-   } else {
-     return creal(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
-         - 0.5 * (1E-6 / p->gamma[p->i] * t)));
-   }
-}
-
-double
-gsl_osc_im(double t, void* params)
-{
-   gsl_params *p = (gsl_params *) params;
-   if ((unsigned int) t <= p->tau) {
-     return cimag(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
-         - p->gi[p->i][(int)t] - 0.5 * (1E-6 / p->gamma[p->i] * t)));
-   } else {
-     return cimag(cexp(I * TOFS * (p->w - p->eigvals[p->i]) * t
-         - 0.5 * (1E-6 / p->gamma[p->i] * t)));
-   }
-}
 
 Input*
 read_input_file(char* filename)
@@ -251,13 +188,13 @@ read_gi(char *input_files[],
          * fgets will periodically lose its way a little bit
          * and start reading garbage characters from somewhere */
         fgets(token, 20, fp);
-        /* fprintf(stdout, "%d %d %s", i, j, token); */
+        fprintf(stdout, "%d %d %s", i, j, token);
         real = atof(token); 
         fgets(token, 22, fp); /* make sure we get to the newline! */
-        /* fprintf(stdout, " %s", token); */
+        fprintf(stdout, " %s", token);
         imag = atof(token); 
         gi[i][j] = (real + I * imag);
-        /* fprintf(stdout, " %12.6f %12.6f\n", real, imag); */
+        fprintf(stdout, " %12.6f %12.6f\n", real, imag);
         /* gi[i][j] = (real + I * imag) * (1. / ((float)CMS * 100. * 1E-15 * 2. * M_PI)); */
         /* fprintf(stdout, "%d %d %18.10e %18.10e\n", i, j, gi[i][j]); */
       }
@@ -267,27 +204,26 @@ read_gi(char *input_files[],
 }
 
 double complex*
-exponent(double w, double w_i, double gamma_i, double l1, double l2,
-	 unsigned int tau, unsigned int num_steps, double complex* gi)
+exponent(double w_i, double gamma_i, double l1, double l2,
+	 unsigned int tau, double complex* gi)
 {
+  double t;
   double complex *e;
-  e = calloc(num_steps, sizeof(double complex));
-  for (unsigned int i = 0; i < num_steps; i++) {
+  e = calloc(tau, sizeof(double complex));
+  for (unsigned int i = 0; i < tau; i++) {
+    t = (double) i * TOFS;
     /* see Kruger - should this be the line-broadening
      * function or just the lineshape function? :S */
-    if (i < tau) {
-      e[i] = cexp(I * i * ((w - w_i) * TOFS) - 1. * gi[i]
-           - (0.5 * ((1E-6 / (gamma_i))) * i));
-    } else {
-      e[i] = cexp(I * i * ((w - w_i) * TOFS)
-           - (0.5 * ((1E-6 / (gamma_i))) * i));
-    }
-    /* if (i < 100) { */ 
-    /*   fprintf(stdout, "%d, %10.4e, %10.4e, (%10.4e + %10.4ei), (%10.4e + %10.4ei), (%10.4e + %10.4ei), (%10.4e + %10.4ei)\n", */
-    /*     i, (w - w_i), TOFS, I * i * ((w - w_i) * TOFS), cexp(I * i * ((w - w_i) * TOFS)), -1. * gi[i] ,cexp(-0.5 * (1E-6/gamma_i) * i)); */
-    /*   /1* fprintf(stdout, "%d, (%18.10e + %18.10ei)\n", *1/ */
-    /*   /1*   i, I * i * ((w - w_i) * INVCONV) - gi[i] - (0.5 * ((1. / gamma_i) * 1E-9) * i * 1E-15)); *1/ */
-    /* } */
+    fprintf(stdout, "%d (%13.10e %+13.10ei)\n",
+            i, creal(gi[i]), cimag(gi[i]));
+    e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i]))
+         - I * t * (l1 + l2)
+         - (0.5 * (gamma_i) * t));
+    /* e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i])) */
+    /*      - I * t * (l1 + l2)); */
+    /* e[i] = cexp(- (1. * gi[i] / (TOFS * 6.4)) */
+    /*      - I * i * (l1 + l2) */
+         /* - (0.5 * ((1E-6 / (gamma_i))) * i)); */
   }
   return e;
 }
@@ -337,11 +273,13 @@ main(int argc, char** argv)
   FILE *fp;
   unsigned int tau, i, j;
   char *line, **lineshape_files;
-  double musq, w;
+  double musq, kd, freq;
   double complex *ex, **gi_array;
   double *eigvals, *gamma, *lambda, *integral,
          **wij, **kij, **mu, **eig;
   Parameters *line_params;
+  fftw_complex *out, *in;
+  fftw_plan plan;
 
   if (argc != 3) {
     fprintf(stdout, "Wrong number of arguments - should be 2: "
@@ -363,29 +301,16 @@ main(int argc, char** argv)
   eigvals = read(p->eigvals_file, p->N);
   line = malloc(200 * sizeof(char));
 
-  /* for (i = 0; i < p->N; i++) { */
-  /*   gamma[i] *= 1.E-9 / CONV; */
-  /*   fprintf(stdout, "%d %18.10e\n", i, gamma[i]); */
-  /* } */
-
-  /* test */
-  if (0) {
-    gamma[0] = 0.1;
-    gamma[1] = 4.0;
-    gamma[2] = 4.0;
-    gamma[3] = 4.0;
-  }
-
   /* malloc 2d stuff */
   lineshape_files = malloc(p->N * sizeof(char*));
   mu = calloc(p->N, sizeof(double*));
-  gi_array = calloc(p->N, sizeof(double*));
+  gi_array = calloc(p->N, sizeof(double complex*));
   eig = calloc(p->N, sizeof(double*));
   wij = calloc(p->N, sizeof(double*));
   kij = calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
-    gi_array[i] = calloc(tau, sizeof(double));
+    gi_array[i] = calloc(tau, sizeof(double complex));
     mu[i] = calloc(3, sizeof(double));
     eig[i] = calloc(p->N, sizeof(double));
     wij[i] = calloc(p->N, sizeof(double));
@@ -428,75 +353,46 @@ main(int argc, char** argv)
 
   kij = rate_calc(p->N, eig, wij, line_params);
 
-  /* gsl stuff */
-  gsl_set_error_handler_off();
-  gsl_params par;
-  par.gi = gi_array;
-  par.gamma = gamma;
-  par.eigvals = eigvals;
-  par.tau = tau;
-  double gi_int_re, gi_int_im, gi_err_re, gi_err_im;
-  double gamma_int, gamma_err;
-  gsl_integration_workspace *work = gsl_integration_workspace_alloc(1000);
-  gsl_function gsl_gi_re, gsl_gi_im, gsl_gamma;
-  gsl_gi_re.function = &gsl_gi_func_re;
-  gsl_gi_im.function = &gsl_gi_func_im;
-  gsl_gamma.function = &gsl_gamma_func;
-  gsl_gi_re.params = &par;
-  gsl_gi_im.params = &par;
-  gsl_gamma.params = &par;
+  integral = calloc(tau, sizeof(double));
 
-  /* does it make sense to do it like this? */
-  double omega_min = 14000.0;
-  double omega_max = 18000.0;
-  double omega_step = 10.0;
-  unsigned int num_steps = (int)(1 + (omega_max - omega_min)/omega_step);
+  in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
+  out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
+  plan = fftw_plan_dft_1d(tau, 
+  	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  integral = calloc(num_steps, sizeof(double));
-
-  ex = calloc(num_steps, sizeof(double complex));
+  ex = calloc(tau, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
-    par.i = (float)i;
-    /* gsl_integrate the gi and gamma bits here - the j loop is for omega
-     * which only appears in the first term */
-    gsl_integration_qagiu(&gsl_gi_re, 0., 1e-8, 1e-8, 1000,
-        work, &gi_int_re, &gi_err_re);
-    gsl_integration_qagiu(&gsl_gi_im, 0., 1e-8, 1e-8, 1000,
-        work, &gi_int_im, &gi_err_im);
-    gsl_integration_qagiu(&gsl_gamma, 0., 1e-8, 1e-8, 1000,
-        work, &gamma_int, &gamma_err);
-    fprintf(stdout, "%d %14.10e %14.10e %14.10e %14.10e %14.10e %14.10e\n",
-        i, gi_int_re, gi_err_re, gi_int_im, gi_err_im, gamma_int, gamma_err);
-    for (unsigned int j = 0; j < num_steps; j++) {
-      w = (omega_min + (j * omega_step));
-      par.w = w;
-      ex = exponent(w, eigvals[i], gamma[i], 
-          line_params[i].l1, line_params[i].l2, 
-          tau, num_steps, gi_array[i]);
-      /* integrate - tau is the number of steps in the integral */
-      integral[j] += musq * 2.0 * creal(trapezoid(ex, num_steps));
-      fprintf(stdout, "%d %18.10e %18.10e\n", i, w, integral[j]);
-      if (j == 100) {
-        for (unsigned int k = 0; k < tau; k++) {
-          fprintf(stdout, "%d, (%14.10e %+14.10ei), "
-              "(%14.10e %+14.10ei), (%14.10e %+14.10ei), "
-              "(%14.10e %+14.10ei)\n", k, creal(ex[k]), cimag(ex[k]), 
-              I * k * (w - eigvals[i]) * TOFS, -gi_array[i][k],
-              -0.5 * (1E-6 / gamma[i]) * k);
-        }
-      }
+    ex = exponent(eigvals[i], gamma[i],
+        line_params[i].l1, line_params[i].l2,
+        tau, gi_array[i]);
+
+    for (unsigned int j = 0; j < tau; j++) {
+      in[j] = At(0.0, creal(gi_array[i][j]),
+            cimag(gi_array[i][j]), (double)j * TOFS,
+            line_params[i].l1, line_params[i].l2, gamma[i]);
+      /* fprintf(stdout, "%d (%18.10e %+18.10ei)" */
+      /*     " (%18.10e %+18.10ei)\n", j, creal(ex[j]), cimag(ex[j]), */
+      /*       creal(in[j]), cimag(in[j])); */
+      /* in[j] = ex[j]; */
+    } /* end j loop */
+
+    fftw_execute(plan); 
+    for (j = 0; j < tau; j++) {
+      /* fprintf(stdout, "%d %18.10e\n", j, integral[j]); */
+      /* fprintf(stdout, "%d (%18.10e %+18.10ei) (%18.10e %+18.10ei)\n", */
+      /*     j, creal(in[j]), cimag(in[j]), creal(out[j]), cimag(out[j])); */
+      integral[j] = musq * 2.0 * creal(out[j]);
     }
-  }
-  for (j = 0; j < num_steps; j++) {
-    fprintf(stdout, "%d %18.10e\n", j, integral[j]);
-    /* integral[j] *= (omega_min + j * omega_step); */
   }
 
   fp = fopen("out/aw_test.dat", "w");
-  for (i = 0; i < num_steps; i++) {
-    fprintf(fp, "%16.8e %16.8e\n", omega_min + (i * omega_step), 
-        integral[i]);
+  for (i = 0; i < tau; i++) {
+    /* unpack the ordering used by FFTW */
+    kd = i * 2. * M_PI / (tau);
+    freq = fmod(kd, M_PI) - (M_PI * floor(kd / M_PI));
+    fprintf(fp, "%18.10f %18.10f\n", freq / TOFS, 
+        integral[i] * TOFS * (1./ sqrt(tau)) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -504,26 +400,9 @@ main(int argc, char** argv)
       exit(EXIT_FAILURE);
   }
 
-  /* should this maybe be an FFT instead of a trapezoid thing????
-   * need to sit down and write it out maybe. have a think */
-
-  /* in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns); */
-
-  /* for (unsigned long i = 0; i < tau; i++) { */
-  /*     in[i][0] = creal(Atv[i]); */
-  /*     in[i][1] = cimag(Atv[i]); */
-  /* } */
-
-  /* out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau); */
-  /* plan = fftw_plan_dft_1d(tau, */ 
-  /* 	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE); */
-  /* fftw_execute(plan); */ 
-  /* unpack the ordering used by FFTW */
-  /* double k = i * 2. * M_PI / (tau); */
-  /* double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI)); */
-
   free(line); free(lineshape_files); free(ex); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
+  free(in); free(out);
   exit(EXIT_SUCCESS);
 }

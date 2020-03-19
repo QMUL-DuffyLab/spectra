@@ -74,10 +74,12 @@ reorg_int(double w, void* params)
 }
 
 double complex
-At(double w0, double re, double im, double t, double l1, double l2)
+At(double w0, double re, double im, double t,
+   double l1, double l2, double gamma)
 {
     /* l1 and l2 from chris's python code - check */
-    double complex exponent = -I * (w0 * t) - (re + (I * im)) - I * t * (l1 + l2);
+    double complex exponent = -I * (w0 * t) - (re + (I * im))
+      - I * t * (l1 + l2) - (0.5 * gamma * t);
     return cexp(exponent);
 }
 
