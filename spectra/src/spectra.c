@@ -67,8 +67,6 @@ read_input_file(char* filename)
   return p;
 }
 
-typedef double (*cw_funptr)(double, void*);
-
 double*
 read(char *input_file, unsigned int N)
 {
@@ -197,24 +195,6 @@ read_gi(char *input_files[],
   return gi;
 }
 
-double complex*
-exponent(double w_i, double gamma_i, double l1, double l2,
-	 unsigned int tau, double complex* gi)
-{
-  double t;
-  double complex *e;
-  e = calloc(tau, sizeof(double complex));
-  for (unsigned int i = 0; i < tau; i++) {
-    t = (double) i * TOFS;
-    /* see Kruger - should this be the line-broadening
-     * function or just the lineshape function? :S */
-    e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i]))
-         - I * t * (l1 + l2)
-         - (0.5 * (gamma_i) * t));
-  }
-  return e;
-}
-
 double**
 rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
 {
@@ -337,15 +317,15 @@ main(int argc, char** argv)
   ex = calloc(tau, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
-    ex = exponent(eigvals[i], gamma[i],
-        line_params[i].l1, line_params[i].l2,
-        tau, gi_array[i]);
-    fprintf(stdout, "%18.10e, %18.10e\n", line_params[i].l1, line_params[i].l2);
 
     for (unsigned int j = 0; j < tau; j++) {
-      in[j] = ex[j];
-    } /* end j loop */
+      in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
+                 (double)j * TOFS, line_params[i].l1, line_params[i].l2,
+                 1. / gamma[i]);
+    }
 
+    /* this looks horribly inefficient - can the multiplication be
+     * taken inside the FFT? My instinct is yes but should think about it */
     fftw_execute(plan); 
     for (j = 0; j < tau; j++) {
       integral[j] = musq * 2.0 * creal(out[j]);
