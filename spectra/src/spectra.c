@@ -184,10 +184,6 @@ read_gi(char *input_files[],
       exit(EXIT_FAILURE);
     } else {
       for (j = 0; j < tau; j++) {
-        /* NB: there is definitely a bug in here!!! 
-         * fgets will periodically lose its way a little bit
-         * and start reading garbage characters from somewhere */
-        /* fgets(line, 200, fp); */
         int cl = fscanf(fp, "      %lf      %lf ", &real, &imag);
         if(cl != 2) {
           fprintf(stdout, "fscanf in read_gi failed with error code %d;"
@@ -206,37 +202,17 @@ exponent(double w_i, double gamma_i, double l1, double l2,
 	 unsigned int tau, double complex* gi)
 {
   double t;
-  double complex exponent;
   double complex *e;
   e = calloc(tau, sizeof(double complex));
   for (unsigned int i = 0; i < tau; i++) {
     t = (double) i * TOFS;
     /* see Kruger - should this be the line-broadening
      * function or just the lineshape function? :S */
-    exponent = -I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i]))
+    e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i]))
          - I * t * (l1 + l2)
-         - (0.5 * (gamma_i) * t);
-    e[i] = cexp(exponent);
-    /* e[i] = cexp(-I * t * (w_i) - (creal(gi[i]) + I * cimag(gi[i])) */
-    /*      - I * t * (l1 + l2)); */
-    /* e[i] = cexp(- (1. * gi[i] / (TOFS * 6.4)) */
-    /*      - I * i * (l1 + l2) */
-         /* - (0.5 * ((1E-6 / (gamma_i))) * i)); */
+         - (0.5 * (gamma_i) * t));
   }
   return e;
-}
-
-double complex
-trapezoid(double complex *f, unsigned int n)
-{
-    double dx = 1./n;
-    double complex sum;
-
-    sum = 0.5 * dx * (f[0] + f[n - 1]);
-    for (unsigned int i = 1; i < n - 1; i++) {
-	sum += dx * f[i];
-    }
-    return sum;
 }
 
 double**
