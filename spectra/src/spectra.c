@@ -21,7 +21,7 @@
 typedef struct {
   unsigned int N;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
-  lambda_file[200], gamma_file[200];
+  lambda_file[200], gamma_file[200], aw_file[200], fw_file[200];
   char *gi_files[];
 } Input;
 
@@ -58,6 +58,12 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
     strcpy(p->gamma_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->aw_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->fw_file, line);
     for (i = 0; i < p->N; i++) {
       fgets(line, 199, fp);
       line[strcspn(line, "\n")] = 0;
@@ -333,7 +339,7 @@ main(int argc, char** argv)
 
   }
 
-  fp = fopen("out/aw_test.dat", "w");
+  fp = fopen(p->aw_file, "w");
   for (i = 0; i < tau; i++) {
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (tau);

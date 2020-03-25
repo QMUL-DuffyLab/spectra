@@ -8,7 +8,7 @@ program coupling_calc
   character(100) :: output_dir
   character(200) :: input_file, jij_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
-    gamma_i_file, spectra_input_file
+    gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
   character(100), dimension(:), allocatable :: coord_files,&
   gnt_files
   integer :: i, j, k, coord_stat, control_len, tau
@@ -44,6 +44,8 @@ program coupling_calc
   mu_i_file     = trim(adjustl(output_dir)) // "/mu_exciton.out"
   lambda_i_file = trim(adjustl(output_dir)) // "/lambda_exciton.out"
   gamma_i_file  = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
+  aw_output_file  = trim(adjustl(output_dir)) // "/aw.dat"
+  fw_output_file  = trim(adjustl(output_dir)) // "/fw.dat"
   spectra_input_file = "in/input_spectra.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
@@ -216,6 +218,8 @@ program coupling_calc
   write(20, '(a)') adjustl(trim(adjustl(mu_i_file)))
   write(20, '(a)') adjustl(trim(adjustl(lambda_i_file)))
   write(20, '(a)') adjustl(trim(adjustl(gamma_i_file)))
+  write(20, '(a)') adjustl(trim(adjustl(aw_output_file)))
+  write(20, '(a)') adjustl(trim(adjustl(fw_output_file)))
 
   open(unit=10, file=jij_file)
   open(unit=11, file=eigvecs_file)

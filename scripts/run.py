@@ -30,20 +30,26 @@ def get_pigments(input_dir):
             filter(str.isdigit, str(item)) makes item into
             a string instead of a dirEntry and then makes a list
             of every digit in the string. Then we join them with
-            nulls to make a number, make it an int, append it to
-            the list of numbers, and sort both arrays based on number
+            nulls to make a number, take the final 3 (ligand codes
+            for FX and DD have numbers in), make it an int, append to
+            the list of numbers, and sort both arrays based on
+            number. don't need numbers so just return pigments
             '''
-            numbers.append(int(''.join(filter(str.isdigit, str(item)))))
+            code = str(''.join(filter(str.isdigit, str(item))))[-3:]
+            numbers.append(int(code))
             pigment_dirs.append(item.name)
 
     numbers, pigment_dirs = zip(*sorted(zip(numbers, pigment_dirs)))
     return pigment_dirs
 
 
-def construct_input_files(pigment_dirs, direc, snapshot_number):
+def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     # fortran won't create the directory; do it here
     output_path = "{}/{}/{}".format(direc, args.input_dir, snapshot_number)
     os.makedirs(output_path, exist_ok=True)
+    # there must be a nicer way of doing this but i can't think of it:
+    # different information needs to be printed to the file based on
+    # file name. Maybe a pair of dicts and then a comprehension
     input_file = "in/pigments.{}".format(snapshot_number) 
     energy_file = "in/ei.txt"
     lifetimes_file = "in/lifetimes.txt"
@@ -61,8 +67,14 @@ def construct_input_files(pigment_dirs, direc, snapshot_number):
         gt = "lineshape/out/{}_gt.dat".format(p[0:3])
         lineshape = "lineshape/in/{}.def".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
-        print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
-        print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
+        if protein is 'FCP':
+            state = "S{}".format(snapshot_number)
+            print(pigment_data.pigment_data[p[0:3]][state]["energy"], file=g)
+            print(pigment_data.pigment_data[p[0:3]][state]["lifetime"], file=h)
+        else:
+            print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
+            print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
+
         print(reorg, file=j)
         print(gt, file=k)
         print(lineshape, file=l)
@@ -78,7 +90,7 @@ output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 pigment_dirs = get_pigments(input_dir)
 print(pigment_dirs)
-input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number)
+input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number, args.input_dir) # NB: assumes input_dir is just the name of the protein
 print("Frame {} complete.".format(output_path))
 os.system("./coupling_calc {} {}".format(input_file, output_path))
 
