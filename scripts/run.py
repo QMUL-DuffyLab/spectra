@@ -22,17 +22,27 @@ args = parser.parse_args()
 
 def get_pigments(input_dir):
     pigment_dirs = []
+    numbers = []
     # programatically get pigment name/numbers
     for item in os.scandir(input_dir):
         if item.is_dir() and "_CSV" in item.name:
+            '''
+            filter(str.isdigit, str(item)) makes item into
+            a string instead of a dirEntry and then makes a list
+            of every digit in the string. Then we join them with
+            nulls to make a number, make it an int, append it to
+            the list of numbers, and sort both arrays based on number
+            '''
+            numbers.append(int(''.join(filter(str.isdigit, str(item)))))
             pigment_dirs.append(item.name)
 
+    numbers, pigment_dirs = zip(*sorted(zip(numbers, pigment_dirs)))
     return pigment_dirs
 
 
 def construct_input_files(pigment_dirs, direc, snapshot_number):
     # fortran won't create the directory; do it here
-    output_path = "{}/{}".format(direc, snapshot_number)
+    output_path = "{}/{}/{}".format(direc, args.input_dir, snapshot_number)
     os.makedirs(output_path, exist_ok=True)
     input_file = "in/pigments.{}".format(snapshot_number) 
     energy_file = "in/ei.txt"
@@ -67,6 +77,7 @@ input_dir = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 pigment_dirs = get_pigments(input_dir)
+print(pigment_dirs)
 input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number)
 print("Frame {} complete.".format(output_path))
 os.system("./coupling_calc {} {}".format(input_file, output_path))

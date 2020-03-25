@@ -10,37 +10,40 @@ pigment_data = {
                 },
             'S2': {
                 'energy': 16300.0,
-                'lifetime': 4.0, # probably untrue
+                # 'lifetime': 4.0, # probably untrue
+                'lifetime': 0.0001, # probably untrue
                 'reorg': 0.0,
                 }
             },
         'KC1': {
             'S1': {
-                'energy': 15970.0,
+                # 'energy': 15970.0,
+                'energy': 15600.0,
                 'lifetime': 4.0,
                 'reorg': 0.0,
                 },
             'S2': {
-                'energy': 17330.0,
-                'lifetime': 4.0,
+                # 'energy': 17330.0,
+                'energy': 16700.0,
+                'lifetime': 0.0001, # probably untrue
                 'reorg': 0.0,
                 }
             },
         'KC2': {
             'S1': {
-                'energy': 15970.0,
+                'energy': 15600.0,
                 'lifetime': 4.0,
                 'reorg': 0.0,
                 },
             'S2': {
-                'energy': 17330.0,
-                'lifetime': 4.0,
+                'energy': 16700.0,
+                'lifetime': 0.0001, # probably untrue
                 'reorg': 0.0,
                 }
             },
         'A86': {
             'S1': {
-                'energy': 14900.0,
+                'energy': 15870.0,
                 'lifetime': 0.01,
                 'reorg': 0.0,
                 },
