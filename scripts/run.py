@@ -87,7 +87,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
 
 input_dir = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
-snapshot_number = 1 # replace this with for loop to iterate obv
+snapshot_number = 2 # replace this with for loop to iterate obv
 pigment_dirs = get_pigments(input_dir)
 print(pigment_dirs)
 input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number, args.input_dir) # NB: assumes input_dir is just the name of the protein

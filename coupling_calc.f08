@@ -21,7 +21,7 @@ program coupling_calc
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
-  verbose = .false.
+  verbose = .true.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
@@ -234,7 +234,11 @@ program coupling_calc
       ! can write these with implied do loops
       ! (Jij(i, j), j = 1, control_len)
       ! but it made the code slower?
-      write(10, '(17F16.5)', advance='no') Jij(i, j)
+      if (i.gt.j) then 
+        write(10, '(17F16.5)', advance='no') Jij(j, i)
+      else
+        write(10, '(17F16.5)', advance='no') Jij(i, j)
+      end if
       write(11, '(17F16.5)', advance='no') Jeig(i, j)
     end do
     write(10,*) ! blank line between rows!
