@@ -1,4 +1,4 @@
-# lutein
+# neoxanthin
 gt_file = out/LUT_gt.dat
 Aw_file = out/LUT_Aw.dat
 Fw_file = out/LUT_Fw.dat
@@ -9,6 +9,6 @@ l2 = 900.0
 g0 = 53.0
 g1 = 106.0
 g2 = 106.0 
-w1 = 1522.0
+w1 = 1530.0
 w2 = 1156.0
 T = 300.0

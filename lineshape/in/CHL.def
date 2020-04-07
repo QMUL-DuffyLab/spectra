@@ -1,0 +1,14 @@
+# chlorophyll B
+gt_file = out/CLA_gt.dat
+Aw_file = out/CLA_Aw.dat
+Fw_file = out/CLA_Fw.dat
+lambda_file = out/CLA_lambda.dat
+l0 = 0.0
+l1 = 0.0
+l2 = 0.0
+s0 = 0.5
+s1 = 0.8
+s2 = 0.5
+w1 = 0.56
+w2 = 1.94
+T = 300.0
