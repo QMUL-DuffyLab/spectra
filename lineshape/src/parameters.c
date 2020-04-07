@@ -62,6 +62,8 @@ get_parameters(char *filename)
     	p.ligand = 2;
     } else if (strstr(filename, "A86") != NULL
     	    || strstr(filename, "LUT") != NULL
+    	    || strstr(filename, "NEX") != NULL
+    	    || strstr(filename, "XAT") != NULL
     	    || strstr(filename, "DD6") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using carotenoid "
     		"spectral density\n", filename);

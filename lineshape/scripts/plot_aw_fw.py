@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+import os.path
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ def plot(filename, *args, **kwargs):
         else:
             plt.plot(args[i], args[i + 1])
 
-    ax.set_xlim([-500,5000])
+    ax.set_xlim([-2000,10000])
     fig.tight_layout()
     if 'label' in kwargs:
         plt.legend(fontsize=10)
@@ -54,7 +54,10 @@ fw = np.loadtxt(args.fw_file)
 fw = fw[fw[:, 0].argsort()]
 
 exp_file = "in/{0}_exp.dat".format(args.ligand)
-aw_exp = np.loadtxt(exp_file)
+aw_exp = np.zeros_like(aw)
+if os.path.isfile(exp_file):
+    aw_exp = np.loadtxt(exp_file)
+
 
 plot(args.aw_graph, aw[:, 0], (aw[:, 1] - np.min(aw[:, 1])),
         aw_exp[:, 0], (aw_exp[:, 1] - np.min(aw_exp[:, 1])),

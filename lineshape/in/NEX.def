@@ -1,8 +1,8 @@
 # neoxanthin
-gt_file = out/LUT_gt.dat
-Aw_file = out/LUT_Aw.dat
-Fw_file = out/LUT_Fw.dat
-lambda_file = out/LUT_lambda.dat
+gt_file = out/NEX_gt.dat
+Aw_file = out/NEX_Aw.dat
+Fw_file = out/NEX_Fw.dat
+lambda_file = out/NEX_lambda.dat
 l0 = 450.0
 l1 = 900.0
 l2 = 900.0
