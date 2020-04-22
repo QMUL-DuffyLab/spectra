@@ -2,7 +2,9 @@
 
 # sed -e 's/[\[\]\"]//g' -e 's/,/\\n/g' -e 's/\s\+/,/g' $1
 for file in LHCII/**/*; do
-  cp $file ${file}_temp
-  tr -d '[]"' < ${file}_temp | tr ',' '\n' > $file;
-  rm ${file}_temp
+  name1=${file/_test/}
+  name2=${name1/./}.csv
+  mv $file $name2
+  # tr -d '[]"' < ${file}_temp | tr ',' '\n' > $file;
+  # rm ${file}_temp
 done
