@@ -25,7 +25,7 @@ def get_pigments(input_dir):
     numbers = []
     # programatically get pigment name/numbers
     for item in os.scandir(input_dir):
-        if item.is_dir() and "_CSV" in item.name:
+        if item.is_dir():
             '''
             filter(str.isdigit, str(item)) makes item into
             a string instead of a dirEntry and then makes a list
@@ -72,7 +72,11 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
             print(pigment_data.pigment_data[p[0:3]][state]["energy"], file=g)
             print(pigment_data.pigment_data[p[0:3]][state]["lifetime"], file=h)
         else:
-            print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
+            if p in pigment_data.site_energies.keys():
+                print(pigment_data.site_energies[p], file=g)
+            else:
+                print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
+
             print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
 
         print(reorg, file=j)
