@@ -21,7 +21,7 @@ program coupling_calc
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
-  verbose = .true.
+  verbose = .false.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
@@ -168,6 +168,7 @@ program coupling_calc
       if (i.eq.j) then
         Jij(i, j) = ei(i)
         mu(:,i) = mu_calc(coords_i, coord_lengths(i))
+        write(*,*) "i = ", i, "mu(i) = ", mu(:,i)
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
@@ -377,7 +378,7 @@ program coupling_calc
     mu = 0.0
     do i = 1, len
       do j = 1, 3
-        mu(j) = p(j, i) * p(4, i)
+        mu(j) = mu(j) + (p(j, i) * p(4, i))
       end do
     end do
     res = mu
