@@ -20,7 +20,7 @@ def plot(filename, *args, **kwargs):
         else:
             plt.plot(args[i], args[i + 1])
 
-    ax.set_xlim([-2000,10000])
+    ax.set_xlim([-1000,3000])
     fig.tight_layout()
     if 'label' in kwargs:
         plt.legend(fontsize=10)
@@ -50,6 +50,7 @@ else:
 
 aw = np.loadtxt(args.aw_file)
 aw = aw[aw[:, 0].argsort()]
+aw[:,1] = aw[:,1] / np.max(aw[:,1])
 fw = np.loadtxt(args.fw_file)
 fw = fw[fw[:, 0].argsort()]
 
@@ -57,6 +58,7 @@ exp_file = "in/{0}_exp.dat".format(args.ligand)
 aw_exp = np.zeros_like(aw)
 if os.path.isfile(exp_file):
     aw_exp = np.loadtxt(exp_file)
+    aw_exp[:,1] = aw_exp[:,1] / np.max(aw_exp[:,1])
 
 
 plot(args.aw_graph, aw[:, 0], (aw[:, 1] - np.min(aw[:, 1])),

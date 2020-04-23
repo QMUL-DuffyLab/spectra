@@ -39,7 +39,8 @@ main(int argc, char** argv)
     Ftv   = malloc(pr.ns * sizeof(double complex));
 
     if (p.ligand == 1) {
-	cw = &cw_chl;
+	/* cw = &cw_chl; */
+	cw = &cw_odo;
     } else if (p.ligand == 2) {
 	cw = &cw_odo;
     } else if (p.ligand == 0) {
