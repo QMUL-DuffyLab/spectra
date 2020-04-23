@@ -21,7 +21,7 @@ program coupling_calc
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
-  verbose = .false.
+  verbose = .true.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
@@ -202,13 +202,25 @@ program coupling_calc
     write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
   end if
 
+  ! if (verbose) then
+  !   write(*,*) Jeig
+  ! end if
+
+  do i = 1, control_len
+    do j = 1, control_len
+      if (i.gt.j) then 
+        Jeig(j,i) = Jeig(i,j)
+      end if
+    end do
+  end do
+
   if (verbose) then
     write(*,*) Jeig
   end if
 
-  mu_ex = matmul(mu, Jeig) ! mix transition dipole moments
-  gnt = matmul(Jeig**4, gnt) ! mix lineshape functions
-  lambda = matmul(Jeig**4, lambda) ! mix reorganisation energies
+  mu_ex     = matmul(mu, Jeig**2) ! mix transition dipole moments
+  gnt       = matmul(Jeig**4, gnt) ! mix lineshape functions
+  lambda    = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
 
   open(unit=20, file=spectra_input_file)

@@ -292,7 +292,8 @@ main(int argc, char** argv)
     if (line_params[i].ligand == 0) {
       line_params[i].cw = &cw_car;
     } else if (line_params[i].ligand == 1) {
-      line_params[i].cw = &cw_chl;
+      /* line_params[i].cw = &cw_chl; */
+      line_params[i].cw = &cw_odo;
     } else if (line_params[i].ligand == 2) {
       line_params[i].cw = &cw_odo;
     } else {
@@ -328,11 +329,14 @@ main(int argc, char** argv)
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
                  (double)j * TOFS, line_params[i].l1, line_params[i].l2,
                  1. / gamma[i]);
-      in[j] *= musq * 2.0;
+      /* in[j] *= musq * 2.0; */
     }
 
     /* i took the multiplication inside the FFT - think it should be fine */
     fftw_execute(plan); 
+    for (unsigned int j = 0; j < tau; j++) {
+      integral[j] += creal(out[j]) * musq * 2.0;
+    }
 
   }
 
@@ -341,7 +345,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        creal(out[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
+        creal(integral[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
