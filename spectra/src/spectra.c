@@ -7,6 +7,8 @@
 #include "../../lineshape/src/functions.h"
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_odeiv2.h>
 #include <fftw3.h>
 
 #define MAX_PIGMENT_NUMBER 200
@@ -388,10 +390,8 @@ main(int argc, char** argv)
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
                  (double)j * TOFS, line_params[i].l1, line_params[i].l2,
                  1. / gamma[i]);
-      /* in[j] *= musq * 2.0; */
     }
 
-    /* i took the multiplication inside the FFT - think it should be fine */
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
       integral[j] += creal(out[j]) * musq * 2.0;
