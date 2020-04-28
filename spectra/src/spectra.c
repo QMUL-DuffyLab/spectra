@@ -25,6 +25,13 @@ typedef struct {
   char *gi_files[];
 } Input;
 
+typedef struct {
+  /* this feels like it won't work lol */
+  unsigned int N;
+  double **kij;
+  double *gamma;
+} ode_params;
+
 Input*
 read_input_file(char* filename)
 {
@@ -216,15 +223,57 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        kij[i][j] = TOCM1 * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
-          p[k].cw(TOCM1 * wij[i][j], vptr));
-        fprintf(stdout, "%d %d %d %d %13.10e %13.10e ", i, j, k, p[k].ligand,
-            wij[i][j], p[k].cw(wij[i][j], vptr));
+        kij[i][j] += (1./TOCM1) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+          p[k].cw(wij[i][j], vptr));
+        /* fprintf(stdout, "%d %d %d %d %13.10e %13.10e ", i, j, k, p[k].ligand, */
+        /*     wij[i][j], p[k].cw(wij[i][j], vptr)); */
       }
+      fprintf(stdout, "%d %d %13.10e %13.10e", i, j, wij[i][j],
+          kij[i][j]);
     fprintf(stdout, "\n");
     }
   }
   return kij;
+}
+
+double**
+jacobian_calc(unsigned int N, double **kij, double *gamma)
+{
+  unsigned int i, j;
+  double **Jij;
+  Jij = calloc(N, sizeof(double));
+  for (i = 0; i < N; i++) {
+    Jij[i] = calloc(N, sizeof(double));
+  }
+
+  for (i = 0; i < N; i++) {
+    for (j = 0; j < N; j++) {
+      if (i == j) {
+        Jij[i][j] = kij[i][j] - gamma[i];
+      } else {
+        Jij[i][j] = kij[i][j];
+      }
+    }
+  }
+  return Jij;
+}
+
+int
+odefunc(double x, const double *y, double *f, void *params)
+{
+  unsigned int i, j;
+  ode_params *p = (ode_params *) params;
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      if (i == j) {
+        f[i] -= p->gamma[i] * y[i];
+      } else {
+        f[i] += p->kij[i][j] * y[j];
+      }
+    }
+    fprintf(stdout, "i = %d; f[i] = %+f; y[i] = %+f\n", i, f[i], y[i]);
+  }
+  return GSL_SUCCESS;
 }
 
 int
@@ -236,7 +285,7 @@ main(int argc, char** argv)
   double musq, kd;
   double complex *ex, **gi_array;
   double *eigvals, *gamma, *lambda, *integral,
-         **wij, **kij, **mu, **eig;
+         **wij, **kij, **Jij, **mu, **eig;
   Parameters *line_params;
   fftw_complex *out, *in;
   fftw_plan plan;
@@ -268,6 +317,7 @@ main(int argc, char** argv)
   eig = calloc(p->N, sizeof(double*));
   wij = calloc(p->N, sizeof(double*));
   kij = calloc(p->N, sizeof(double*));
+  Jij = calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
     gi_array[i] = calloc(tau, sizeof(double complex));
@@ -275,6 +325,7 @@ main(int argc, char** argv)
     eig[i] = calloc(p->N, sizeof(double));
     wij[i] = calloc(p->N, sizeof(double));
     kij[i] = calloc(p->N, sizeof(double));
+    Jij[i] = calloc(p->N, sizeof(double));
 
   }
 
@@ -313,6 +364,14 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->N, eig, wij, line_params);
+  Jij = jacobian_calc(p->N, kij, gamma);
+  fprintf(stdout, "Jacobian matrix:\n\n");
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      fprintf(stdout, "%12.6e ", Jij[i][j]);
+    }
+    fprintf(stdout, "\n");
+  }
 
   integral = calloc(tau, sizeof(double));
 
@@ -338,6 +397,28 @@ main(int argc, char** argv)
       integral[j] += creal(out[j]) * musq * 2.0;
     }
 
+  }
+
+  ode_params odep;
+  odep.N = p->N;
+  odep.kij = kij;
+  odep.gamma = gamma;
+  double *f = calloc(p->N, sizeof(double));
+  double *y = calloc(p->N, sizeof(double));
+  /* test boundary condition */
+  for (i = 0; i < p->N; i++) {
+    if (i == 0) {
+      y[i] = 1.0;
+    } else {
+      y[i] = 0.0;
+    }
+  }
+  double xtest = 0.0;
+  void *params = &odep;
+
+  int ode_success = odefunc(xtest, y, f, params);
+  if (ode_success != GSL_SUCCESS) {
+    fprintf(stdout, "ode_success failed!\n");
   }
 
   fp = fopen(p->aw_file, "w");
