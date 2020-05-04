@@ -151,6 +151,27 @@ main(int argc, char** argv)
     fprintf(stdout, "ode_success failed!\n");
   }
 
+  /* do ODE solving
+   * this doesn't work yet */
+
+  gsl_odeiv2_system sys = {odefunc, Jij, p->N, params};
+  gsl_odeiv2_driver *d =
+  	  gsl_odeiv2_driver_alloc_y_new(&sys, gsl_odeiv2_step_rkf45,
+  	  		  1e-6, 1e-6, 0.0);
+  double t1 = 0.0; double ti = 0.0; double tf = (float)tau;
+  int status = 0.0;
+  for (i = 0; i < tau; i++) {
+    ti = t1 + (i * tf) / tau;
+    fprintf(stdout, "starting iteration %d\n", i);
+    status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
+    fprintf(stdout, "done iteration %d\n", i);
+    if (status != GSL_SUCCESS) {
+      fprintf(stdout, "error: return value = %d\n", status);
+      exit(EXIT_FAILURE);
+    }
+
+  }
+
   fp = fopen(p->aw_file, "w");
   for (i = 0; i < tau; i++) {
     /* unpack the ordering used by FFTW */
