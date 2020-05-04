@@ -29,14 +29,15 @@ ifeq ($(UNAME), Darwin)
 	CC = gcc
 endif
 ifeq ($(UNAME), Linux)
-	LIBRARIES = -lm -lgsl -lgslcblas -lmpi -L/usr/local/lib
+	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -lmpi -L/usr/local/lib
 	INCLUDES = -I/usr/local/include
 	CFLAGS = -Wall -Wextra -std=c99 $(DEBUGFLAG) $(INCLUDES)
 	LFLAGS = -Wall -Wextra -O3 -std=c99 $(DEBUGFLAG) $(LIBRARIES)
 	CC = mpicc
 endif
 
-SOURCES = ./src/spectra.c \
+SOURCES = ./src/input.c \
+	  ./src/spectra.c \
 	  ../lineshape/src/parameters.c \
 	  ../lineshape/src/functions.c
 
