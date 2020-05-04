@@ -1,4 +1,5 @@
 #include <complex.h>
+#include <stdio.h>
 #include "parameters.h"
 
 #ifndef FUNCTIONS_H

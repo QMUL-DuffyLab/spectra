@@ -29,14 +29,15 @@ ifeq ($(UNAME), Darwin)
 	CC = gcc
 endif
 ifeq ($(UNAME), Linux)
-	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -lmpi -L/usr/local/lib
-	INCLUDES = -I/usr/local/include
+	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -lmpi -L/usr/lib
+	INCLUDES = -I/usr/include
 	CFLAGS = -Wall -Wextra -std=c99 $(DEBUGFLAG) $(INCLUDES)
 	LFLAGS = -Wall -Wextra -O3 -std=c99 $(DEBUGFLAG) $(LIBRARIES)
 	CC = mpicc
 endif
 
 SOURCES = ./src/input.c \
+	  ./src/fluorescence.c \
 	  ./src/spectra.c \
 	  ../lineshape/src/parameters.c \
 	  ../lineshape/src/functions.c
@@ -56,7 +57,7 @@ $(EXEC): $(OBJECTS)
 
 .PHONY: clean cleaner
 clean:
-	\rm -f $(OBJ)
+	\rm -f $(OBJECTS)
 
 cleaner:
-	\rm -f $(EXEC) $(OBJ) $(DEP)
+	\rm -f $(EXEC) $(OBJECTS) $(DEP)

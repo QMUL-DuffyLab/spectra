@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <complex.h>
+#include <math.h>
 
 #ifndef PARAMETERS_H
 #define PARAMETERS_H

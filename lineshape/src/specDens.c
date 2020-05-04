@@ -1,4 +1,6 @@
 #include <time.h>
+#include <stdio.h>
+#include <math.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 #include <fftw3.h>

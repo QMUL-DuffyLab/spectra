@@ -1,5 +1,4 @@
 OBJDIR = obj
-SRCDIR = src
 EXEC = test
 vpath %.o $(OBJDIR)/
 vpath %.c $(SRCDIR)/
@@ -30,51 +29,33 @@ ifeq ($(UNAME), Darwin)
 	CC = gcc
 endif
 ifeq ($(UNAME), Linux)
-	LIBRARIES = -lm -lgsl -lgslcblas -lmpi -L/usr/local/lib
-	INCLUDES = -I/usr/local/include
+	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -lmpi -L/usr/lib
+	INCLUDES = -I/usr/include
 	CFLAGS = -Wall -Wextra -std=c99 $(DEBUGFLAG) $(INCLUDES)
 	LFLAGS = -Wall -Wextra -O3 -std=c99 $(DEBUGFLAG) $(LIBRARIES)
-	CC = mpicc
+	CC = gcc
 endif
 
-SOURCES = $(wildcard $(SRCDIR)/*.c)
-OBJTMP := $(notdir $(SOURCES))
-OBJTMP := $(OBJTMP:.c=.o)
-OBJ := $(addprefix $(OBJDIR)/, $(OBJTMP))
-DEP = $(OBJ:.o=.d)
+SOURCES = ./src/parameters.c \
+	  ./src/functions.c \
+	  ./src/specDens.c
 
-print-%  : ; @echo $* = $($*)
+VPATH := $(sort $(dir $(SOURCES)))
+OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(notdir $(SOURCES)))
 
-# pull in existing dependency info
--include $(DEP)
+# the "common" object files
+$(OBJDIR)/%.o : %.c
+	@echo "creating $@ ..."
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-all: $(EXEC)
+$(EXEC): $(OBJECTS)
+	@echo "building output ..."
+	$(CC) -o $(EXEC) $(OBJECTS) $(LFLAGS)
 
-$(EXEC): $(OBJ)
-	$(CC) $(LFLAGS) $(OBJ) -o $(EXEC)
-
-# Automatically build a list of dependencies for each object file
-# http://scottmcpeak.com/autodepend/autodepend.html
-# list dependencies and send to a file with extension .d
-# moves the gcc output to a temp file so we can change formatting
-# substitutes whatever's before the colon for its stem + .o;
-# which allows make to be run from a different directory than src/obj files
-# strips everything before the colon, then gets rid of continuation backslashes
-# Finally strips leading spaces left after the backslashes are cut out
-# and deletes the temporary dependency files
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@mkdir -p $(OBJDIR)/
-	$(CC) -c $(CFLAGS) $(SRCDIR)/$*.c -o $(OBJDIR)/$*.o
-	$(CC) -MM $(CFLAGS) $(SRCDIR)/$*.c > $(OBJDIR)/$*.d
-	@mv -f $(OBJDIR)/$*.d $(OBJDIR)/$*.d.tmp
-	@sed -e 's|.*:|$(OBJDIR)/$*.o:|' < $(OBJDIR)/$*.d.tmp > $(OBJDIR)/$*.d
-	@sed -e 's/.*://' -e 's/\\$$//' < $(OBJDIR)/$*.d.tmp | fmt -1 | \
-	sed -e 's/^ *//' -e 's/$$/:/' >> $(OBJDIR)/$*.d
-	@rm -f $(OBJDIR)/$*.d.tmp
 
 .PHONY: clean cleaner
 clean:
-	\rm -f $(OBJ)
+	\rm -f $(OBJECTS)
 
 cleaner:
-	\rm -f $(EXEC) $(OBJ) $(DEP)
+	\rm -f $(EXEC) $(OBJECTS)
