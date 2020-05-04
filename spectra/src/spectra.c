@@ -12,7 +12,7 @@ main(int argc, char** argv)
   double musq, kd;
   double complex *ex, **gi_array;
   double *eigvals, *gamma, *lambda, *integral,
-         **wij, **kij, **Jij, **mu, **eig;
+         **wij, **kij, **Jij, **mu, **eig, **chiw;
   Parameters *line_params;
   fftw_complex *out, *in;
   fftw_plan plan;
@@ -47,6 +47,7 @@ main(int argc, char** argv)
   wij = calloc(p->N, sizeof(double*));
   kij = calloc(p->N, sizeof(double*));
   Jij = calloc(p->N, sizeof(double*));
+  chiw = calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
     gi_array[i] = calloc(tau, sizeof(double complex));
@@ -55,6 +56,7 @@ main(int argc, char** argv)
     wij[i] = calloc(p->N, sizeof(double));
     kij[i] = calloc(p->N, sizeof(double));
     Jij[i] = calloc(p->N, sizeof(double));
+    chiw[i] = calloc(p->N, sizeof(double));
 
   }
 
@@ -121,6 +123,7 @@ main(int argc, char** argv)
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
+      chiw[i][j] = creal(out[j]) * musq * 2.0;
       integral[j] += creal(out[j]) * musq * 2.0;
     }
 
