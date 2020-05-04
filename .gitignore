@@ -9,5 +9,5 @@ pigme*
 *.mod
 *.o
 test
-in*
+in/*
 exec*
