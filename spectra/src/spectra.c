@@ -1,6 +1,7 @@
 #include "input.h"
 #include "fluorescence.h"
 #include <fftw3.h>
+#include <stdio.h>
 
 int
 main(int argc, char** argv)
@@ -15,6 +16,8 @@ main(int argc, char** argv)
   Parameters *line_params;
   fftw_complex *out, *in;
   fftw_plan plan;
+
+  fprintf(stdout, "== Spectra calculation code ==\n");
 
   if (argc != 3) {
     fprintf(stdout, "Wrong number of arguments - should be 2: "

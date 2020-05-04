@@ -31,8 +31,8 @@ endif
 ifeq ($(UNAME), Linux)
 	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -lmpi -L/usr/lib
 	INCLUDES = -I/usr/include
-	CFLAGS = -Wall -Wextra -std=c99 $(DEBUGFLAG) $(INCLUDES)
-	LFLAGS = -Wall -Wextra -O3 -std=c99 $(DEBUGFLAG) $(LIBRARIES)
+	CFLAGS = -Wall -Wextra -std=gnu99 $(DEBUGFLAG) $(INCLUDES)
+	LFLAGS = -Wall -Wextra -std=gnu99 $(DEBUGFLAG) $(LIBRARIES)
 	CC = mpicc
 endif
 

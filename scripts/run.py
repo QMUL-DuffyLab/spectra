@@ -63,8 +63,12 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     k = open(gnt_file, "w")
     l = open(lineshape_file, "w")
     for p in pigment_dirs:
-        reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
         gt = "lineshape/out/{}_gt.dat".format(p[0:3])
+        if not os.path.isfile(gt):
+            print("Lineshape data does not exist for ligand {}. Generating now.".format(p[0:3]))
+            os.system("cd lineshape && ./test ./in/prot ./in/{}.def".format(p[0:3]))
+
+        reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
         lineshape = "lineshape/in/{}.def".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
         if protein is 'FCP':
@@ -89,14 +93,14 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     j.close()
     return (input_file, output_path)
 
-input_dir = os.path.join(os.getcwd(), args.input_dir)
+input_dir  = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 snapshot_number = 1 # replace this with for loop to iterate obv
 pigment_dirs = get_pigments(input_dir)
 print(pigment_dirs)
 input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number, args.input_dir) # NB: assumes input_dir is just the name of the protein
 print("Frame {} complete.".format(output_path))
-os.system("./coupling_calc {} {}".format(input_file, output_path))
+os.system("./couplings/coupling_calc {} {}".format(input_file, output_path))
 os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "in/lineshapes.{}".format(snapshot_number)))
 
 # for i in range(1000):

@@ -54,7 +54,7 @@ jacobian_calc(unsigned int N, double **kij, double *gamma)
 int
 odefunc(double x, const double *y, double *f, void *params)
 {
-  (void)(x);
+  (void)(x); /* suppress unused parameter warning */
   unsigned int i, j;
   ode_params *p = (ode_params *) params;
   for (i = 0; i < p->N; i++) {
