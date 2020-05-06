@@ -12,18 +12,25 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
     kij[i] = calloc(N, sizeof(double));
   }
 
+  double elem = 0.0;
+  unsigned short print_kij = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        kij[i][j] += (1./TOCM1) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+        elem = (1./TOCM1) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(wij[i][j], vptr));
-        /* fprintf(stdout, "%d %d %d %d %13.10e %13.10e ", i, j, k, p[k].ligand, */
-        /*     wij[i][j], p[k].cw(wij[i][j], vptr)); */
+        kij[i][j] += elem;
+        if (print_kij) {
+          fprintf(stdout, "%d %d %d %10.6e %10.6e %10.6e %10.6e %10.6e ", i, j, k,
+              wij[i][j], p[k].cw(wij[i][j], vptr), eig[i][k], eig[j][k], elem);
+	}
       }
-      fprintf(stdout, "%d %d %13.10e %13.10e", i, j, wij[i][j],
+      if (print_kij) {
+        fprintf(stdout, "\n%d %d %13.10e %13.10e", i, j, wij[i][j],
           kij[i][j]);
-    fprintf(stdout, "\n");
+        fprintf(stdout, "\n");
+      }
     }
   }
   return kij;
@@ -65,7 +72,7 @@ odefunc(double x, const double *y, double *f, void *params)
         f[i] += p->kij[i][j] * y[j];
       }
     }
-    fprintf(stdout, "i = %d; f[i] = %+f; y[i] = %+f\n", i, f[i], y[i]);
+    /* fprintf(stdout, "i = %d; f[i] = %+f; y[i] = %+f\n", i, f[i], y[i]); */
   }
   return GSL_SUCCESS;
 }

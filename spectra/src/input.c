@@ -126,14 +126,17 @@ read_eigvecs(char *input_file, unsigned int N)
     exit(EXIT_FAILURE);
   } else {
     for (i = 0; i < N; i++) {
-        fgets(token, 20, fp);
+        fgets(token, 17, fp);
         eig[i][0] = atof(token); 
+        /* fprintf(stdout, "%d 0 %10.6e ", i, eig[i][0]); */
         for (j = 1; j < N - 1; j++) {
-          fgets(token, 20, fp);
+          fgets(token, 17, fp);
           eig[i][j] = atof(token); 
+          /* fprintf(stdout, "%d %d %10.6e ", i, j, eig[i][j]); */
         }
-        fgets(token, 22, fp); /* make sure we get to the newline! */
+        fgets(token, 18, fp); /* make sure we get to the newline! */
         eig[i][N - 1] = atof(token); 
+        /* fprintf(stdout, "%d 13 %10.6e\n", i, eig[i][0]); */
       }
   }
   return eig;

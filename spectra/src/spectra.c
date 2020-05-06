@@ -96,13 +96,13 @@ main(int argc, char** argv)
 
   kij = rate_calc(p->N, eig, wij, line_params);
   Jij = jacobian_calc(p->N, kij, gamma);
-  fprintf(stdout, "Jacobian matrix:\n\n");
-  for (i = 0; i < p->N; i++) {
-    for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "%12.6e ", Jij[i][j]);
-    }
-    fprintf(stdout, "\n");
-  }
+  /* fprintf(stdout, "Jacobian matrix:\n\n"); */
+  /* for (i = 0; i < p->N; i++) { */
+  /*   for (j = 0; j < p->N; j++) { */
+  /*     fprintf(stdout, "%12.6e ", Jij[i][j]); */
+  /*   } */
+  /*   fprintf(stdout, "\n"); */
+  /* } */
 
   integral = calloc(tau, sizeof(double));
 
