@@ -13,17 +13,17 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
   }
 
   double elem = 0.0;
-  unsigned short print_kij = 0;
+  unsigned short print_kij = 1;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        elem = (1./TOCM1) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+        elem = (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(wij[i][j], vptr));
         kij[i][j] += elem;
         if (print_kij) {
-          fprintf(stdout, "%d %d %d %10.6e %10.6e %10.6e %10.6e %10.6e ", i, j, k,
-              wij[i][j], p[k].cw(wij[i][j], vptr), eig[i][k], eig[j][k], elem);
+          /* fprintf(stdout, "%d %d %d %10.6e %10.6e %10.6e %10.6e %10.6e ", i, j, k, */
+          /*     wij[i][j], p[k].cw(wij[i][j], vptr), eig[i][k], eig[j][k], elem); */
 	}
       }
       if (print_kij) {

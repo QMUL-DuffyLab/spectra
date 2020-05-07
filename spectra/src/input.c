@@ -150,14 +150,11 @@ read_gi(char *input_files[],
   FILE *fp;
   unsigned int i, j;
   double real, imag;
-  char *line, *token;
   gi = calloc(N, sizeof(double complex*));
   for (unsigned int i = 0; i < N; i++) {
     gi[i] = calloc(tau, sizeof(double complex));
   }
   j = 0;
-  line = malloc(200 * sizeof(char*));
-  token = malloc(22 * sizeof(char*));
 
   for (i = 0; i < N; i++) {
     fp = fopen(input_files[i], "r");
