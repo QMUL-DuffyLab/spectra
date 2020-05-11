@@ -10,6 +10,9 @@ typedef struct {
   double *gamma;
 } ode_params;
 
-double** rate_calc(unsigned int N, double **eig, double** wij, Parameters *p);
-double** jacobian_calc(unsigned int N, double **kij, double *gamma);
-int odefunc(double x, const double *y, double *f, void *params);
+double** rate_calc (unsigned int N, double **eig,
+                    double** wij, Parameters *p);
+double** jacobian_calc (unsigned int N, double **kij, double *gamma);
+int odefunc (double x, const double *y, double *f, void *params);
+int jacobian (double t, const double y[], double *dfdy,
+              double dfdt[], void *params);

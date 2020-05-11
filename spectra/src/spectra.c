@@ -154,7 +154,12 @@ main(int argc, char** argv)
   /* do ODE solving
    * this doesn't work yet */
 
-  gsl_odeiv2_system sys = {odefunc, Jij, p->N, params};
+  gsl_odeiv2_system sys;
+  sys.function = odefunc;
+  sys.jacobian = jacobian; /* this is not correct lol */
+  sys.dimension = p->N;
+  sys.params = params;
+
   gsl_odeiv2_driver *d =
   	  gsl_odeiv2_driver_alloc_y_new(&sys, gsl_odeiv2_step_rkf45,
   	  		  1e-6, 1e-6, 0.0);

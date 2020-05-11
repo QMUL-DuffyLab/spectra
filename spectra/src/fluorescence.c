@@ -18,7 +18,8 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        elem = (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+        /* 100 cm^-1 = 53 fs^-1 */
+        elem = 0.53 * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(wij[i][j], vptr));
         kij[i][j] += elem;
         if (print_kij) {
@@ -56,6 +57,34 @@ jacobian_calc(unsigned int N, double **kij, double *gamma)
     }
   }
   return Jij;
+}
+
+int
+jacobian (double t, const double y[], double *dfdy,
+          double dfdt[], void *params)
+{
+  (void)(t);
+  /* get parameter(s) from params_ptr; here, just a double */
+  ode_params *p = (ode_params *) params;
+
+  gsl_matrix_view dfdy_mat = gsl_matrix_view_array (dfdy, p->N, p->N);
+
+  gsl_matrix *m_ptr = &dfdy_mat.matrix;	/* m_ptr points to the matrix */
+
+  /* fill the Jacobian matrix as shown */
+  for (unsigned int i = 0; i < p->N; i++) {
+    for (unsigned int j = 0; j < p->N; j++) {
+      if (i == j) {
+        gsl_matrix_set (m_ptr, i, j,
+            (p->kij[i][j] * y[j]) - (p->gamma[i] * y[i]));
+      } else {
+        gsl_matrix_set (m_ptr, i, j, (p->kij[i][j] * y[j]));
+      }
+    }
+    dfdt[i] = 0.0; /* set explicit t dependence of f[i] */
+  }
+
+  return GSL_SUCCESS;		/* GSL_SUCCESS defined in gsl/errno.h as 0 */
 }
 
 int
