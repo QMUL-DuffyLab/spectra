@@ -37,28 +37,6 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
   return kij;
 }
 
-double**
-jacobian_calc(unsigned int N, double **kij, double *gamma)
-{
-  unsigned int i, j;
-  double **Jij;
-  Jij = calloc(N, sizeof(double));
-  for (i = 0; i < N; i++) {
-    Jij[i] = calloc(N, sizeof(double));
-  }
-
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++) {
-      if (i == j) {
-        Jij[i][j] = kij[i][j] - gamma[i];
-      } else {
-        Jij[i][j] = kij[i][j];
-      }
-    }
-  }
-  return Jij;
-}
-
 int
 jacobian (double t, const double y[], double *dfdy,
           double dfdt[], void *params)
@@ -106,3 +84,38 @@ odefunc(double x, const double *y, double *f, void *params)
   return GSL_SUCCESS;
 }
 
+double*
+bcs (unsigned int N, double* eigvals)
+{
+  /* calculate t = 0 boltzmannised exciton populations */
+  double temp = 300.0; /* probably shouldn't hardcode this lmao */
+  double beta = 1./temp;
+  double sum = 0.0;
+  double *populations = calloc(N, sizeof(double));
+  for (unsigned int i = 0; i < N; i++) {
+    sum += exp(-1. * beta * eigvals[i]);
+  }
+  for (unsigned int i = 0; i < N; i++) {
+    populations[i] = exp(-1. * beta * eigvals[i]) / sum;
+  }
+  return populations;
+}
+
+double**
+jacmat (ode_params *p)
+{
+  double **Jij = calloc(p->N, sizeof(double));
+  for (unsigned int i = 0; i < p->N; i++) {
+    Jij[i] = calloc(p->N, sizeof(double));
+  }
+  for (unsigned int i = 0; i < p->N; i++) {
+    for (unsigned int j = 0; j < p->N; j++) {
+      if (i == j) {
+        Jij[i][j] = p->kij[i][j] - p->gamma[i];
+      } else {
+        Jij[i][j] = p->kij[i][j];
+      }
+    }
+  }
+  return Jij;
+}

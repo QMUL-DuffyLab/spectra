@@ -95,14 +95,6 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->N, eig, wij, line_params);
-  Jij = jacobian_calc(p->N, kij, gamma);
-  /* fprintf(stdout, "Jacobian matrix:\n\n"); */
-  /* for (i = 0; i < p->N; i++) { */
-  /*   for (j = 0; j < p->N; j++) { */
-  /*     fprintf(stdout, "%12.6e ", Jij[i][j]); */
-  /*   } */
-  /*   fprintf(stdout, "\n"); */
-  /* } */
 
   integral = calloc(tau, sizeof(double));
 
@@ -135,9 +127,10 @@ main(int argc, char** argv)
   odep.gamma = gamma;
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));
-  /* test boundary condition */
+
+  /* y = bcs(p->N, eigvals); */
   for (i = 0; i < p->N; i++) {
-    if (i == 0) {
+    if (!i) {
       y[i] = 1.0;
     } else {
       y[i] = 0.0;
@@ -154,28 +147,34 @@ main(int argc, char** argv)
   /* do ODE solving
    * this doesn't work yet */
 
-  gsl_odeiv2_system sys;
-  sys.function = odefunc;
-  sys.jacobian = jacobian; /* this is not correct lol */
-  sys.dimension = p->N;
-  sys.params = params;
+  gsl_odeiv2_system sys = {odefunc, jacobian, p->N, params};
 
-  gsl_odeiv2_driver *d =
-  	  gsl_odeiv2_driver_alloc_y_new(&sys, gsl_odeiv2_step_rkf45,
-  	  		  1e-6, 1e-6, 0.0);
-  double t1 = 0.0; double ti = 0.0; double tf = (float)tau;
-  int status = 0.0;
+  gsl_odeiv2_driver *d = gsl_odeiv2_driver_alloc_y_new(
+      &sys, 
+      gsl_odeiv2_step_bsimp,
+      /* gsl_odeiv2_step_rkf45, */
+      1e-4,
+      1e-4,
+      0.0);
+
+  double t1 = 0.0; double ti = 0.0; double dt = 1.0;
+  int status = 0;
   for (i = 0; i < tau; i++) {
-    ti = t1 + (i * tf) / tau;
-    fprintf(stdout, "starting iteration %d\n", i);
+    ti = (i * dt);
+    fprintf(stdout, "iteration %d: ", i);
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
-    fprintf(stdout, "done iteration %d\n", i);
+    fprintf(stdout, "ti = %6.3f, ", ti);
+    for (j = 0; j < p->N; j++) {
+      fprintf(stdout, "%6.4e ", y[j]);
+    }
+    fprintf(stdout, "\n");
     if (status != GSL_SUCCESS) {
       fprintf(stdout, "error: return value = %d\n", status);
       exit(EXIT_FAILURE);
     }
 
   }
+  gsl_odeiv2_driver_free(d);
 
   fp = fopen(p->aw_file, "w");
   for (i = 0; i < tau; i++) {
