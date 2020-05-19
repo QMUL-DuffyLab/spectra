@@ -26,7 +26,8 @@ main(int argc, char** argv)
   }
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
-  double (*chi_p)[tau]; /* pointer to chi(w)[i] for each exciton */
+  /* double (*chi_p)[tau]; /1* pointer to chi(w)[i] for each exciton *1/ */
+  double *chi_p;
 
   Input *p = read_input_file(argv[1]);
 
