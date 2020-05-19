@@ -13,7 +13,7 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
   }
 
   double elem = 0.0;
-  unsigned short print_kij = 1;
+  unsigned short print_kij = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {

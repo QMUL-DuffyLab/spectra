@@ -128,15 +128,18 @@ main(int argc, char** argv)
      * of double chiw[][] - can probably be fixed somehow. */
     chi_p = chiw[i];
     chiw_ints[i] = trapezoid(chi_p, tau);
-    fprintf(stdout, "%d %10.6e\n", i, chiw_ints[i]);
 
   }
 
   /* one with the highest oscillator strength gets excited? */
   unsigned int max = 0;
   double musq_max = 0.0;
+  fprintf(stdout, "----------------------------------\n"
+      "Osc. strengths and chi(w) integral\n"
+      "----------------------------------\n");
   for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
+    fprintf(stdout, "%d %10.6e %10.6e\n", i + 601, musq, chiw_ints[i]);
     if (musq > musq_max) {
       max = i;
       musq_max = musq;
@@ -150,14 +153,20 @@ main(int argc, char** argv)
   odep.chiw = chiw_ints;
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));
+  double *boltz = calloc(p->N, sizeof(double));
 
+  boltz = bcs(p->N, eigvals);
+  fprintf(stdout, "-----------------\nBOLTZMANN WEIGHTS\n"
+                  "-----------------\n");
   for (i = 0; i < p->N; i++) {
+    fprintf(stdout, "%d %10.6e\n", i + 601, boltz[i]);
     if (i == max) {
       y[i] = 1.0;
     } else {
       y[i] = 0.0;
     }
   }
+  fprintf(stdout, "-----------------\n");
   double xtest = 0.0;
   void *params = &odep;
 
@@ -175,8 +184,8 @@ main(int argc, char** argv)
       &sys, 
       gsl_odeiv2_step_bsimp,
       /* gsl_odeiv2_step_rkf45, */
-      1e-4,
-      1e-4,
+      1e-6,
+      1e-6,
       0.0);
 
   double t1 = 0.0; double ti = 0.0; double dt = 1.0;
