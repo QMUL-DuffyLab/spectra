@@ -74,7 +74,7 @@ odefunc(double x, const double *y, double *f, void *params)
   for (i = 0; i < p->N; i++) {
     for (j = 0; j < p->N; j++) {
       if (i == j) {
-        f[i] -= p->gamma[i] * y[i];
+        f[i] -= p->gamma[i] * y[i] - p->chiw[i];
       } else {
         f[i] += p->kij[i][j] * y[j];
       }
@@ -118,4 +118,17 @@ jacmat (ode_params *p)
     }
   }
   return Jij;
+}
+
+double
+trapezoid(double *f, unsigned int n)
+{
+    double dx = 1./n;
+    double complex sum;
+
+    sum = 0.5 * dx * (f[0] + f[n - 1]);
+    for (unsigned int i = 1; i < n - 1; i++) {
+	sum += dx * f[i];
+    }
+    return sum;
 }

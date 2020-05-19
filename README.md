@@ -5,7 +5,7 @@ PLACEHOLDER README
 I haven't yet written any of the convenience stuff which will make this code usable by anyone but me.
 I also have not made it particularly readable yet so bear with me lol, make it work then make it nice
 
-basic requirements are `gcc, LAPACK, FFTW`. I use exactly one `gnu99` C extension (`strndup`) which could easily be changed but I'm lazy, otherwise I think it's all strictly `C99`.
+basic requirements are `gcc, gfortran, LAPACK, FFTW`. I use exactly one `gnu99` C extension (`strndup`) which could easily be changed but I'm lazy, otherwise I think it's all strictly `C99`.
 
 throughout this repo I've labelled pigments by ligand codes from RCSB PDB; e.g. chlorophyll a is CLA, chlorophyll b is CHL, fucoxanthin is A86, etc. etc.
 

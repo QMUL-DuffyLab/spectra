@@ -11,7 +11,7 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double musq, kd;
   double complex *ex, **gi_array;
-  double *eigvals, *gamma, *lambda, *integral,
+  double *eigvals, *gamma, *lambda, *integral, *chiw_ints,
          **wij, **kij, **Jij, **mu, **eig, **chiw;
   Parameters *line_params;
   fftw_complex *out, *in;
@@ -26,6 +26,7 @@ main(int argc, char** argv)
   }
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
+  double (*chi_p)[tau]; /* pointer to chi(w)[i] for each exciton */
 
   Input *p = read_input_file(argv[1]);
 
@@ -34,6 +35,7 @@ main(int argc, char** argv)
   gamma = calloc(p->N, sizeof(double));
   lambda = calloc(p->N, sizeof(double));
   line_params = malloc(p->N * sizeof(Parameters));
+  chiw_ints = calloc(p->N, sizeof(double));
   gamma = read(p->gamma_file, p->N);
   lambda = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
@@ -56,7 +58,7 @@ main(int argc, char** argv)
     wij[i] = calloc(p->N, sizeof(double));
     kij[i] = calloc(p->N, sizeof(double));
     Jij[i] = calloc(p->N, sizeof(double));
-    chiw[i] = calloc(p->N, sizeof(double));
+    chiw[i] = calloc(tau, sizeof(double));
 
   }
 
@@ -105,7 +107,7 @@ main(int argc, char** argv)
 
   ex = calloc(tau, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
-    musq = pow(mu[i][0], 2.) + pow(mu[i][2], 2.) + pow(mu[i][2], 2.);
+    musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
     for (unsigned int j = 0; j < tau; j++) {
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
@@ -119,18 +121,38 @@ main(int argc, char** argv)
       integral[j] += creal(out[j]) * musq * 2.0;
     }
 
+    /* NB: these two lines complain about pointer types
+     * but as far as I can tell they all point to the
+     * right places and the integral works correctly.
+     * it's because i defined chiw as double ** instead
+     * of double chiw[][] - can probably be fixed somehow. */
+    chi_p = chiw[i];
+    chiw_ints[i] = trapezoid(chi_p, tau);
+    fprintf(stdout, "%d %10.6e\n", i, chiw_ints[i]);
+
+  }
+
+  /* one with the highest oscillator strength gets excited? */
+  unsigned int max = 0;
+  double musq_max = 0.0;
+  for (i = 0; i < p->N; i++) {
+    musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
+    if (musq > musq_max) {
+      max = i;
+      musq_max = musq;
+    }
   }
 
   ode_params odep;
   odep.N = p->N;
   odep.kij = kij;
   odep.gamma = gamma;
+  odep.chiw = chiw_ints;
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));
 
-  /* y = bcs(p->N, eigvals); */
   for (i = 0; i < p->N; i++) {
-    if (!i) {
+    if (i == max) {
       y[i] = 1.0;
     } else {
       y[i] = 0.0;

@@ -8,6 +8,7 @@ typedef struct {
   unsigned int N;
   double **kij;
   double *gamma;
+  double *chiw;
 } ode_params;
 
 double** rate_calc (unsigned int N, double **eig,
@@ -17,3 +18,4 @@ int odefunc (double x, const double *y, double *f, void *params);
 int jacobian (double t, const double y[], double *dfdy,
               double dfdt[], void *params);
 double* bcs (unsigned int N, double* eigvals);
+double trapezoid(double *f, unsigned int n);
