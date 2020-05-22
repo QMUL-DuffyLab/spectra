@@ -9,16 +9,12 @@ pop_converge(double *y, double *yprev, unsigned int N, double thresh)
   unsigned short int result = 0;
   double *diff = calloc(N, sizeof(double));
   unsigned int conv = 0;
-  fprintf(stdout, "differences: ");
   for (unsigned int i = 0; i < N; i++) {
     diff[i] = fabs(yprev[i] - y[i]);
-    fprintf(stdout, "%8.6f ", diff[i]);
     if (diff[i] < thresh) {
       conv++;
     }
   }
-  fprintf(stdout, "\n");
-  /* fprintf(stdout, "%d\n", conv); */
   if (conv == N) {
     result = 1;
   }
@@ -144,11 +140,6 @@ main(int argc, char** argv)
       integral[j] += creal(out[j]) * musq * 2.0;
     }
 
-    /* NB: these two lines complain about pointer types
-     * but as far as I can tell they all point to the
-     * right places and the integral works correctly.
-     * it's because i defined chiw as double ** instead
-     * of double chiw[][] - can probably be fixed somehow. */
     chi_p = chiw[i];
     chiw_ints[i] = trapezoid(chi_p, tau);
 
@@ -157,12 +148,13 @@ main(int argc, char** argv)
   /* one with the highest oscillator strength gets excited? */
   unsigned int max = 0;
   double musq_max = 0.0;
-  fprintf(stdout, "----------------------------------\n"
+  fprintf(stdout, "\n----------------------------------\n"
       "Osc. strengths and chi(w) integral\n"
-      "----------------------------------\n");
+      "----------------------------------\n\n");
+  fprintf(stdout, "Pigment        |μ^2|      ∫χ_i(w)\n");
   for (i = 0; i < p->N; i++) {
     musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
-    fprintf(stdout, "%d %10.6e %10.6e\n", i + 601, musq, chiw_ints[i]);
+    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, musq, chiw_ints[i]);
     if (musq > musq_max) {
       max = i;
       musq_max = musq;
@@ -181,10 +173,12 @@ main(int argc, char** argv)
   double *boltz = calloc(p->N, sizeof(double));
 
   boltz = bcs(p->N, eigvals);
-  fprintf(stdout, "-----------------\nBOLTZMANN WEIGHTS\n"
-                  "-----------------\n");
+  fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
+                  "-----------------\n\n");
+  fprintf(stdout, "Pigment          p_i    |μ^2|*p_i\n");
   for (i = 0; i < p->N; i++) {
-    fprintf(stdout, "%d %10.6e\n", i + 601, boltz[i]);
+    musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
+    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, boltz[i], boltz[i] * musq);
     if (i == max) {
       y[i] = 1.0;
     } else {
@@ -202,6 +196,9 @@ main(int argc, char** argv)
 
   /* do ODE solving
    * this doesn't work yet */
+  fprintf(stdout, "\n----------------------------------\n"
+      "ODE solver for exciton populations\n"
+      "----------------------------------\n\n");
 
   gsl_odeiv2_system sys = {odefunc, jacobian, p->N, params};
 
@@ -222,7 +219,7 @@ main(int argc, char** argv)
       yprev[j] = y[j];
     }
 
-    fprintf(stdout, "iteration %d: ", i);
+    /* fprintf(stdout, "iteration %d: ", i); */
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
     fprintf(stdout, "ti = %6.3f, ", ti);
     for (j = 0; j < p->N; j++) {
@@ -244,6 +241,19 @@ main(int argc, char** argv)
 
   }
   gsl_odeiv2_driver_free(d);
+
+  double *ynorm = calloc(p->N, sizeof(double));
+  double ysum = 0.0;
+  fprintf(stdout, "\n----------------------\nNormalised populations\n"
+      "----------------------\n\n");
+  for (i = 0; i < p->N; i++) {
+    ysum += y[i];
+  }
+  for (i = 0; i < p->N; i++) {
+    ynorm[i] = y[i] / ysum;
+    fprintf(stdout, "%8.6f ", ynorm[i]);
+  }
+  fprintf(stdout, "\n----------------------\n");
 
   fp = fopen(p->aw_file, "w");
   for (i = 0; i < tau; i++) {

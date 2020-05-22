@@ -18,7 +18,7 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        /* 100 cm^-1 = 53 fs^-1 */
+        /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 */
         /* this is the wrong way up i think */
         elem = (100.0/53000.0) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(fabs(wij[i][j]), vptr));
@@ -60,14 +60,14 @@ jacobian (double t, const double y[], double *dfdy,
         /*     (p->kij[i][j] * y[j]) - (p->gamma[i] * y[i]) + p->chiw[i]); */
         elem = (p->kij[i][j]) - (1. / (p->gamma[i] * 1000));
         if (print_elem) {
-          fprintf(stdout, "%d %d %10.6e ", i, j, elem);
+          fprintf(stdout, "%d %d %8.6f ", i, j, elem);
         }
         gsl_matrix_set (m_ptr, i, j, elem);
       } else {
         /* gsl_matrix_set (m_ptr, i, j, (p->kij[i][j] * y[j])); */
         elem = (p->kij[i][j]);
         if (print_elem) {
-          fprintf(stdout, "%d %d %10.6e ", i, j, elem);
+          fprintf(stdout, "%d %d %8.6f ", i, j, elem);
         }
         gsl_matrix_set (m_ptr, i, j, elem);
       }
@@ -90,12 +90,17 @@ odefunc(double x, const double *y, double *f, void *params)
   for (i = 0; i < p->N; i++) {
     for (j = 0; j < p->N; j++) {
       if (i == j) {
-        f[i] += p->kij[i][i] * y[i] - (p->gamma[i] * y[i]) + p->chiw[i];
+        /* f[i] += p->kij[i][i] * y[i] - (p->gamma[i] * y[i]) + p->chiw[i]; */
+        f[i] += p->kij[i][i] * y[i] 
+             - (y[i] * (1. / (1000 * p->gamma[i])))
+             + p->chiw[i];
       } else {
         f[i] += p->kij[i][j] * y[j];
       }
     }
-    /* fprintf(stdout, "i = %d; f[i] = %+f; y[i] = %+f\n", i, f[i], y[i]); */
+    /* fprintf(stdout, "i = %d; f[i] = %+f; y[i] = %+f ", i, f[i], y[i]); */
+    /* fprintf(stdout, "- y[i] * (1. / 1000 gamma_i) = %+f\n", */
+        /* - y[i] * (1. / (1000 * p->gamma[i]))); */
   }
   return GSL_SUCCESS;
 }
@@ -127,7 +132,7 @@ jacmat (ode_params *p)
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
-        Jij[i][j] = p->kij[i][j] - p->gamma[i];
+        Jij[i][j] = p->kij[i][j] - (1. / (p->gamma[i] * 1000));
       } else {
         Jij[i][j] = p->kij[i][j];
       }
