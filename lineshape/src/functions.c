@@ -14,6 +14,7 @@ cw_chl(double w, void* params)
      * with gsl_function when we do the quadrature */
     Parameters *p = (Parameters *) params;
     double pf = 2 * M_PI * CMS * 1E-15;
+
     /* 7! is 5040; this is the Renger form for chlorophyll */
     double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
     	      * (exp(-1. * sqrt(fabs(w * pf) / (pf * p->w1))));
