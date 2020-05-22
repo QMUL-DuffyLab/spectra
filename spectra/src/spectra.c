@@ -3,6 +3,28 @@
 #include <fftw3.h>
 #include <stdio.h>
 
+unsigned short int
+pop_converge(double *y, double *yprev, unsigned int N, double thresh)
+{
+  unsigned short int result = 0;
+  double *diff = calloc(N, sizeof(double));
+  unsigned int conv = 0;
+  fprintf(stdout, "differences: ");
+  for (unsigned int i = 0; i < N; i++) {
+    diff[i] = fabs(yprev[i] - y[i]);
+    fprintf(stdout, "%8.6f ", diff[i]);
+    if (diff[i] < thresh) {
+      conv++;
+    }
+  }
+  fprintf(stdout, "\n");
+  /* fprintf(stdout, "%d\n", conv); */
+  if (conv == N) {
+    result = 1;
+  }
+  return result;
+}
+
 int
 main(int argc, char** argv)
 {
@@ -154,6 +176,8 @@ main(int argc, char** argv)
   odep.chiw = chiw_ints;
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));
+  /* check convergence */
+  double *yprev = calloc(p->N, sizeof(double));
   double *boltz = calloc(p->N, sizeof(double));
 
   boltz = bcs(p->N, eigvals);
@@ -181,28 +205,41 @@ main(int argc, char** argv)
 
   gsl_odeiv2_system sys = {odefunc, jacobian, p->N, params};
 
+  double thresh = 1e-6;
   gsl_odeiv2_driver *d = gsl_odeiv2_driver_alloc_y_new(
       &sys, 
       gsl_odeiv2_step_bsimp,
       /* gsl_odeiv2_step_rkf45, */
-      1e-6,
-      1e-6,
+      thresh,
+      thresh,
       0.0);
 
   double t1 = 0.0; double ti = 0.0; double dt = 1.0;
   int status = 0;
   for (i = 0; i < tau; i++) {
     ti = (i * dt);
+    for (j = 0; j < p->N; j++) {
+      yprev[j] = y[j];
+    }
+
     fprintf(stdout, "iteration %d: ", i);
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
     fprintf(stdout, "ti = %6.3f, ", ti);
     for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "%6.4e ", y[j]);
+      fprintf(stdout, "%8.6f ", y[j]);
     }
     fprintf(stdout, "\n");
     if (status != GSL_SUCCESS) {
       fprintf(stdout, "error: return value = %d\n", status);
       exit(EXIT_FAILURE);
+    }
+    if (i > 0) {
+      unsigned short int converged = pop_converge(y, yprev, p->N, thresh);
+      if (converged) {
+        fprintf(stdout, "all populations converged to within %f; "
+            "ending integration at interation %d\n", thresh, i);
+        break;
+      }
     }
 
   }
