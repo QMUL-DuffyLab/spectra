@@ -20,13 +20,9 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
         vptr = &p[k];
         /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 */
         /* this is the wrong way up i think */
-        elem = (100.0/53000.0) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+        elem = (100. / 53000.) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cw(fabs(wij[i][j]), vptr));
         kij[i][j] += elem;
-        if (print_kij) {
-          /* fprintf(stdout, "%d %d %d %10.6e %10.6e %10.6e %10.6e %10.6e ", i, j, k, */
-          /*     wij[i][j], p[k].cw(wij[i][j], vptr), eig[i][k], eig[j][k], elem); */
-	}
       }
       if (print_kij) {
         fprintf(stdout, "\n%d %d %13.10e %13.10e", i, j, wij[i][j],
@@ -56,15 +52,12 @@ jacobian (double t, const double y[], double *dfdy,
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
-        /* gsl_matrix_set (m_ptr, i, j, */
-        /*     (p->kij[i][j] * y[j]) - (p->gamma[i] * y[i]) + p->chiw[i]); */
         elem = (p->kij[i][j]) - (1. / (p->gamma[i] * 1000));
         if (print_elem) {
           fprintf(stdout, "%d %d %8.6f ", i, j, elem);
         }
         gsl_matrix_set (m_ptr, i, j, elem);
       } else {
-        /* gsl_matrix_set (m_ptr, i, j, (p->kij[i][j] * y[j])); */
         elem = (p->kij[i][j]);
         if (print_elem) {
           fprintf(stdout, "%d %d %8.6f ", i, j, elem);
@@ -98,9 +91,6 @@ odefunc(double x, const double *y, double *f, void *params)
         f[i] += p->kij[i][j] * y[j];
       }
     }
-    /* fprintf(stdout, "i = %d; f[i] = %+f; y[i] = %+f ", i, f[i], y[i]); */
-    /* fprintf(stdout, "- y[i] * (1. / 1000 gamma_i) = %+f\n", */
-        /* - y[i] * (1. / (1000 * p->gamma[i]))); */
   }
   return GSL_SUCCESS;
 }
@@ -123,20 +113,25 @@ bcs (unsigned int N, double* eigvals)
 }
 
 double**
-jacmat (ode_params *p)
+jacmat (ode_params p)
 {
-  double **Jij = calloc(p->N, sizeof(double));
-  for (unsigned int i = 0; i < p->N; i++) {
-    Jij[i] = calloc(p->N, sizeof(double));
+  double **Jij = calloc(p.N, sizeof(double));
+  for (unsigned int i = 0; i < p.N; i++) {
+    Jij[i] = calloc(p.N, sizeof(double));
   }
-  for (unsigned int i = 0; i < p->N; i++) {
-    for (unsigned int j = 0; j < p->N; j++) {
+  fprintf(stdout, "\n---------------\nJacobian\n"
+      "---------------\n\n");
+  for (unsigned int i = 0; i < p.N; i++) {
+    for (unsigned int j = 0; j < p.N; j++) {
       if (i == j) {
-        Jij[i][j] = p->kij[i][j] - (1. / (p->gamma[i] * 1000));
+        Jij[i][j] = p.kij[i][j] - (1. / (p.gamma[i] * 1000));
+        fprintf(stdout, "%8.6f ", Jij[i][j]);
       } else {
-        Jij[i][j] = p->kij[i][j];
+        Jij[i][j] = p.kij[i][j];
+        fprintf(stdout, "%8.6f ", Jij[i][j]);
       }
     }
+    fprintf(stdout,"\n");
   }
   return Jij;
 }

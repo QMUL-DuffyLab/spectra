@@ -13,7 +13,7 @@ typedef struct {
 
 double** rate_calc (unsigned int N, double **eig,
                     double** wij, Parameters *p);
-double **jac_mat (ode_params p);
+double **jacmat (ode_params p);
 int odefunc (double x, const double *y, double *f, void *params);
 int jacobian (double t, const double y[], double *dfdy,
               double dfdt[], void *params);

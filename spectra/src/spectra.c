@@ -189,6 +189,8 @@ main(int argc, char** argv)
   double xtest = 0.0;
   void *params = &odep;
 
+  Jij = jacmat(odep);
+
   int ode_success = odefunc(xtest, y, f, params);
   if (ode_success != GSL_SUCCESS) {
     fprintf(stdout, "ode_success failed!\n");
@@ -271,6 +273,6 @@ main(int argc, char** argv)
   free(line); free(lineshape_files); free(ex); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
-  free(in); free(out);
+  free(in); free(out); free(y); free(f); free(boltz); free(yprev);
   exit(EXIT_SUCCESS);
 }
