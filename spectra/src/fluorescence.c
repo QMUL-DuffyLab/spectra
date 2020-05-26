@@ -39,6 +39,7 @@ jacobian (double t, const double y[], double *dfdy,
           double dfdt[], void *params)
 {
   (void)(t);
+  (void)(y);
   double elem;
   /* get parameter(s) from params_ptr; here, just a double */
   ode_params *p = (ode_params *) params;
