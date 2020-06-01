@@ -2,7 +2,8 @@
 #include "fluorescence.h"
 
 double**
-rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
+rate_calc(unsigned int N, double **eig, 
+          double *eigvals, double** wij, Parameters *p)
 {
   unsigned int i, j, k;
   double **kij;
@@ -13,7 +14,9 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
   }
 
   double elem = 0.0;
-  unsigned short print_kij = 0;
+  /* T = 300K here lol */
+  double beta = -1. / 300.0;
+  unsigned short print_kij = 1;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       for (k = 0; k < N; k++) {
@@ -24,11 +27,16 @@ rate_calc(unsigned int N, double **eig, double** wij, Parameters *p)
           p[k].cw(fabs(wij[i][j]), vptr));
         kij[i][j] += elem;
       }
-      if (print_kij) {
-        fprintf(stdout, "\n%d %d %13.10e %13.10e", i, j, wij[i][j],
-          kij[i][j]);
-        fprintf(stdout, "\n");
+      if (eigvals[i] < eigvals[j]) {
+        /* probably not correct yet */
+        kij[i][j] *= -1. * exp(-beta * (eigvals[j] - eigvals[i]));
       }
+      if (print_kij) {
+        fprintf(stdout, "%8.6e ", kij[i][j]);
+      }
+    }
+    if (print_kij) {
+      fprintf(stdout, "\n");
     }
   }
   return kij;
@@ -41,29 +49,24 @@ jacobian (double t, const double y[], double *dfdy,
   (void)(t);
   (void)(y);
   double elem;
-  /* get parameter(s) from params_ptr; here, just a double */
   ode_params *p = (ode_params *) params;
 
   gsl_matrix_view dfdy_mat = gsl_matrix_view_array (dfdy, p->N, p->N);
 
   gsl_matrix *m_ptr = &dfdy_mat.matrix;	/* m_ptr points to the matrix */
 
-  /* fill the Jacobian matrix as shown */
   unsigned short print_elem = 0;
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
         elem = (p->kij[i][j]) - (1. / (p->gamma[i] * 1000));
-        if (print_elem) {
-          fprintf(stdout, "%d %d %8.6f ", i, j, elem);
-        }
         gsl_matrix_set (m_ptr, i, j, elem);
       } else {
         elem = (p->kij[i][j]);
-        if (print_elem) {
-          fprintf(stdout, "%d %d %8.6f ", i, j, elem);
-        }
         gsl_matrix_set (m_ptr, i, j, elem);
+      }
+      if (print_elem) {
+        fprintf(stdout, "%d %d %8.6f ", i, j, elem);
       }
     }
     if (print_elem) {

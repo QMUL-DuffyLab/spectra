@@ -11,7 +11,7 @@ typedef struct {
   double *chiw;
 } ode_params;
 
-double** rate_calc (unsigned int N, double **eig,
+double** rate_calc (unsigned int N, double **eig, double *eigvals,
                     double** wij, Parameters *p);
 double **jacmat (ode_params p);
 int odefunc (double x, const double *y, double *f, void *params);

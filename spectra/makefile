@@ -38,6 +38,7 @@ endif
 
 SOURCES = ./src/input.c \
 	  ./src/fluorescence.c \
+	  ./src/steady_state.c \
 	  ./src/spectra.c \
 	  ../lineshape/src/parameters.c \
 	  ../lineshape/src/functions.c

@@ -1,5 +1,5 @@
 #include "input.h"
-#include "fluorescence.h"
+#include "steady_state.h"
 #include <fftw3.h>
 #include <stdio.h>
 
@@ -27,9 +27,9 @@ main(int argc, char** argv)
   FILE *fp;
   unsigned int tau, i, j;
   char *line, **lineshape_files;
-  double musq, kd;
+  double kd;
   double complex *ex, **gi_array;
-  double *eigvals, *gamma, *lambda, *integral, *chiw_ints,
+  double *eigvals, *gamma, *musq, *lambda, *integral, *chiw_ints,
          **wij, **kij, **Jij, **mu, **eig, **chiw;
   Parameters *line_params;
   fftw_complex *out, *in;
@@ -52,6 +52,7 @@ main(int argc, char** argv)
   /* malloc 1d stuff, read them in */
   eigvals = calloc(p->N, sizeof(double));
   gamma = calloc(p->N, sizeof(double));
+  musq = calloc(p->N, sizeof(double));
   lambda = calloc(p->N, sizeof(double));
   line_params = malloc(p->N * sizeof(Parameters));
   chiw_ints = calloc(p->N, sizeof(double));
@@ -106,6 +107,8 @@ main(int argc, char** argv)
     }
 
     for (j = 0; j < p->N; j++) {
+      /* this might just be eigval[i] - eigval[j] */
+      /* the equations aren't balanced! need to include rates away from i etc. */
       wij[i][j] = ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
     }
   }
@@ -115,7 +118,7 @@ main(int argc, char** argv)
       exit(EXIT_FAILURE);
   }
 
-  kij = rate_calc(p->N, eig, wij, line_params);
+  kij = rate_calc(p->N, eig, eigvals, wij, line_params);
 
   integral = calloc(tau, sizeof(double));
 
@@ -126,7 +129,7 @@ main(int argc, char** argv)
 
   ex = calloc(tau, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
-    musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
+    musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
     for (unsigned int j = 0; j < tau; j++) {
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
@@ -136,8 +139,8 @@ main(int argc, char** argv)
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
-      chiw[i][j] = creal(out[j]) * musq * 2.0;
-      integral[j] += creal(out[j]) * musq * 2.0;
+      chiw[i][j] = creal(out[j]) * musq[i] * 2.0;
+      integral[j] += creal(out[j]) * musq[i] * 2.0;
     }
 
     chi_p = chiw[i];
@@ -153,11 +156,10 @@ main(int argc, char** argv)
       "----------------------------------\n\n");
   fprintf(stdout, "Pigment        |μ^2|      ∫χ_i(w)\n");
   for (i = 0; i < p->N; i++) {
-    musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
-    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, musq, chiw_ints[i]);
-    if (musq > musq_max) {
+    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, musq[i], chiw_ints[i]);
+    if (musq[i] > musq_max) {
       max = i;
-      musq_max = musq;
+      musq_max = musq[i];
     }
   }
 
@@ -177,17 +179,68 @@ main(int argc, char** argv)
                   "-----------------\n\n");
   fprintf(stdout, "Pigment          p_i    |μ^2|*p_i\n");
   for (i = 0; i < p->N; i++) {
-    musq = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
-    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, boltz[i], boltz[i] * musq);
-    if (i == max) {
-      y[i] = 1.0;
-    } else {
-      y[i] = 0.0;
-    }
+    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, boltz[i],
+        boltz[i] * musq[i]);
+    /* possible initial values for transient absorption? */
+    /* if (i == max) { */
+    /*   y[i] = 1.0; */
+    /* } else { */
+    /*   y[i] = 0.0; */
+    /* } */
   }
   fprintf(stdout, "-----------------\n");
   double xtest = 0.0;
   void *params = &odep;
+
+  fprintf(stdout, "\n-------------------------\nSTEADY STATE FLUORESCENCE\n"
+                  "-------------------------\n\n");
+
+  const gsl_multiroot_fdfsolver_type *T;
+  gsl_multiroot_fdfsolver *s;
+  gsl_vector *x = gsl_vector_alloc(p->N);
+  /* initial guesses for populations */
+  for (i = 0; i < p->N; i++){
+    gsl_vector_set(x, i, boltz[i] * musq[i]);
+  }
+
+  gsl_multiroot_function_fdf FDF;
+  FDF.f = &pop_steady_f;
+  FDF.df = &pop_steady_df;
+  FDF.fdf = &pop_steady_fdf;
+  FDF.n = p->N;
+  FDF.params = params;
+
+  T = gsl_multiroot_fdfsolver_hybridsj;
+  s = gsl_multiroot_fdfsolver_alloc(T, p->N);
+  gsl_multiroot_fdfsolver_set(s, &FDF, x);
+
+  int status;
+  unsigned int iter = 0;
+
+  do
+    {
+      iter++;
+      status = gsl_multiroot_fdfsolver_iterate (s);
+
+      fprintf(stdout, "iter %d: ", iter);
+      for (i = 0; i < p->N; i++) {
+        fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i));
+      }
+      fprintf(stdout, "\n");
+
+      if (status)   /* check if solver is stuck */
+        break;
+
+      status =
+        gsl_multiroot_test_residual (s->f, 1e-7);
+    }
+  while (status == GSL_CONTINUE && iter < 1000);
+
+  printf ("status = %s\n", gsl_strerror (status));
+
+  gsl_multiroot_fdfsolver_free (s);
+  gsl_vector_free (x);
+  return 0;
 
   Jij = jacmat(odep);
 
@@ -214,7 +267,7 @@ main(int argc, char** argv)
       0.0);
 
   double t1 = 0.0; double ti = 0.0; double dt = 1.0;
-  int status = 0;
+  status = 0;
   for (i = 0; i < tau; i++) {
     ti = (i * dt);
     for (j = 0; j < p->N; j++) {
