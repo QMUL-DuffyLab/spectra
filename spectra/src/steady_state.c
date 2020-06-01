@@ -9,7 +9,8 @@ pop_steady_f
     double elem = 0.0;
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
-        elem -= (1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i);
+        elem += (-1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i)
+          + p->chiw[i];
       }
       elem += p->kij[i][j] * gsl_vector_get(x, j);
     }
@@ -26,7 +27,7 @@ pop_steady_df
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
-        gsl_matrix_set(J, i, j, (1. / (1000 * p->gamma[i])));
+        gsl_matrix_set(J, i, j, - (1. / (1000 * p->gamma[i])));
       }
       gsl_matrix_set(J, i, j, p->kij[i][j]);
     }
@@ -43,10 +44,10 @@ pop_steady_fdf
     double elem = 0.0;
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
-        /* elem -= (1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i)
-         * - p->chiw[i]; */
-        elem -= (1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i);
-        gsl_matrix_set(J, i, j, (1. / (1000 * p->gamma[i])));
+        elem += (-1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i)
+        + p->chiw[i];
+        /* elem -= (1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i); */
+        gsl_matrix_set(J, i, j, - (1. / (1000 * p->gamma[i])));
       }
       elem += p->kij[i][j] * gsl_vector_get(x, j);
       gsl_matrix_set(J, i, j, p->kij[i][j]);

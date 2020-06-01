@@ -199,9 +199,12 @@ main(int argc, char** argv)
   gsl_multiroot_fdfsolver *s;
   gsl_vector *x = gsl_vector_alloc(p->N);
   /* initial guesses for populations */
+  fprintf(stdout, "Initial population guess:\n");
   for (i = 0; i < p->N; i++){
     gsl_vector_set(x, i, boltz[i] * musq[i]);
+    fprintf(stdout, "%d %8.6f ", i, boltz[i] * musq[i]);
   }
+  fprintf(stdout, "\n");
 
   gsl_multiroot_function_fdf FDF;
   FDF.f = &pop_steady_f;
@@ -240,7 +243,7 @@ main(int argc, char** argv)
 
   gsl_multiroot_fdfsolver_free (s);
   gsl_vector_free (x);
-  return 0;
+  /* return 0; */
 
   Jij = jacmat(odep);
 
