@@ -29,7 +29,7 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double kd;
   double complex *ex, **gi_array;
-  double *eigvals, *gamma, *musq, *lambda, *integral, *chiw_ints,
+  double *eigvals, *gamma, *rates, *musq, *lambda, *integral, *chiw_ints,
          **wij, **kij, **Jij, **mu, **eig, **chiw;
   Parameters *line_params;
   fftw_complex *out, *in;
@@ -52,6 +52,7 @@ main(int argc, char** argv)
   /* malloc 1d stuff, read them in */
   eigvals = calloc(p->N, sizeof(double));
   gamma = calloc(p->N, sizeof(double));
+  rates = calloc(p->N, sizeof(double));
   musq = calloc(p->N, sizeof(double));
   lambda = calloc(p->N, sizeof(double));
   line_params = malloc(p->N * sizeof(Parameters));
@@ -119,6 +120,7 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->N, eig, eigvals, wij, line_params);
+  rates = relaxation_rates(p->N, gamma, kij);
 
   integral = calloc(tau, sizeof(double));
 

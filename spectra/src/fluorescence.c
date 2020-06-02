@@ -43,7 +43,7 @@ rate_calc(unsigned int N, double **eig,
 }
 
 double*
-rates
+relaxation_rates
 (unsigned int N, double *gamma, double **kij)
 {
   double *res = calloc(N, sizeof(double));
