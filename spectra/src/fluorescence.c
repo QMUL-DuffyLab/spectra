@@ -42,6 +42,20 @@ rate_calc(unsigned int N, double **eig,
   return kij;
 }
 
+double*
+rates
+(unsigned int N, double *gamma, double **kij)
+{
+  double *res = calloc(N, sizeof(double));
+  for (unsigned int i = 0; i < N; i++) {
+    res[i] = (1. / (1000 * gamma[i]));
+    for (unsigned int j = 0; j < N; j++) {
+      res[i] += kij[i][j];
+    }
+  }
+  return res;
+}
+
 int
 jacobian (double t, const double y[], double *dfdy,
           double dfdt[], void *params)
