@@ -1,9 +1,7 @@
 PLACEHOLDER README
 ==================
 
-
-I haven't yet written any of the convenience stuff which will make this code usable by anyone but me.
-I also have not made it particularly readable yet so bear with me lol, make it work then make it nice
+Code is not particularly convenient to use (or well written!) yet, bear with me :)
 
 basic requirements are `gcc, gfortran, LAPACK, FFTW`. I use exactly one `gnu99` C extension (`strndup`) which could easily be changed but I'm lazy, otherwise I think it's all strictly `C99`.
 
