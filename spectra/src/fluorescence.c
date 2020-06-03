@@ -73,7 +73,7 @@ jacobian (double t, const double y[], double *dfdy,
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
       if (i == j) {
-        elem = (p->kij[i][j]) - (1. / (p->gamma[i] * 1000));
+        elem = (p->kij[i][j]) - p->rates[i];
         gsl_matrix_set (m_ptr, i, j, elem);
       } else {
         elem = (p->kij[i][j]);
@@ -103,7 +103,7 @@ odefunc(double x, const double *y, double *f, void *params)
       if (i == j) {
         /* f[i] += p->kij[i][i] * y[i] - (p->gamma[i] * y[i]) + p->chiw[i]; */
         f[i] += p->kij[i][i] * y[i] 
-             - (y[i] * (1. / (1000 * p->gamma[i])))
+             - (y[i] * p->rates[i])
              + p->chiw[i];
       } else {
         f[i] += p->kij[i][j] * y[j];
@@ -142,7 +142,7 @@ jacmat (ode_params p)
   for (unsigned int i = 0; i < p.N; i++) {
     for (unsigned int j = 0; j < p.N; j++) {
       if (i == j) {
-        Jij[i][j] = p.kij[i][j] - (1. / (p.gamma[i] * 1000));
+        Jij[i][j] = p.kij[i][j] - p.rates[i];
         fprintf(stdout, "%8.6f ", Jij[i][j]);
       } else {
         Jij[i][j] = p.kij[i][j];

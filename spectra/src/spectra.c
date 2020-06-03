@@ -168,7 +168,7 @@ main(int argc, char** argv)
   ode_params odep;
   odep.N = p->N;
   odep.kij = kij;
-  odep.gamma = gamma;
+  odep.rates = rates;
   odep.chiw = chiw_ints;
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));

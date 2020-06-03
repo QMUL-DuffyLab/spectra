@@ -7,7 +7,7 @@
 typedef struct {
   unsigned int N;
   double **kij;
-  double *gamma;
+  double *rates;
   double *chiw;
 } ode_params;
 
