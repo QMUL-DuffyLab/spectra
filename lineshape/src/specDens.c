@@ -12,12 +12,12 @@ main(int argc, char** argv)
 {
     time_t start_time, end_time;
     time(&start_time);
-    Parameters p, *pt;
+    Parameters p;
     double *times;
     double complex *Atv, *Ftv;
     fftw_complex *out, *in;
     fftw_plan plan;
-    double (*cw)(double, void *);
+    double complex (*cw)(double, void *);
     double (*re)(double, void *);
     double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_function gsl_reorg, gsl_re, gsl_im;

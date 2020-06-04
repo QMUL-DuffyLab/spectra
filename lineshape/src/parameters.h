@@ -16,7 +16,7 @@ typedef struct {
 
 typedef struct {
     double s0, s1, s2, g0, g1, g2, l0, l1, l2, w1, w2, ti, T;
-    double (* cw)(double, void *);
+    double complex (* cw)(double, void *);
     int ligand; /* 1 for chlorophyll, 0 for carotenoid */
     char aw_file[200], gt_file[200];
     char fw_file[200], lambda_file[200];
