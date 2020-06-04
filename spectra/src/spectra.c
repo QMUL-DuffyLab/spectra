@@ -29,8 +29,8 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double kd;
   double complex *ex, **gi_array;
-  double *eigvals, *gamma, *rates, *musq, *lambda, *integral, *chiw_ints,
-         **wij, **kij, **Jij, **mu, **eig, **chiw;
+  double *eigvals, *gamma, *rates, *musq, *lambda, *integral,
+         *chiw_ints, **wij, **kij, **Jij, **mu, **eig, **chiw;
   Parameters *line_params;
   fftw_complex *out, *in;
   fftw_plan plan;
@@ -149,6 +149,21 @@ main(int argc, char** argv)
     chiw_ints[i] = trapezoid(chi_p, tau);
 
   }
+
+  fprintf(stdout, "\nWriting A(w) file\n");
+  fp = fopen(p->aw_file, "w");
+  for (i = 0; i < tau; i++) {
+    /* unpack the ordering used by FFTW */
+    kd = i * 2. * M_PI / (tau);
+    fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
+        creal(integral[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
+  }
+  cl = fclose(fp);
+  if (cl != 0) {
+      fprintf(stdout, "Failed to close A(w) output file %d.\n", cl);
+      exit(EXIT_FAILURE);
+  }
+
 
   /* one with the highest oscillator strength gets excited? */
   unsigned int max = 0;
@@ -314,19 +329,6 @@ main(int argc, char** argv)
     fprintf(stdout, "%8.6f ", ynorm[i]);
   }
   fprintf(stdout, "\n----------------------\n");
-
-  fp = fopen(p->aw_file, "w");
-  for (i = 0; i < tau; i++) {
-    /* unpack the ordering used by FFTW */
-    kd = i * 2. * M_PI / (tau);
-    fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        creal(integral[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
-  }
-  cl = fclose(fp);
-  if (cl != 0) {
-      fprintf(stdout, "Failed to close A(w) output file %d.\n", cl);
-      exit(EXIT_FAILURE);
-  }
 
   free(line); free(lineshape_files); free(ex); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);

@@ -14,6 +14,6 @@ endif
 $(EXEC):
 	$(GF) $(DEBUGFLAGS) $(SOURCE) $(LFLAGS) $(CFLAGS) -o $(EXEC)
 
-.PHONY: clean
-clean:
+.PHONY: cleaner
+cleaner:
 	\rm -f $(EXEC)

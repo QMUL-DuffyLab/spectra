@@ -51,7 +51,7 @@ get_parameters(char *filename)
      * assign to p.ligand here because functions.h isn't included*/
     if (strstr(filename, "CLA") != NULL
      || strstr(filename, "CHL") != NULL) {
-    	fprintf(stdout, "Ligand name read as %s; using chlorophyll "
+    	fprintf(stdout, "Ligand name read as %s; using Renger "
     		"spectral density\n", filename);
     	p.ligand = 1;
     } else if (strstr(filename, "KC1") != NULL
