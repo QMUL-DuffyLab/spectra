@@ -17,9 +17,9 @@ cw_chl(double w, void* params)
 
     /* 7! is 5040; this is the Renger form for chlorophyll */
     double complex c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
-    	      * (exp(-1. * csqrt((w) / (p->w1))));
+    	      * (cexp(-1. * csqrt((w) / (p->w1))));
     double complex c2 = (p->s2 / (5040 * 2 * pow(p->w2, 4.)))
-    	      * (exp(-1. * csqrt((w) / (p->w2))));
+    	      * (cexp(-1. * csqrt((w) / (p->w2))));
     return ((M_PI * p->s0 * pow(w, 5.)) / (p->s1 + p->s2)) * (c1 + c2);
 }
 
