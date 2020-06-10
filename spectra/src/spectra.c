@@ -106,6 +106,7 @@ main(int argc, char** argv)
           "No idea what's happened here.\n",
           i, line_params[i].ligand);
     }
+    line_params[i].cn = &cn;
 
     for (j = 0; j < p->N; j++) {
       /* this might just be eigval[i] - eigval[j] */

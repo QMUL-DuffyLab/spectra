@@ -49,6 +49,17 @@ cw_odo(double w, void* params)
     return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
 }
 
+double complex
+cn(double w, void* params)
+{
+  /* cw_x is C''(w) - spectral density (odd). C_n from
+   * the mancal paper is the sum of even and odd parts - 
+   * enters in the Redfield rate equations for k_{ij} */
+  Parameters *p = (Parameters *) params;
+  double hbeta = 1.439 / p->T;
+  return (1. + (1. / tanh(0.5 * w * hbeta))) * p->cw(w, p);
+}
+
 /* the integral for g(t) includes the spectral density function,
  * which should be switchable, but we need to call a function pointer
  * of a specific form later on. Hence, add a function pointer to the params
@@ -98,6 +109,6 @@ At(double w0, double re, double im, double t,
 double complex
 Ft(double w0, double re, double im, double reorg, double t)
 {
-    double complex exponent = -I * ((w0 * t) - (2. * reorg)) - (re + (I * im));
+    double complex exponent = -I * ((w0 * t) - (2. * reorg)) - (re - (I * im));
     return cexp(exponent);
 }

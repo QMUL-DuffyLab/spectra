@@ -23,8 +23,11 @@ rate_calc(unsigned int N, double **eig,
         vptr = &p[k];
         /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 */
         /* this is the wrong way up i think */
+        if (i == j) {
+          continue;
+        }
         elem = (100. / 53000.) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
-          p[k].cw(fabs(wij[i][j]), vptr));
+          p[k].cn(fabs(wij[i][j]), vptr));
         kij[i][j] += elem;
       }
       if (eigvals[i] < eigvals[j]) {

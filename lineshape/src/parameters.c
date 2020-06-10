@@ -45,7 +45,7 @@ get_parameters(char *filename)
     p.l0 = 0.0; p.l1 = 0.0; p.l2 = 0.0;
     p.l0 = 0.0; p.w1 = 0.0; p.w2 = 0.0;
     p.ti = 0.0; p.T = 0.0;
-    p.cw = NULL;
+    p.cw = NULL; p.cn = NULL;
 
     /* check filename to get ligand and spectral density ansatz.
      * assign to p.ligand here because functions.h isn't included*/

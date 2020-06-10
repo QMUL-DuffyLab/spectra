@@ -18,6 +18,7 @@ main(int argc, char** argv)
     fftw_complex *out, *in;
     fftw_plan plan;
     double complex (*cw)(double, void *);
+    double complex (*cn)(double, void *);
     double (*re)(double, void *);
     double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_function gsl_reorg, gsl_re, gsl_im;
@@ -41,8 +42,8 @@ main(int argc, char** argv)
     Ftv   = malloc(pr.ns * sizeof(double complex));
 
     if (p.ligand == 1) {
-	cw = &cw_chl;
-	/* cw = &cw_odo; */
+	/* cw = &cw_chl; */
+	cw = &cw_odo;
     } else if (p.ligand == 2) {
 	cw = &cw_odo;
     } else if (p.ligand == 0) {
@@ -53,6 +54,7 @@ main(int argc, char** argv)
     }
 
     p.cw = cw;
+    p.cn = cn;
 
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
 
