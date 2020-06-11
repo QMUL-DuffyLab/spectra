@@ -8,14 +8,14 @@ rate_calc(unsigned int N, double **eig,
   unsigned int i, j, k;
   double **kij;
   void *vptr;
-  kij = calloc(N, sizeof(double));
+  kij = calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
     kij[i] = calloc(N, sizeof(double));
   }
 
   double elem = 0.0;
   /* T = 300K here lol */
-  double beta = -1. / 300.0;
+  double beta = 1. / 300.0;
   unsigned short print_kij = 1;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
@@ -30,7 +30,7 @@ rate_calc(unsigned int N, double **eig,
           p[k].cn(fabs(wij[i][j]), vptr));
         kij[i][j] += elem;
       }
-      if (eigvals[i] < eigvals[j]) {
+      if (eigvals[i] > eigvals[j]) {
         /* probably not correct yet */
         kij[i][j] *= -1. * exp(-beta * (eigvals[j] - eigvals[i]));
       }
