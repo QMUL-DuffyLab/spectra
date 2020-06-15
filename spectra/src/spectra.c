@@ -28,7 +28,7 @@ main(int argc, char** argv)
   unsigned int tau, i, j;
   char *line, **lineshape_files;
   double kd;
-  double complex *ex, **gi_array;
+  double complex **gi_array;
   double *eigvals, *gamma, *rates, *musq, *lambda, *integral,
          *chiw_ints, **wij, **kij, **Jij, **mu, **eig, **chiw;
   Parameters *line_params;
@@ -130,14 +130,13 @@ main(int argc, char** argv)
   plan = fftw_plan_dft_1d(tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  ex = calloc(tau, sizeof(double complex));
   for (i = 0; i < p->N; i++) {
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
     for (unsigned int j = 0; j < tau; j++) {
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
                  (double)j * TOFS, line_params[i].l1, line_params[i].l2,
-                 1. / gamma[i]);
+                 1. / (gamma[i]));
     }
 
     fftw_execute(plan); 
@@ -330,7 +329,7 @@ main(int argc, char** argv)
   }
   fprintf(stdout, "\n----------------------\n");
 
-  free(line); free(lineshape_files); free(ex); free(integral);
+  free(line); free(lineshape_files); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
   free(in); free(out); free(y); free(f); free(boltz); free(yprev);
