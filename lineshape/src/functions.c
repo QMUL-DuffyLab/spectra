@@ -7,7 +7,7 @@
 #endif
 
 /* Chl spectral density */
-double complex
+double
 cw_chl(double w, void* params)
 {
     /* Pass a void pointer and cast it here for compatibility
@@ -16,23 +16,23 @@ cw_chl(double w, void* params)
     /* double pf = 2 * M_PI * CMS * 1E-15; */
 
     /* 7! is 5040; this is the Renger form for chlorophyll */
-    double complex c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
-    	      * (cexp(-1. * csqrt((w) / (p->w1))));
-    double complex c2 = (p->s2 / (5040 * 2 * pow(p->w2, 4.)))
-    	      * (cexp(-1. * csqrt((w) / (p->w2))));
+    double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
+    	      * (exp(-1. * sqrt(fabs(w) / (p->w1))));
+    double c2 = (p->s2 / (5040 * 2 * pow(p->w2, 4.)))
+    	      * (exp(-1. * sqrt(fabs(w) / (p->w2))));
     return ((M_PI * p->s0 * pow(w, 5.)) / (p->s1 + p->s2)) * (c1 + c2);
 }
 
 /* Car spectral density */
-double complex
+double
 cw_car(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
     /* ansatz from Kieran's paper on carotenoids */
-    double complex c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
+    double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
     	      (pow((pow(w, 2.) - pow(p->w1, 2.)), 2.)
    	    + (pow(w, 2.) * pow(p->g1, 2.)));
-    double complex c2 = 2. * p->l2 * (w * p->g2 * pow(p->w2, 2.)) /
+    double c2 = 2. * p->l2 * (w * p->g2 * pow(p->w2, 2.)) /
     	      (pow((pow(w, 2.) - pow(p->w2, 2.)), 2.)
     	    + (pow(w, 2.) * pow(p->g2, 2.)));
     return (c1 + c2 + 2 * p->l0 * (w * p->g0)
@@ -40,7 +40,7 @@ cw_car(double w, void* params)
 }
 
 /* overdamped brownian oscillator */
-double complex
+double
 cw_odo(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
@@ -49,8 +49,8 @@ cw_odo(double w, void* params)
     return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
 }
 
-double complex
-cn(double w, void* params)
+double
+c_n(double w, void* params)
 {
   /* cw_x is C''(w) - spectral density (odd). C_n from
    * the mancal paper is the sum of even and odd parts - 

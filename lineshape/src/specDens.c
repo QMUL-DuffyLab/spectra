@@ -17,9 +17,8 @@ main(int argc, char** argv)
     double complex *Atv, *Ftv;
     fftw_complex *out, *in;
     fftw_plan plan;
-    double complex (*cw)(double, void *);
-    double complex (*cn)(double, void *);
-    double (*re)(double, void *);
+    double (* cw)(double, void *);
+    double (* re)(double, void *);
     double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_function gsl_reorg, gsl_re, gsl_im;
 
@@ -54,7 +53,7 @@ main(int argc, char** argv)
     }
 
     p.cw = cw;
-    p.cn = cn;
+    p.cn = &c_n;
 
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
 

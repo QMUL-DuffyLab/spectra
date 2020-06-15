@@ -106,7 +106,7 @@ main(int argc, char** argv)
           "No idea what's happened here.\n",
           i, line_params[i].ligand);
     }
-    line_params[i].cn = &cn;
+    line_params[i].cn = &c_n;
 
     for (j = 0; j < p->N; j++) {
       /* this might just be eigval[i] - eigval[j] */
@@ -167,18 +167,18 @@ main(int argc, char** argv)
 
 
   /* one with the highest oscillator strength gets excited? */
-  unsigned int max = 0;
-  double musq_max = 0.0;
+  /* unsigned int max = 0; */
+  /* double musq_max = 0.0; */
   fprintf(stdout, "\n----------------------------------\n"
       "Osc. strengths and chi(w) integral\n"
       "----------------------------------\n\n");
   fprintf(stdout, "Pigment        |μ^2|      ∫χ_i(w)\n");
   for (i = 0; i < p->N; i++) {
     fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, musq[i], chiw_ints[i]);
-    if (musq[i] > musq_max) {
-      max = i;
-      musq_max = musq[i];
-    }
+    /* if (musq[i] > musq_max) { */
+    /*   max = i; */
+    /*   musq_max = musq[i]; */
+    /* } */
   }
 
   ode_params odep;
@@ -261,7 +261,6 @@ main(int argc, char** argv)
 
   gsl_multiroot_fdfsolver_free (s);
   gsl_vector_free (x);
-  /* return 0; */
 
   Jij = jacmat(odep);
 
