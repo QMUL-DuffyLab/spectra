@@ -3,24 +3,6 @@
 #include <fftw3.h>
 #include <stdio.h>
 
-unsigned short int
-pop_converge(double *y, double *yprev, unsigned int N, double thresh)
-{
-  unsigned short int result = 0;
-  double *diff = calloc(N, sizeof(double));
-  unsigned int conv = 0;
-  for (unsigned int i = 0; i < N; i++) {
-    diff[i] = fabs(yprev[i] - y[i]);
-    if (diff[i] < thresh) {
-      conv++;
-    }
-  }
-  if (conv == N) {
-    result = 1;
-  }
-  return result;
-}
-
 int
 main(int argc, char** argv)
 {

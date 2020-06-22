@@ -4,6 +4,8 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv2.h>
 
+unsigned short int pop_converge(double *y, double *yprev, 
+                                unsigned int N, double thresh);
 int pop_steady_f (gsl_vector *x, void *params, gsl_vector *f);
 int pop_steady_df (gsl_vector *x, void *params, gsl_matrix *J);
 int pop_steady_fdf (gsl_vector *x, void *params,
