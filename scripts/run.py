@@ -107,9 +107,10 @@ def run_frame(i):
     os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "in/lineshapes.{}".format(i)))
     os.system("python ./scripts/plot_aw.py -f {}".format(i))
 
-if args.frame == 0:
+if int(args.frame) == 0:
     for i in range(1000):
-        run_frame(i)
+        run_frame(i + 1) # range starts from 0
+
 else:
     run_frame(args.frame)
 
