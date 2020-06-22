@@ -17,6 +17,8 @@ parser.add_argument("-i", "--input_dir", default='LHCII',
         help="Relative path to input directory.")
 parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
+parser.add_argument("-f", "--frame", default=1,
+        help="MD frame to calculate for - pass 0 to loop over all frames")
 
 args = parser.parse_args()
 
@@ -95,12 +97,19 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
 
 input_dir  = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
-snapshot_number = 1 # replace this with for loop to iterate obv
 pigment_dirs = get_pigments(input_dir)
-print(pigment_dirs)
-input_file, output_path = construct_input_files(pigment_dirs, output_dir, snapshot_number, args.input_dir) # NB: assumes input_dir is just the name of the protein
-print("Frame {} complete.".format(output_path))
-os.system("./couplings/coupling_calc {} {}".format(input_file, output_path))
-os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "in/lineshapes.{}".format(snapshot_number)))
 
-# for i in range(1000):
+# this is so ugly lol needs tidying up in future
+def run_frame(i):
+    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir) # NB: assumes input_dir is just the name of the protein
+    print("Calculating for frame {}.\n\n".format(output_path))
+    os.system("./couplings/coupling_calc {} {}".format(input_file, output_path))
+    os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "in/lineshapes.{}".format(i)))
+    os.system("python ./scripts/plot_aw.py -f {}".format(i))
+
+if args.frame == 0:
+    for i in range(1000):
+        run_frame(i)
+else:
+    run_frame(args.frame)
+

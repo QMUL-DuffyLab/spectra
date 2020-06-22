@@ -27,12 +27,12 @@ rate_calc(unsigned int N, double **eig,
           continue;
         }
         elem = (100. / 53000.) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
-          p[k].cn(fabs(wij[i][j]), vptr));
+          p[k].cn((wij[i][j]), vptr));
         kij[i][j] += elem;
       }
       if (eigvals[i] > eigvals[j]) {
         /* probably not correct yet */
-        kij[i][j] *= -1. * exp(-beta * (eigvals[j] - eigvals[i]));
+        kij[i][j] *= -1. * exp(-beta * (eigvals[i] - eigvals[j]));
       }
       if (print_kij) {
         fprintf(stdout, "%8.6e ", kij[i][j]);
