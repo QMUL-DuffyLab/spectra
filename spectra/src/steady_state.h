@@ -6,7 +6,7 @@
 
 unsigned short int pop_converge(double *y, double *yprev, 
                                 unsigned int N, double thresh);
-int pop_steady_f (gsl_vector *x, void *params, gsl_vector *f);
-int pop_steady_df (gsl_vector *x, void *params, gsl_matrix *J);
-int pop_steady_fdf (gsl_vector *x, void *params,
+int pop_steady_f   (const gsl_vector *x, void *params, gsl_vector *f);
+int pop_steady_df  (const gsl_vector *x, void *params, gsl_matrix *J);
+int pop_steady_fdf (const gsl_vector *x, void *params,
                     gsl_vector *f, gsl_matrix *J);

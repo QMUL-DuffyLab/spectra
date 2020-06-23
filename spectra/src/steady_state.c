@@ -20,7 +20,7 @@ pop_converge(double *y, double *yprev, unsigned int N, double thresh)
 
 int
 pop_steady_f
-(gsl_vector *x, void *params, gsl_vector *f)
+(const gsl_vector *x, void *params, gsl_vector *f)
 {
   ode_params *p = (ode_params *)params;
   for (unsigned int i = 0; i < p->N; i++) {
@@ -39,7 +39,7 @@ pop_steady_f
 
 int
 pop_steady_df
-(gsl_vector *x, void *params, gsl_matrix *J)
+(const gsl_vector *x, void *params, gsl_matrix *J)
 {
   ode_params *p = (ode_params *)params;
   for (unsigned int i = 0; i < p->N; i++) {
@@ -55,7 +55,7 @@ pop_steady_df
 
 int
 pop_steady_fdf
-(gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
+(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
 {
   ode_params *p = (ode_params *)params;
   for (unsigned int i = 0; i < p->N; i++) {
