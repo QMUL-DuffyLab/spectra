@@ -41,6 +41,7 @@ int
 pop_steady_df
 (const gsl_vector *x, void *params, gsl_matrix *J)
 {
+  (void)(x); /* suppress warning */
   ode_params *p = (ode_params *)params;
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
