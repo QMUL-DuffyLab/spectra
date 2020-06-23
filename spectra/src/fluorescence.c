@@ -19,13 +19,13 @@ rate_calc(unsigned int N, double **eig,
   unsigned short print_kij = 1;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
+      if (i == j) {
+        continue;
+      }
       for (k = 0; k < N; k++) {
         vptr = &p[k];
         /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 */
         /* this is the wrong way up i think */
-        if (i == j) {
-          continue;
-        }
         elem = (100. / 53000.) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cn((wij[i][j]), vptr));
         kij[i][j] += elem;
