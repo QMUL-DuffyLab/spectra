@@ -14,7 +14,7 @@ rate_calc(unsigned int N, double **eig,
   }
 
   double elem = 0.0;
-  /* T = 300K here lol */
+  /* T = 300K here lol un hardcode at some point! */
   double beta = 1. / 300.0;
   unsigned short print_kij = 1;
   for (i = 0; i < N; i++) {
@@ -24,9 +24,9 @@ rate_calc(unsigned int N, double **eig,
       }
       for (k = 0; k < N; k++) {
         vptr = &p[k];
-        /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 */
-        /* this is the wrong way up i think */
-        elem = (100. / 53000.) * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
+        /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 : (100. / 53000.)?? */
+        double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
+        elem = cmperps * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
           p[k].cn((wij[i][j]), vptr));
         kij[i][j] += elem;
       }
@@ -52,9 +52,9 @@ relaxation_rates
   double *res = calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {
     res[i] = (1. / (1000 * gamma[i]));
-    for (unsigned int j = 0; j < N; j++) {
-      res[i] += kij[i][j];
-    }
+    /* for (unsigned int j = 0; j < N; j++) { */
+    /*   res[i] += kij[i][j]; */
+    /* } */
   }
   return res;
 }

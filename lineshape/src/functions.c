@@ -13,7 +13,7 @@ cw_chl(double w, void* params)
     /* Pass a void pointer and cast it here for compatibility
      * with gsl_function when we do the quadrature */
     Parameters *p = (Parameters *) params;
-    /* double pf = 2 * M_PI * CMS * 1E-15; */
+    /* double pf = 2 * M_PI * CMS * 100 * 1E-15; */
 
     /* 7! is 5040; this is the Renger form for chlorophyll */
     double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
@@ -109,6 +109,9 @@ At(double w0, double re, double im, double t,
 double complex
 Ft(double w0, double re, double im, double reorg, double t)
 {
-    double complex exponent = -I * ((w0 * t) - (2. * reorg)) - (re - (I * im));
+    /* hbar in lambda term??? */
+    double hbar = 1.;
+    double complex exponent = -I * (w0 - (2. * (reorg/hbar))) * t 
+                            - (re - (I * im));
     return cexp(exponent);
 }
