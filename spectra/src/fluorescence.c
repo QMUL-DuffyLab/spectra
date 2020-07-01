@@ -32,7 +32,7 @@ rate_calc(unsigned int N, double **eig,
       }
       if (eigvals[i] > eigvals[j]) {
         /* probably not correct yet */
-        kij[i][j] *= -1. * exp(-beta * (eigvals[i] - eigvals[j]));
+        kij[i][j] *= 1. * exp(-beta * (eigvals[i] - eigvals[j]));
       }
       if (print_kij) {
         fprintf(stdout, "%8.6e ", kij[i][j]);
