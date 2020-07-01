@@ -162,11 +162,19 @@ main(int argc, char** argv)
     /* } */
   }
 
+  /* this is very disorganised for now - clean up later!!! */
+  double **transfer = calloc(p->N, sizeof(double*));
+  for (i = 0; i < p->N; i++) {
+    transfer[i] = calloc(p->N, sizeof(double));
+  }
+  transfer = transfer_matrix(p->N, rates, kij);
+
   ode_params odep;
   odep.N = p->N;
   odep.kij = kij;
   odep.rates = rates;
   odep.chiw = chiw_ints;
+  odep.Fij = final_matrix(p->N, rates, transfer);
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));
   /* check convergence */
@@ -244,6 +252,11 @@ main(int argc, char** argv)
   gsl_vector_free (x);
 
   Jij = jacmat(odep);
+
+  /* this is the matrix-vector multiplication for the final
+   * set of equations:
+  gsl_blas_dgemv(CblasNoTrans, 1., final_matrix, x, 0., y);
+  */
 
   int ode_success = odefunc(xtest, y, f, params);
   if (ode_success != GSL_SUCCESS) {
