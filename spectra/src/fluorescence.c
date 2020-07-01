@@ -5,6 +5,8 @@ double**
 rate_calc(unsigned int N, double **eig, 
           double *eigvals, double** wij, Parameters *p)
 {
+  /* this function returns the transfer rates between states -
+   * it's *not* the transfer matrix! separate function for that */
   unsigned int i, j, k;
   double **kij;
   void *vptr;
@@ -49,6 +51,7 @@ double*
 relaxation_rates
 (unsigned int N, double *gamma, double **kij)
 {
+  /* this function just returns a vector of relaxation rates */
   double *res = calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {
     res[i] = (1. / (1000 * gamma[i]));
@@ -57,6 +60,54 @@ relaxation_rates
     /* } */
   }
   return res;
+}
+
+double**
+transfer_matrix
+(unsigned int N, double* relax, double** kij)
+{
+  /* returns the N x N transfer matrix.
+   * this can be optimised a lot later */
+  unsigned int i, j, k;
+  double **Tij;
+  Tij = calloc(N, sizeof(double*));
+  for (i = 0; i < N; i++) {
+    Tij[i] = calloc(N, sizeof(double));
+  }
+  for (i = 0; i < N; i++) {
+    for (j = 0; j < N; j++) {
+      if (i == j) {
+        Tij[i][j] = -1. * relax[i];
+        for (k = 0; k < N; k++) {
+          /* kij will be 0 on the diagonal so we
+           * don't need to worry about excluding it */
+          Tij[i][j] += (-1. * kij[i][k]);
+        }
+      } else {
+        Tij[i][j] = kij[i][j];
+      }
+    }
+  }
+  return Tij;
+}
+
+double**
+final_matrix
+(unsigned int N, double* chiw, double** Tij)
+{
+  /* the GSL routines need the whole matrix set up:
+   * this adds the final pumping term.
+   * again, can be optimised a lot later. */
+  unsigned int i;
+  double **Fij;
+  Fij = calloc(N, sizeof(double*));
+  for (i = 0; i < N; i++) {
+    Fij[i] = calloc(N, sizeof(double));
+  }
+  for (i = 0; i < N; i++) {
+    Fij[i][i] -= chiw[i];
+  }
+  return Fij;
 }
 
 int
