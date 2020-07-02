@@ -23,17 +23,7 @@ pop_steady_f
 (const gsl_vector *x, void *params, gsl_vector *f)
 {
   ode_params *p = (ode_params *)params;
-  for (unsigned int i = 0; i < p->N; i++) {
-    double elem = 0.0;
-    for (unsigned int j = 0; j < p->N; j++) {
-      if (i == j) {
-        elem += -1. * p->rates[i] * gsl_vector_get(x, i)
-          + p->chiw[i];
-      }
-      elem += p->kij[i][j] * gsl_vector_get(x, j);
-    }
-    gsl_vector_set(f, i, elem);
-  }
+  gsl_blas_dgemv(CblasNoTrans, 1., p->Fij, x, 0., f);
   return GSL_SUCCESS;
 }
 
