@@ -174,7 +174,7 @@ main(int argc, char** argv)
   odep.kij = kij;
   odep.rates = rates;
   odep.chiw = chiw_ints;
-  odep.Fij = final_matrix(p->N, rates, transfer);
+  odep.Tij = transfer_matrix(p->N, rates, kij);
   double *f = calloc(p->N, sizeof(double));
   double *y = calloc(p->N, sizeof(double));
   /* check convergence */

@@ -22,8 +22,24 @@ int
 pop_steady_f
 (const gsl_vector *x, void *params, gsl_vector *f)
 {
+  unsigned int i, j;
   ode_params *p = (ode_params *)params;
-  gsl_blas_dgemv(CblasNoTrans, 1., p->Fij, x, 0., f);
+  gsl_matrix *Tij_gsl = gsl_matrix_alloc(p->N, p->N);
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      gsl_matrix_set(Tij_gsl, i, j, p->Tij[i][j]);
+    }
+  }
+  gsl_blas_dgemv(CblasNoTrans, 1., Tij_gsl, x, 0., f);
+  gsl_vector* chiw_gsl = gsl_vector_alloc(p->N);
+  for (i = 0; i < p->N; i++) {
+    gsl_vector_set(chiw_gsl, i, p->chiw[i]);
+  }
+  gsl_vector_add(f, chiw_gsl);
+
+  gsl_vector_free(chiw_gsl);
+  gsl_matrix_free(Tij_gsl);
+
   return GSL_SUCCESS;
 }
 
@@ -35,10 +51,7 @@ pop_steady_df
   ode_params *p = (ode_params *)params;
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
-      if (i == j) {
-        gsl_matrix_set(J, i, j, - p->rates[i]);
-      }
-      gsl_matrix_set(J, i, j, p->kij[i][j]);
+      gsl_matrix_set(J, i, j, p->Tij[i][j]);
     }
   }
   return GSL_SUCCESS;
@@ -49,19 +62,8 @@ pop_steady_fdf
 (const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
 {
   ode_params *p = (ode_params *)params;
-  for (unsigned int i = 0; i < p->N; i++) {
-    double elem = 0.0;
-    for (unsigned int j = 0; j < p->N; j++) {
-      if (i == j) {
-        elem += -1. * p->rates[i] * gsl_vector_get(x, i)
-        + p->chiw[i];
-        /* elem -= (1. / (1000 * p->gamma[i])) * gsl_vector_get(x, i); */
-        gsl_matrix_set(J, i, j, -1. * p->rates[i]);
-      }
-      elem += p->kij[i][j] * gsl_vector_get(x, j);
-      gsl_matrix_set(J, i, j, p->kij[i][j]);
-    }
-    gsl_vector_set(f, i, elem);
-  }
+  pop_steady_f(x, p, f);
+  pop_steady_df(x, p, J);
+
   return GSL_SUCCESS;
 }

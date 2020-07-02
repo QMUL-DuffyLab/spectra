@@ -91,30 +91,6 @@ transfer_matrix
   return Tij;
 }
 
-double**
-final_matrix
-(unsigned int N, double* chiw, double** Tij)
-{
-  /* the GSL routines need the whole matrix set up:
-   * this adds the final pumping term.
-   * again, can be optimised a lot later. */
-  unsigned int i, j;
-  double **Fij;
-  Fij = calloc(N, sizeof(double*));
-  for (i = 0; i < N; i++) {
-    Fij[i] = calloc(N, sizeof(double));
-  }
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++) {
-      Fij[i][j] = Tij[i][j];
-      if (i == j) {
-        Fij[i][j] -= chiw[i];
-      }
-    }
-  }
-  return Fij;
-}
-
 int
 jacobian (double t, const double y[], double *dfdy,
           double dfdt[], void *params)
