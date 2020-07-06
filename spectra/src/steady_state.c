@@ -59,7 +59,7 @@ pop_steady_df
       if ((i == j) && (i != 0)) {
         elem -= p->chiw[i];
       }
-      gsl_matrix_set(J, i, j, p->Tij[i][j]);
+      gsl_matrix_set(J, i, j, elem);
     }
   }
   return GSL_SUCCESS;
