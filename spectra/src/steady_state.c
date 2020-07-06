@@ -23,6 +23,7 @@ pop_steady_f
 (const gsl_vector *x, void *params, gsl_vector *f)
 {
   unsigned int i, j;
+  double elem;
   ode_params *p = (ode_params *)params;
   gsl_matrix *Tij_gsl = gsl_matrix_alloc(p->N, p->N);
   for (i = 0; i < p->N; i++) {
@@ -33,7 +34,9 @@ pop_steady_f
   gsl_blas_dgemv(CblasNoTrans, 1., Tij_gsl, x, 0., f);
   gsl_vector* chiw_gsl = gsl_vector_alloc(p->N);
   for (i = 0; i < p->N; i++) {
-    gsl_vector_set(chiw_gsl, i, p->chiw[i]);
+    elem = p->chiw[i] * 
+         (gsl_vector_get(f, 0) - gsl_vector_get(f, i));
+    gsl_vector_set(chiw_gsl, i, elem);
   }
   gsl_vector_add(f, chiw_gsl);
 
@@ -48,9 +51,14 @@ pop_steady_df
 (const gsl_vector *x, void *params, gsl_matrix *J)
 {
   (void)(x); /* suppress warning */
+  double elem;
   ode_params *p = (ode_params *)params;
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
+      elem = p->Tij[i][j];
+      if ((i == j) && (i != 0)) {
+        elem -= p->chiw[i];
+      }
       gsl_matrix_set(J, i, j, p->Tij[i][j]);
     }
   }
