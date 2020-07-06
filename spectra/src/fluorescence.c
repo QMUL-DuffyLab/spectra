@@ -51,13 +51,11 @@ double*
 relaxation_rates
 (unsigned int N, double *gamma, double **kij)
 {
-  /* this function just returns a vector of relaxation rates */
+  /* take vector of lifetimes in ns,
+   * output relaxation rates in ps^{-1} */
   double *res = calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {
     res[i] = (1. / (1000 * gamma[i]));
-    /* for (unsigned int j = 0; j < N; j++) { */
-    /*   res[i] += kij[i][j]; */
-    /* } */
   }
   return res;
 }

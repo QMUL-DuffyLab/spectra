@@ -248,15 +248,20 @@ main(int argc, char** argv)
 
   printf ("status = %s\n", gsl_strerror (status));
 
+  double *p_i_equib = calloc(p->N, sizeof(double));
+  double p_i_sum = 0.0;
+  for (i = 0; i < p->N; i++) {
+    /* amazingly there does not seem to be a GSL function for this */
+    p_i_sum += gsl_vector_get(x, i);
+  }
+  fprintf(stdout, "\n");
+  for (i = 0; i < p->N; i++) {
+    p_i_equib[i] = gsl_vector_get(x, i) / p_i_sum;
+    fprintf(stdout, "%2d\t%8.6f\n", i, p_i_equib[i]);
+  }
+
   gsl_multiroot_fdfsolver_free (s);
   gsl_vector_free (x);
-
-  Jij = jacmat(odep);
-
-  /* this is the matrix-vector multiplication for the final
-   * set of equations:
-  gsl_blas_dgemv(CblasNoTrans, 1., final_matrix, x, 0., y);
-  */
 
   int ode_success = odefunc(xtest, y, f, params);
   if (ode_success != GSL_SUCCESS) {
