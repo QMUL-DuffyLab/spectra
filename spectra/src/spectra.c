@@ -186,7 +186,7 @@ main(int argc, char** argv)
                   "-----------------\n\n");
   fprintf(stdout, "Pigment          p_i    |μ^2|*p_i\n");
   for (i = 0; i < p->N; i++) {
-    fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, boltz[i],
+    fprintf(stdout, "%7d %8.6f %8.6f\n", i + 601, boltz[i],
         boltz[i] * musq[i]);
     /* possible initial values for transient absorption? */
     /* if (i == max) { */
@@ -232,11 +232,11 @@ main(int argc, char** argv)
       iter++;
       status = gsl_multiroot_fdfsolver_iterate (s);
 
-      fprintf(stdout, "iter %d: ", iter);
-      for (i = 0; i < p->N; i++) {
-        fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i));
-      }
-      fprintf(stdout, "\n");
+      /* fprintf(stdout, "iter %d: ", iter); */
+      /* for (i = 0; i < p->N; i++) { */
+      /*   fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i)); */
+      /* } */
+      /* fprintf(stdout, "\n"); */
 
       if (status)   /* check if solver is stuck */
         break;
@@ -250,14 +250,17 @@ main(int argc, char** argv)
 
   double *p_i_equib = calloc(p->N, sizeof(double));
   double p_i_sum = 0.0;
+  double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
     /* amazingly there does not seem to be a GSL function for this */
     p_i_sum += gsl_vector_get(x, i);
+    boltz_sum += boltz[i] * musq[i];
   }
   fprintf(stdout, "\n");
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(x, i) / p_i_sum;
-    fprintf(stdout, "%2d\t%8.6f\n", i, p_i_equib[i]);
+    fprintf(stdout, "%2d\t%8.6f\t%8.6f\n", i, p_i_equib[i],
+        (boltz[i] * musq[i]) / boltz_sum);
   }
 
   gsl_multiroot_fdfsolver_free (s);
