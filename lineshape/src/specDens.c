@@ -107,8 +107,9 @@ main(int argc, char** argv)
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
+        /* check this soon - leaving gamma as 0? */
 	Atv[i] = At(w0, re_res, im_res, cmtime, p.l1, p.l2, 0.0);
-	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime);
+	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime, 1./3);
     }
     fclose(fp);
 

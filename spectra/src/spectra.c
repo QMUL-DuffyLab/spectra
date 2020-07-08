@@ -210,6 +210,8 @@ main(int argc, char** argv)
   for (i = 0; i < p->N; i++){
     gsl_vector_set(x, i, boltz[i] * musq[i]);
     fprintf(stdout, "%d %8.6f ", i, boltz[i] * musq[i]);
+    /* gsl_vector_set(x, i, 1. / p->N); */
+    /* fprintf(stdout, "%d %8.6f ", i, 1. / p->N); */
   }
   fprintf(stdout, "\n");
 
@@ -232,11 +234,11 @@ main(int argc, char** argv)
       iter++;
       status = gsl_multiroot_fdfsolver_iterate (s);
 
-      /* fprintf(stdout, "iter %d: ", iter); */
-      /* for (i = 0; i < p->N; i++) { */
-      /*   fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i)); */
-      /* } */
-      /* fprintf(stdout, "\n"); */
+      fprintf(stdout, "iter %d: ", iter);
+      for (i = 0; i < p->N; i++) {
+        fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i));
+      }
+      fprintf(stdout, "\n");
 
       if (status)   /* check if solver is stuck */
         break;
@@ -253,14 +255,43 @@ main(int argc, char** argv)
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
     /* amazingly there does not seem to be a GSL function for this */
-    p_i_sum += gsl_vector_get(x, i);
+    p_i_sum += gsl_vector_get(s->x, i);
     boltz_sum += boltz[i] * musq[i];
   }
   fprintf(stdout, "\n");
   for (i = 0; i < p->N; i++) {
-    p_i_equib[i] = gsl_vector_get(x, i) / p_i_sum;
-    fprintf(stdout, "%2d\t%8.6f\t%8.6f\n", i, p_i_equib[i],
-        (boltz[i] * musq[i]) / boltz_sum);
+    p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
+    fprintf(stdout, "%2d\t%8.6f\t%8.6f\t%8.6f\n", i, p_i_equib[i],
+        gsl_vector_get(x, i), (boltz[i] * musq[i]) / boltz_sum);
+  }
+
+  /* fluorescence spectrum */
+  for (i = 0; i < p->N; i++) {
+    for (unsigned int j = 0; j < tau; j++) {
+      in[j] = gsl_vector_get(s->x, i) * Ft(eigvals[i],
+              creal(gi_array[i][j]), cimag(gi_array[i][j]),
+              lambda[i], (double)j * TOFS, 1. / gamma[i]);
+    }
+
+    fftw_execute(plan); 
+    for (unsigned int j = 0; j < tau; j++) {
+      integral[j] += creal(out[j]) * musq[i];
+    }
+
+  }
+
+  fprintf(stdout, "\nWriting F(w) file\n");
+  fp = fopen(p->fw_file, "w");
+  for (i = 0; i < tau; i++) {
+    /* unpack the ordering used by FFTW */
+    kd = i * 2. * M_PI / (tau);
+    fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
+        creal(integral[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
+  }
+  cl = fclose(fp);
+  if (cl != 0) {
+      fprintf(stdout, "Failed to close F(w) output file %d.\n", cl);
+      exit(EXIT_FAILURE);
   }
 
   gsl_multiroot_fdfsolver_free (s);

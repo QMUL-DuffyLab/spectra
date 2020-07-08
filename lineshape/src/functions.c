@@ -107,11 +107,12 @@ At(double w0, double re, double im, double t,
 }
 
 double complex
-Ft(double w0, double re, double im, double reorg, double t)
+Ft(double w0, double re, double im, double reorg, double t,
+   double gamma)
 {
     /* hbar in lambda term??? */
     double hbar = 1.;
     double complex exponent = -I * (w0 - (2. * (reorg/hbar))) * t 
-                            - (re - (I * im));
+                            - (re - (I * im) - (0.5 * t * gamma));
     return cexp(exponent);
 }
