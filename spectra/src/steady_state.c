@@ -25,6 +25,7 @@ incident(pulse p, unsigned int tau)
   double wn, diff, min;
   unsigned int min_arg;
   double *ww = calloc(tau, sizeof(double));
+  double sum = 0.0; /* lorentzian / gaussian won't be normalised */
   for (unsigned int i = 0; i < tau; i++) {
     wn = (i * 2. * M_PI / tau) * (1. / TOFS);
     if (p.type == FLAT) {
@@ -33,11 +34,12 @@ incident(pulse p, unsigned int tau)
     else if (p.type == LORENTZIAN) {
       ww[i] = (1. / (M_PI * p.width)) * pow(p.width, 2.) / 
               (pow(wn - p.centre, 2.) + pow(p.width, 2.));
-      fprintf(stdout, "%8.6f\t%8.6f\n", wn, ww[i]);
+      sum += ww[i];
     }
     else if (p.type == GAUSSIAN) {
       ww[i] = (1. / (p.width * sqrt(2. * M_PI))) *
               exp(0.5 * pow((wn - p.centre) / p.width, 2.));
+      sum += ww[i];
     }
     else if (p.type == DELTA) {
       /* the centre of the delta function probably
@@ -56,6 +58,11 @@ incident(pulse p, unsigned int tau)
      * closest bin to the centre of the delta function to 1
      * and be sure it's still normalised. */
     ww[min_arg] = 1.;
+  }
+  if (sum != 0.0) {
+    for (unsigned int i = 0; i < tau; i++) {
+      ww[i] /= sum;
+    }
   }
   return ww;
 }
