@@ -6,6 +6,9 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
 
+#ifndef __STEADY_STATE_H__
+#define __STEADY_STATE_H__
+
 typedef enum pulse_type {
   FLAT = 0,
   LORENTZIAN = 1,
@@ -30,3 +33,5 @@ int pop_steady_f   (const gsl_vector *x, void *params, gsl_vector *f);
 int pop_steady_df  (const gsl_vector *x, void *params, gsl_matrix *J);
 int pop_steady_fdf (const gsl_vector *x, void *params,
                     gsl_vector *f, gsl_matrix *J);
+
+#endif

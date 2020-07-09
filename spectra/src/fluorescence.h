@@ -5,6 +5,9 @@
 #include "input.h"
 #include "../../lineshape/src/parameters.h"
 
+#ifndef __FLUORESCENCE_H__
+#define __FLUORESCENCE_H__
+
 typedef struct {
   unsigned int N;
   double **kij;
@@ -24,3 +27,5 @@ int jacobian (double t, const double y[], double *dfdy,
               double dfdt[], void *params);
 double* bcs (unsigned int N, double* eigvals);
 double trapezoid(double *f, unsigned int n);
+
+#endif

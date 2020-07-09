@@ -1,18 +1,5 @@
 #include "steady_state.h"
 
-typedef enum pulse_type {
-  FLAT = 0,
-  LORENTZIAN = 1,
-  GAUSSIAN = 2,
-  DELTA = 3,
-} pulse_type;
-
-typedef struct pulse {
-  pulse_type type;
-  double centre;
-  double width;
-} pulse;
-
 unsigned short int
 pop_converge(double *y, double *yprev, unsigned int N, double thresh)
 {

@@ -1,4 +1,3 @@
-#include "input.h"
 #include "fluorescence.h"
 
 double**

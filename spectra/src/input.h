@@ -6,6 +6,9 @@
 #include "../../lineshape/src/parameters.h"
 #include "../../lineshape/src/functions.h"
 
+#ifndef __INPUT_H__
+#define __INPUT_H__
+
 #define MAX_PIGMENT_NUMBER 200
 #define EC 1.6022E-19
 #define E0 8.854E-12
@@ -29,3 +32,5 @@ double** read_eigvecs(char *input_file, unsigned int N);
 
 double complex** read_gi(char *input_files[], 
 		 unsigned int N, unsigned int tau);
+
+#endif
