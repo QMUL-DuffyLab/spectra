@@ -1,8 +1,9 @@
-#include "../../lineshape/src/parameters.h"
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv2.h>
+#include "input.h"
+#include "../../lineshape/src/parameters.h"
 
 typedef struct {
   unsigned int N;

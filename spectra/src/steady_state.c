@@ -1,5 +1,18 @@
 #include "steady_state.h"
 
+typedef enum pulse_type {
+  FLAT = 0,
+  LORENTZIAN = 1,
+  GAUSSIAN = 2,
+  DELTA = 3,
+} pulse_type;
+
+typedef struct pulse {
+  pulse_type type;
+  double centre;
+  double width;
+} pulse;
+
 unsigned short int
 pop_converge(double *y, double *yprev, unsigned int N, double thresh)
 {
@@ -16,6 +29,47 @@ pop_converge(double *y, double *yprev, unsigned int N, double thresh)
     result = 1;
   }
   return result;
+}
+
+double*
+incident(pulse p, unsigned int tau)
+{
+  /* returns W(\omega), the spectrum of incident light */
+  double wn, diff, min;
+  unsigned int min_arg;
+  double *ww = calloc(tau, sizeof(double));
+  for (unsigned int i = 0; i < tau; i++) {
+    wn = (i * 2. * M_PI / tau) * (1. / TOFS);
+    if (p.type == FLAT) {
+      ww[i] = 1. / tau;
+    }
+    else if (p.type == LORENTZIAN) {
+      ww[i] = (1. / (M_PI * p.width)) * pow(p.width, 2.) / 
+              (pow(wn - p.centre, 2.) + pow(p.width, 2.));
+    }
+    else if (p.type == GAUSSIAN) {
+      ww[i] = (1. / (p.width * sqrt(2. * M_PI))) *
+              exp(0.5 * pow((wn - p.centre) / p.width, 2.));
+    }
+    else if (p.type == DELTA) {
+      /* the centre of the delta function probably
+       * won't coincide exactly with any wn; hence put
+       * the pulse at min(centre - wn) */
+      diff = abs(p.centre - wn);
+      if (diff <= min) {
+        min = diff;
+        min_arg = i;
+      }
+    }
+  }
+  if (p.type == DELTA) {
+    /* if p.type is DELTA we haven't changed any element of
+     * ww, so they're still all 0. hence we can just set the
+     * closest bin to the centre of the delta function to 1
+     * and be sure it's still normalised. */
+    ww[min_arg] = 1.;
+  }
+  return ww;
 }
 
 int
