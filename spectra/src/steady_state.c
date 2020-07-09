@@ -38,7 +38,7 @@ incident(pulse p, unsigned int tau)
     }
     else if (p.type == GAUSSIAN) {
       ww[i] = (1. / (p.width * sqrt(2. * M_PI))) *
-              exp(0.5 * pow((wn - p.centre) / p.width, 2.));
+              exp(-0.5 * pow(abs(wn - p.centre) / p.width, 2.));
       sum += ww[i];
     }
     else if (p.type == DELTA) {
@@ -46,6 +46,10 @@ incident(pulse p, unsigned int tau)
        * won't coincide exactly with any wn; hence put
        * the pulse at min(centre - wn) */
       diff = abs(p.centre - wn);
+      if (i == 0) {
+        min = diff;
+        min_arg = i;
+      }
       if (diff <= min) {
         min = diff;
         min_arg = i;

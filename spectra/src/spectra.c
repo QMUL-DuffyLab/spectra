@@ -27,9 +27,7 @@ main(int argc, char** argv)
   }
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
-  /* testing a Lorentzian pulse centred at 15000cm^{-1} with FWHM
-   * 300cm^{-1} - at some point this should be switchable at runtime */
-  pulse pump_properties = { .type=1, .centre=15000., .width=300. };
+  pulse pump_properties = { .type=0, .centre=15000., .width=300. };
 
   Input *p = read_input_file(argv[1]);
 
