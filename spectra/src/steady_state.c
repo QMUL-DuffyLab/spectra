@@ -46,6 +46,7 @@ incident(pulse p, unsigned int tau)
     else if (p.type == LORENTZIAN) {
       ww[i] = (1. / (M_PI * p.width)) * pow(p.width, 2.) / 
               (pow(wn - p.centre, 2.) + pow(p.width, 2.));
+      fprintf(stdout, "%8.6f\t%8.6f\n", wn, ww[i]);
     }
     else if (p.type == GAUSSIAN) {
       ww[i] = (1. / (p.width * sqrt(2. * M_PI))) *

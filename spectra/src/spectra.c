@@ -11,8 +11,9 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double kd;
   double complex **gi_array;
-  double *eigvals, *gamma, *rates, *musq, *lambda, *integral,
-         *chiw_ints, **wij, **kij, **Jij, **mu, **eig, **chiw;
+  double *eigvals, *gamma, *rates, *musq, *chi_p,
+         *lambda, *integral, *chiw_ints, *ww,
+         **wij, **kij, **Jij, **mu, **eig, **chiw, **pump;
   Parameters *line_params;
   fftw_complex *out, *in;
   fftw_plan plan;
@@ -26,8 +27,9 @@ main(int argc, char** argv)
   }
 
   tau = 2000; /* again probably shouldn't hardcode this but oh well */
-  /* double (*chi_p)[tau]; /1* pointer to chi(w)[i] for each exciton *1/ */
-  double *chi_p;
+  /* testing a Lorentzian pulse centred at 15000cm^{-1} with FWHM
+   * 300cm^{-1} - at some point this should be switchable at runtime */
+  pulse pump_properties = { .type=1, .centre=15000., .width=300. };
 
   Input *p = read_input_file(argv[1]);
 
@@ -39,6 +41,7 @@ main(int argc, char** argv)
   lambda = calloc(p->N, sizeof(double));
   line_params = malloc(p->N * sizeof(Parameters));
   chiw_ints = calloc(p->N, sizeof(double));
+  ww = calloc(tau, sizeof(double));
   gamma = read(p->gamma_file, p->N);
   lambda = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
@@ -53,6 +56,7 @@ main(int argc, char** argv)
   kij = calloc(p->N, sizeof(double*));
   Jij = calloc(p->N, sizeof(double*));
   chiw = calloc(p->N, sizeof(double*));
+  pump = calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
     gi_array[i] = calloc(tau, sizeof(double complex));
@@ -62,12 +66,13 @@ main(int argc, char** argv)
     kij[i] = calloc(p->N, sizeof(double));
     Jij[i] = calloc(p->N, sizeof(double));
     chiw[i] = calloc(tau, sizeof(double));
-
+    pump[i] = calloc(tau, sizeof(double));
   }
 
   gi_array = read_gi(p->gi_files, p->N, tau);
   eig = read_eigvecs(p->eigvecs_file, p->N);
   mu = read_mu(p->mu_file, p->N);
+  ww = incident(pump_properties, tau);
 
   fp = fopen(argv[2], "r"); /* read in list of lineshape files here */
   for (i = 0; i < p->N; i++) {
@@ -91,8 +96,6 @@ main(int argc, char** argv)
     line_params[i].cn = &c_n;
 
     for (j = 0; j < p->N; j++) {
-      /* this might just be eigval[i] - eigval[j] */
-      /* the equations aren't balanced! need to include rates away from i etc. */
       wij[i][j] = ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
     }
   }
@@ -124,10 +127,11 @@ main(int argc, char** argv)
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
       chiw[i][j] = creal(out[j]) * musq[i] * 2.0;
+      pump[i][j] = chiw[i][j] * ww[i];
       integral[j] += creal(out[j]) * musq[i] * 2.0;
     }
 
-    chi_p = chiw[i];
+    chi_p = pump[i];
     chiw_ints[i] = trapezoid(chi_p, tau);
 
   }
