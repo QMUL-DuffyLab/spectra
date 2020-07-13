@@ -5,7 +5,7 @@ program coupling_calc
   logical :: verbose
   character(50) :: coord_fmt, ei_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
-  character(100) :: output_dir
+  character(100) :: input_dir, output_dir
   character(200) :: input_file, jij_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
@@ -25,11 +25,12 @@ program coupling_calc
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
-  if (command_argument_count().ne.2) then
+  if (command_argument_count().ne.3) then
     write (*,*) "Wrong number of arguments. Try again."
   else
     call get_command_argument(1, input_file)
-    call get_command_argument(2, output_dir)
+    call get_command_argument(2, input_dir)
+    call get_command_argument(3, output_dir)
   end if
 
   if (verbose) then
@@ -61,10 +62,10 @@ program coupling_calc
   tau = 2000
 
   ! these are the ones we read in from
-  ei_file = "in/ei.txt"
-  lambda_file = "in/lambda.txt"
-  gnt_file = "in/gnt.txt"
-  lifetimes_file = "in/lifetimes.txt"
+  ei_file         = trim(adjustl(input_dir)) // "/ei.txt"
+  lambda_file     = trim(adjustl(input_dir)) // "/lambda.txt"
+  gnt_file        = trim(adjustl(input_dir)) // "/gnt.txt"
+  lifetimes_file  = trim(adjustl(input_dir)) // "/lifetimes.txt"
 
   ! this way we automatically deal with varying numbers of pigments
   control_len = get_file_length(input_file)
