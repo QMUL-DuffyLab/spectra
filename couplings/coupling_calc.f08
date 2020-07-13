@@ -21,7 +21,7 @@ program coupling_calc
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
-  verbose = .false.
+  verbose = .true.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
@@ -168,7 +168,7 @@ program coupling_calc
       if (i.eq.j) then
         Jij(i, j) = ei(i)
         mu(:,i) = mu_calc(coords_i, coord_lengths(i))
-        write(*,*) "i = ", i, "mu(i) = ", mu(:,i)
+        write(*,*) "i = ", i, "mu(i) = ", mu(:,i), "e_i = ", Jij(i,j)
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
@@ -372,6 +372,10 @@ program coupling_calc
         ry = p1(2, i) - p2(2, j)
         rz = p1(3, i) - p2(3, j)
         r = sqrt(rx**2 + ry**2 + rz**2)
+        ! hack - so i can set homodimer parameters easier
+        if (r.eq.0.0) then
+          r = 1.0
+        end if
         s = s + (p1(4, i) * p2(4, j)) / r
       end do
     end do

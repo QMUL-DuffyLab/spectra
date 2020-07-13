@@ -4,6 +4,7 @@ coupling_calc.dSYM
 out/
 */obj/*
 LHCII/
+homodimer/
 pigme*
 *.txt
 *.mod
