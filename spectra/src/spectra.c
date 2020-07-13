@@ -264,13 +264,13 @@ main(int argc, char** argv)
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
     fprintf(stdout, "%2d\t%8.6f\t%8.6f\t%8.6f\n", i, p_i_equib[i],
-        gsl_vector_get(x, i), (boltz[i] * musq[i]) / boltz_sum);
+        gsl_vector_get(s->x, i), (boltz[i] * musq[i]) / boltz_sum);
   }
 
   /* fluorescence spectrum */
   for (i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < tau; j++) {
-      in[j] = gsl_vector_get(s->x, i) * Ft(eigvals[i],
+      in[j] = p_i_equib[i] * Ft(eigvals[i],
               creal(gi_array[i][j]), cimag(gi_array[i][j]),
               lambda[i], (double)j * TOFS, 1. / gamma[i]);
     }
