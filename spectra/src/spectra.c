@@ -211,7 +211,7 @@ main(int argc, char** argv)
   fprintf(stdout, "Initial population guess:\n");
   for (i = 0; i < p->N; i++){
     gsl_vector_set(x, i, boltz[i] * musq[i]);
-    fprintf(stdout, "%d %8.6f ", i, boltz[i] * musq[i]);
+    fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
     /* gsl_vector_set(x, i, 1. / p->N); */
     /* fprintf(stdout, "%d %8.6f ", i, 1. / p->N); */
   }
@@ -261,13 +261,20 @@ main(int argc, char** argv)
     boltz_sum += boltz[i] * musq[i];
   }
   fprintf(stdout, "\n");
+  if (p_i_sum <= 1E-10) {
+    fprintf(stdout, "Sum of steady-state populations is zero!!!\n");
+    p_i_sum = 1.;
+  } else { fprintf(stdout, "p_i_sum = %8.6f\n", p_i_sum); }
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
-    fprintf(stdout, "%2d\t%8.6f\t%8.6f\t%8.6f\n", i, p_i_equib[i],
+    fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i, p_i_equib[i],
         gsl_vector_get(s->x, i), (boltz[i] * musq[i]) / boltz_sum);
   }
 
   /* fluorescence spectrum */
+  /* need to zero the running integral before FFT! */
+  free(integral);
+  integral = calloc(tau, sizeof(double));
   for (i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < tau; j++) {
       in[j] = p_i_equib[i] * Ft(eigvals[i],
@@ -278,6 +285,8 @@ main(int argc, char** argv)
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
       integral[j] += creal(out[j]) * musq[i];
+      /* fprintf(stdout,"%2d\t%4d\t%12.8e %12.8e\n", i, j, */
+      /*     creal(integral[j]), cimag(integral[j])); */
     }
 
   }
@@ -298,6 +307,7 @@ main(int argc, char** argv)
 
   gsl_multiroot_fdfsolver_free (s);
   gsl_vector_free (x);
+  return 0;
 
   int ode_success = odefunc(xtest, y, f, params);
   if (ode_success != GSL_SUCCESS) {
