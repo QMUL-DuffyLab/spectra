@@ -263,8 +263,11 @@ main(int argc, char** argv)
   fprintf(stdout, "\n");
   if (p_i_sum <= 1E-10) {
     fprintf(stdout, "Sum of steady-state populations is zero!!!\n");
+    /* this stops it from e.g. normalising a vector (0, 1e-23)
+     * to (0, 1) and making it look normal */
     p_i_sum = 1.;
   } else { fprintf(stdout, "p_i_sum = %8.6f\n", p_i_sum); }
+  fprintf(stdout, "\n i\t p_i^eq(norm)\t p_i^eq(un-norm)\t boltz*|mu|^2\n\n");
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
     fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i, p_i_equib[i],
