@@ -31,10 +31,6 @@ rate_calc(unsigned int N, double **eig,
           p[k].cn((wij[i][j]), vptr));
         kij[i][j] += elem;
       }
-      if (eigvals[i] > eigvals[j]) {
-        /* probably not correct yet */
-        /* kij[i][j] *= 1. * exp(-beta * (eigvals[i] - eigvals[j])); */
-      }
       if (print_kij) {
         fprintf(stdout, "%8.6e ", kij[i][j]);
       }
@@ -86,7 +82,7 @@ transfer_matrix
           Tij[i][j] += (-1. * kij[i][k]);
         }
       } else {
-        Tij[i][j] = kij[j][i];
+        Tij[i][j] = kij[j][i]; /* incoming rate! */
       }
       if (print_Tij) {
         fprintf(stdout, "%8.6e ", Tij[i][j]);
