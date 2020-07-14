@@ -153,7 +153,7 @@ main(int argc, char** argv)
   /* unsigned int max = 0; */
   /* double musq_max = 0.0; */
   fprintf(stdout, "\n----------------------------------\n"
-      "Osc. strengths and chi(w) integral\n"
+      "OSC. STRENGTHS AND CHI(W) INTEGRAL\n"
       "----------------------------------\n\n");
   fprintf(stdout, "Pigment        |μ^2|      ∫χ_i(w)\n");
   for (i = 0; i < p->N; i++) {
@@ -163,13 +163,6 @@ main(int argc, char** argv)
     /*   musq_max = musq[i]; */
     /* } */
   }
-
-  /* this is very disorganised for now - clean up later!!! */
-  double **transfer = calloc(p->N, sizeof(double*));
-  for (i = 0; i < p->N; i++) {
-    transfer[i] = calloc(p->N, sizeof(double));
-  }
-  transfer = transfer_matrix(p->N, rates, kij);
 
   ode_params odep;
   odep.N = p->N;
@@ -186,7 +179,7 @@ main(int argc, char** argv)
   boltz = bcs(p->N, eigvals);
   fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
                   "-----------------\n\n");
-  fprintf(stdout, "Pigment          p_i    |μ^2|*p_i\n");
+  fprintf(stdout, "Pigment    p_i   |μ^2|*p_i\n");
   for (i = 0; i < p->N; i++) {
     fprintf(stdout, "%7d %8.6f %8.6f\n", i + 601, boltz[i],
         boltz[i] * musq[i]);
@@ -197,7 +190,7 @@ main(int argc, char** argv)
     /*   y[i] = 0.0; */
     /* } */
   }
-  fprintf(stdout, "-----------------\n");
+  fprintf(stdout, "\n");
   double xtest = 0.0;
   void *params = &odep;
 
@@ -260,18 +253,20 @@ main(int argc, char** argv)
     p_i_sum += gsl_vector_get(s->x, i);
     boltz_sum += boltz[i] * musq[i];
   }
-  fprintf(stdout, "\n");
   if (p_i_sum <= 1E-10) {
     fprintf(stdout, "Sum of steady-state populations is zero!!!\n");
     /* this stops it from e.g. normalising a vector (0, 1e-23)
      * to (0, 1) and making it look normal */
     p_i_sum = 1.;
-  } else { fprintf(stdout, "p_i_sum = %8.6f\n", p_i_sum); }
-  fprintf(stdout, "\n i\t p_i^eq(norm)\t p_i^eq(un-norm)\t boltz*|mu|^2\n\n");
+  } else {
+    fprintf(stdout, "Σ_i p_i = %8.6f\n", p_i_sum);
+  }
+  fprintf(stdout, "i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz*|μ^2|\n");
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
-    fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i, p_i_equib[i],
-        gsl_vector_get(s->x, i), (boltz[i] * musq[i]) / boltz_sum);
+    fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
+        gsl_vector_get(s->x, i), p_i_equib[i],
+        (boltz[i] * musq[i]) / boltz_sum);
   }
 
   /* fluorescence spectrum */
@@ -288,8 +283,8 @@ main(int argc, char** argv)
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
       integral[j] += creal(out[j]) * musq[i];
-      /* fprintf(stdout,"%2d\t%4d\t%12.8e %12.8e\n", i, j, */
-      /*     creal(integral[j]), cimag(integral[j])); */
+      /* fprintf(stdout,"%2d\t%4d\t%12.8e\n", i, j, */
+      /*     creal(integral[j])); */
     }
 
   }

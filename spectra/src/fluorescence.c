@@ -17,7 +17,7 @@ rate_calc(unsigned int N, double **eig,
   double elem = 0.0;
   /* T = 300K here lol un hardcode at some point! */
   double beta = 1. / 300.0;
-  unsigned short print_kij = 1;
+  unsigned short print_kij = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       if (i == j) {
@@ -33,7 +33,7 @@ rate_calc(unsigned int N, double **eig,
       }
       if (eigvals[i] > eigvals[j]) {
         /* probably not correct yet */
-        kij[i][j] *= 1. * exp(-beta * (eigvals[i] - eigvals[j]));
+        /* kij[i][j] *= 1. * exp(-beta * (eigvals[i] - eigvals[j])); */
       }
       if (print_kij) {
         fprintf(stdout, "%8.6e ", kij[i][j]);
@@ -67,9 +67,14 @@ transfer_matrix
    * this can be optimised a lot later */
   unsigned int i, j, k;
   double **Tij;
+  unsigned short print_Tij = 1;
   Tij = calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
     Tij[i] = calloc(N, sizeof(double));
+  }
+  if (print_Tij) {
+    fprintf(stdout, "\n---------------\nTRANSFER MATRIX"
+                    "\n---------------\n\n");
   }
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
@@ -81,8 +86,14 @@ transfer_matrix
           Tij[i][j] += (-1. * kij[i][k]);
         }
       } else {
-        Tij[i][j] = kij[i][j];
+        Tij[i][j] = kij[j][i];
       }
+      if (print_Tij) {
+        fprintf(stdout, "%8.6e ", Tij[i][j]);
+      }
+    }
+    if (print_Tij) {
+      fprintf(stdout, "\n");
     }
   }
   return Tij;
