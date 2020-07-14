@@ -305,17 +305,16 @@ main(int argc, char** argv)
 
   gsl_multiroot_fdfsolver_free (s);
   gsl_vector_free (x);
-  return 0;
 
+  /* do ODE solving
+   * this doesn't work yet */
   int ode_success = odefunc(xtest, y, f, params);
   if (ode_success != GSL_SUCCESS) {
     fprintf(stdout, "ode_success failed!\n");
   }
 
-  /* do ODE solving
-   * this doesn't work yet */
   fprintf(stdout, "\n----------------------------------\n"
-      "ODE solver for exciton populations\n"
+      "ODE SOLVER FOR EXCITON POPULATIONS\n"
       "----------------------------------\n\n");
 
   gsl_odeiv2_system sys = {odefunc, jacobian, p->N, params};
@@ -341,7 +340,7 @@ main(int argc, char** argv)
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
     fprintf(stdout, "ti = %6.3f, ", ti);
     for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "%8.6f ", y[j]);
+      fprintf(stdout, "%+12.8e ", y[j]);
     }
     fprintf(stdout, "\n");
     if (status != GSL_SUCCESS) {
@@ -362,7 +361,7 @@ main(int argc, char** argv)
 
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;
-  fprintf(stdout, "\n----------------------\nNormalised populations\n"
+  fprintf(stdout, "\n----------------------\nNORMALISED POPULATIONS\n"
       "----------------------\n\n");
   for (i = 0; i < p->N; i++) {
     ysum += y[i];

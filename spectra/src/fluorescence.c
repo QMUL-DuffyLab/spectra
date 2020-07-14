@@ -99,9 +99,10 @@ int
 jacobian (double t, const double y[], double *dfdy,
           double dfdt[], void *params)
 {
-  (void)(t);
-  (void)(y);
-  double elem;
+  /* in this and odefunc we should be able to use the same
+   * transfer matrix as for the steady state case - I
+   * deliberately didn't add the incident light source term */
+  (void)(t); (void)(y);
   ode_params *p = (ode_params *) params;
 
   gsl_matrix_view dfdy_mat = gsl_matrix_view_array (dfdy, p->N, p->N);
@@ -111,24 +112,17 @@ jacobian (double t, const double y[], double *dfdy,
   unsigned short print_elem = 0;
   for (unsigned int i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->N; j++) {
-      if (i == j) {
-        elem = (p->kij[i][j]) - p->rates[i];
-        gsl_matrix_set (m_ptr, i, j, elem);
-      } else {
-        elem = (p->kij[i][j]);
-        gsl_matrix_set (m_ptr, i, j, elem);
-      }
+      gsl_matrix_set (m_ptr, i, j, p->Tij[i][j]);
       if (print_elem) {
-        fprintf(stdout, "%d %d %8.6f ", i, j, elem);
+        fprintf(stdout, "%d %d %8.6f ", i, j, p->Tij[i][j]);
       }
     }
     if (print_elem) {
       fprintf(stdout, "\n");
     }
-    dfdt[i] = 0.0; /* set explicit t dependence of f[i] */
+    dfdt[i] = 0.0; /* explicit t dependence of f[i] */
   }
-
-  return GSL_SUCCESS;		/* GSL_SUCCESS defined in gsl/errno.h as 0 */
+  return GSL_SUCCESS;
 }
 
 int
@@ -139,14 +133,7 @@ odefunc(double x, const double *y, double *f, void *params)
   ode_params *p = (ode_params *) params;
   for (i = 0; i < p->N; i++) {
     for (j = 0; j < p->N; j++) {
-      if (i == j) {
-        /* f[i] += p->kij[i][i] * y[i] - (p->gamma[i] * y[i]) + p->chiw[i]; */
-        f[i] += p->kij[i][i] * y[i] 
-             - (y[i] * p->rates[i])
-             + p->chiw[i];
-      } else {
-        f[i] += p->kij[i][j] * y[j];
-      }
+      f[i] += p->Tij[i][j] * y[j];
     }
   }
   return GSL_SUCCESS;
