@@ -327,8 +327,9 @@ main(int argc, char** argv)
       0.0);
 
   double t1 = 0.0; double ti = 0.0; double dt = 1.0;
+  unsigned int MAX_ITER = 20000;
   status = 0;
-  for (i = 0; i < tau; i++) {
+  for (i = 0; i < MAX_ITER; i++) {
     ti = (i * dt);
     for (j = 0; j < p->N; j++) {
       yprev[j] = y[j];
@@ -338,7 +339,7 @@ main(int argc, char** argv)
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
     fprintf(stdout, "ti = %6.3f, ", ti);
     for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "%+12.8e %+12.8e ", f[j], y[j]);
+      fprintf(stdout, "%+12.8e ", y[j]);
     }
     fprintf(stdout, "\n");
     if (status != GSL_SUCCESS) {
