@@ -150,18 +150,18 @@ main(int argc, char** argv)
 
 
   /* one with the highest oscillator strength gets excited? */
-  /* unsigned int max = 0; */
-  /* double musq_max = 0.0; */
+  unsigned int max = 0;
+  double musq_max = musq[0];
   fprintf(stdout, "\n----------------------------------\n"
       "OSC. STRENGTHS AND CHI(W) INTEGRAL\n"
       "----------------------------------\n\n");
   fprintf(stdout, "Pigment        |μ^2|      ∫χ_i(w)\n");
   for (i = 0; i < p->N; i++) {
     fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, musq[i], chiw_ints[i]);
-    /* if (musq[i] > musq_max) { */
-    /*   max = i; */
-    /*   musq_max = musq[i]; */
-    /* } */
+    if (musq[i] > musq_max) {
+      max = i;
+      musq_max = musq[i];
+    }
   }
 
   ode_params odep;
@@ -184,11 +184,11 @@ main(int argc, char** argv)
     fprintf(stdout, "%7d %8.6f %8.6f\n", i + 601, boltz[i],
         boltz[i] * musq[i]);
     /* possible initial values for transient absorption? */
-    /* if (i == max) { */
-    /*   y[i] = 1.0; */
-    /* } else { */
-    /*   y[i] = 0.0; */
-    /* } */
+    if (i == max) {
+      y[i] = 1.0;
+    } else {
+      y[i] = 0.0;
+    }
   }
   fprintf(stdout, "\n");
   double xtest = 0.0;
@@ -283,8 +283,6 @@ main(int argc, char** argv)
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
       integral[j] += creal(out[j]) * musq[i];
-      /* fprintf(stdout,"%2d\t%4d\t%12.8e\n", i, j, */
-      /*     creal(integral[j])); */
     }
 
   }
