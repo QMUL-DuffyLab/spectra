@@ -22,10 +22,12 @@ plt.savefig("out/LHCII/{}/aw_new.pdf".format(args.frame));
 plt.close()
 
 fw_data = loadtxt("out/LHCII/{}/fw.dat".format(args.frame))
+exp_data = loadtxt('out/LHCII/fw_lhcii_mancal.csv')
 
 plt.plot(10000000/fw_data[:,0], fw_data[:,1]/max(fw_data[:,1]), label='F(w)')
+plt.plot(exp_data[:,0], exp_data[:,1]/max(exp_data[:,1]), label='Mancal$')
 plt.xlabel(r'Wavelength (nm)'); plt.ylabel(r'$ F(\omega) $ (abu)')
 
-ax = plt.gca(); ax.set_xlim([580,700]); 
+ax = plt.gca(); ax.set_xlim([640,780]); 
 plt.grid(); 
 plt.savefig("out/LHCII/{}/fw_new.pdf".format(args.frame));
