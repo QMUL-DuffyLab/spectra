@@ -132,6 +132,7 @@ odefunc(double x, const double *y, double *f, void *params)
   unsigned int i, j;
   ode_params *p = (ode_params *) params;
   for (i = 0; i < p->N; i++) {
+    f[i] = 0.; /* lol otherwise it just diverges */
     for (j = 0; j < p->N; j++) {
       f[i] += p->Tij[i][j] * y[j];
     }
