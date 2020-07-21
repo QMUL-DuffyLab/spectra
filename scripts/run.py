@@ -52,12 +52,12 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     # there must be a nicer way of doing this but i can't think of it:
     # different information needs to be printed to the file based on
     # file name. Maybe a pair of dicts and then a comprehension
-    input_file = "in/pigments.{}".format(snapshot_number) 
-    energy_file = "in/ei.txt"
-    lifetimes_file = "in/lifetimes.txt"
-    lambda_file = "in/lambda.txt"
-    gnt_file = "in/gnt.txt"
-    lineshape_file = "in/lineshapes.{}".format(snapshot_number) 
+    input_file     = "{}/pigments.{}".format(output_path, snapshot_number) 
+    energy_file    = "{}/ei.txt".format(output_path) 
+    lifetimes_file = "{}/lifetimes.txt".format(output_path) 
+    lambda_file    = "{}/lambda.txt".format(output_path) 
+    gnt_file       = "{}/gnt.txt".format(output_path) 
+    lineshape_file = "{}/lineshapes.{}".format(output_path, snapshot_number) 
     f = open(input_file, "w")
     g = open(energy_file, "w")
     h = open(lifetimes_file, "w")
@@ -103,8 +103,10 @@ pigment_dirs = get_pigments(input_dir)
 def run_frame(i):
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
-    os.system("./couplings/coupling_calc {} {}".format(input_file, output_path))
-    os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "in/lineshapes.{}".format(i)))
+    print("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
+    print("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
+    os.system("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
+    os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
     os.system("python ./scripts/plot_aw.py -f {}".format(i))
 
 if int(args.frame) == 0:

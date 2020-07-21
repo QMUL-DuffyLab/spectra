@@ -3,7 +3,7 @@ program coupling_calc
   implicit none
   integer, parameter :: sp = REAL64
   logical :: verbose
-  character(50) :: coord_fmt, ei_file,&
+  character(100) :: coord_fmt, ei_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: input_dir, output_dir
   character(200) :: input_file, jij_file,&
