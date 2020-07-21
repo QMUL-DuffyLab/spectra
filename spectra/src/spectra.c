@@ -140,7 +140,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        creal(integral[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
+        kd * creal(integral[i]) * (1./ sqrt(tau)) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -295,7 +295,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        creal(integral[i]) * TOFS * (1./ sqrt(tau)) * 6.4);
+        (pow(kd, 3.) * creal(integral[i]) * (1./ sqrt(tau))));
   }
   cl = fclose(fp);
   if (cl != 0) {

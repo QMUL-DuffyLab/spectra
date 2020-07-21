@@ -9,7 +9,8 @@ pigment_data = {
                 'reorg': 0.0, # actually will need to read this in
                 },
             'S2': {
-                'energy': 16300.0,
+                # 'energy': 16300.0,
+                'energy': 15900.0,
                 # 'lifetime': 4.0, # probably untrue
                 'lifetime': 0.0001, # probably untrue
                 'reorg': 0.0,
