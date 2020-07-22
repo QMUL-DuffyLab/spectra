@@ -1,6 +1,7 @@
 GF = gfortran
-SOURCE = coupling_calc.f08
-CFLAGS = -std=f2008 -ffree-form -Wall -fcheck=bounds -c
+SOURCES = coupling_calc.f08
+OBJECTS = $(patsubst %.f08, %.o, $(notdir $(SOURCES)))
+CFLAGS = -std=f2008 -ffree-form -Wall -fcheck=bounds
 LFLAGS = -llapack
 EXEC = coupling_calc
 
@@ -11,8 +12,11 @@ else
 	DEBUGFLAGS = -O2
 endif
 
-$(EXEC):
-	$(GF) $(DEBUGFLAGS) $(SOURCE) $(LFLAGS) $(CFLAGS) -o $(EXEC)
+%.o : %.f08
+	$(GF) $(DEBUGFLAGS) $(CFLAGS) -c $<
+
+$(EXEC): $(OBJECTS)
+	$(GF) $(OBJECTS) $(LFLAGS) -o $(EXEC)
 
 .PHONY: cleaner
 cleaner:
