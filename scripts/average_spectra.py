@@ -18,6 +18,7 @@ aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 
 for i in range(1000):
+    print("Adding frame {}".format(i + 1))
     direc = "{}/{}".format(root_dir, i + 1)
     aws = aws + np.loadtxt("{}/aw.dat".format(direc))
     fws = fws + np.loadtxt("{}/fw.dat".format(direc))
