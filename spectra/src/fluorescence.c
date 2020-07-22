@@ -16,7 +16,7 @@ rate_calc(unsigned int N, double **eig,
 
   double elem = 0.0;
   /* T = 300K here lol un hardcode at some point! */
-  double beta = 1. / 300.0;
+  /* double beta = 1. / 300.0; */
   unsigned short print_kij = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
@@ -26,9 +26,10 @@ rate_calc(unsigned int N, double **eig,
       for (k = 0; k < N; k++) {
         vptr = &p[k];
         /* 100 cm^-1 = 53 fs^-1 = 53000 ps^-1 : (100. / 53000.)?? */
+        /* beta = p[k].T; */
         double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
         elem = cmperps * (pow(eig[i][k], 2.) * pow(eig[j][k], 2.) *
-          p[k].cn((wij[i][j]), vptr));
+          p[k].nu * p[k].cn((wij[i][j]), vptr));
         kij[i][j] += elem;
       }
       if (print_kij) {

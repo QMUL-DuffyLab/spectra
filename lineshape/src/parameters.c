@@ -44,7 +44,7 @@ get_parameters(char *filename)
     p.g0 = 0.0; p.g1 = 0.0; p.g2 = 0.0;
     p.l0 = 0.0; p.l1 = 0.0; p.l2 = 0.0;
     p.l0 = 0.0; p.w1 = 0.0; p.w2 = 0.0;
-    p.ti = 0.0; p.T = 0.0;
+    p.ti = 0.0; p.T = 0.0;  p.nu = 0.0;
     p.cw = NULL; p.cn = NULL;
 
     /* check filename to get ligand and spectral density ansatz.
@@ -110,6 +110,8 @@ get_parameters(char *filename)
 	    p.w2 = atof(val);
 	} else if (strcmp(key, "T") == 0) {
 	    p.T = atof(val);
+	} else if (strcmp(key, "nu") == 0) {
+	    p.nu = atof(val);
 	} else if (strcmp(key, "Aw_file") == 0) {
 	    strcpy(p.aw_file, val);
 	} else if (strcmp(key, "Fw_file") == 0) {
