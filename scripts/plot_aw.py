@@ -13,8 +13,8 @@ args = parser.parse_args()
 aw_data = np.loadtxt("out/LHCII/{}/aw.dat".format(args.frame))
 fw_data = np.loadtxt("out/LHCII/{}/fw.dat".format(args.frame))
 
-aw_exp = np.loadtxt('out/LHCII/mancal_2016_qy.dat')
-fw_exp = np.loadtxt('out/LHCII/fw_lhcii_mancal.csv')
+aw_exp = np.loadtxt('out/LHCII/aw_exp.dat', skiprows=1)
+fw_exp = np.loadtxt('out/LHCII/fw_exp.dat', skiprows=1)
 
 '''
 the next two lines switch from wavenumbers to a wavelength
