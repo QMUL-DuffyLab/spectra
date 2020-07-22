@@ -7,22 +7,25 @@ write them out, plot them.
 """
 
 import os
-import numpy as np
 import argparse
-import subprocess
-import pigment_data
+import numpy as np
+import matplotlib.pyplot as plt
 
 root_dir = "out/LHCII"
 initial_data = np.loadtxt("{}/1/aw.dat".format(root_dir))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 
+print("Summing A(w) and F(w) per frame")
 for i in range(1000):
-    print("Adding frame {}".format(i + 1))
+    if (i % 100) is 0:
+        print(".", end='', flush=True)
+
     direc = "{}/{}".format(root_dir, i + 1)
     aws = aws + np.loadtxt("{}/aw.dat".format(direc))
     fws = fws + np.loadtxt("{}/fw.dat".format(direc))
 
+print("Done.")
 aws = aws / 1000.
 fws = fws / 1000.
 
@@ -36,35 +39,35 @@ fws = np.delete(fws, 0, 0)
 aws[:, 0] = 1000000/aws[:, 0]
 fws[:, 0] = 1000000/fws[:, 0]
 # plot
-aw_exp = np.loadtxt("{}/aw_exp.dat", skiprows=1)
-fw_exp = np.loadtxt("{}/fw_exp.dat", skiprows=1)
+aw_exp = np.loadtxt("{}/aw_exp.dat".format(root_dir), skiprows=1)
+fw_exp = np.loadtxt("{}/fw_exp.dat".format(root_dir), skiprows=1)
 
 fig, ax = plt.subplots()
 ax.set_xlim([580, 700])
-plt.grid()
-plt.legend()
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
-plt.plot(aw[:, 0], aw[:, 1], label=r'$ A(\omega) $')
+plt.plot(aws[:, 0], aws[:, 1], label=r'$ A(\omega) $')
 plt.plot(aw_exp[:, 0], aw_exp[:, 1], label=r'Experiment')
+plt.grid()
+plt.legend()
 plt.savefig("{}/aw_average.pdf".format(root_dir))
 
 fig, ax = plt.subplots()
 ax.set_xlim([640, 780])
-plt.grid()
-plt.legend()
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
-plt.plot(fw[:, 0], fw[:, 1], label=r'$ F(\omega) $')
+plt.plot(fws[:, 0], fws[:, 1], label=r'$ F(\omega) $')
 plt.plot(fw_exp[:, 0], fw_exp[:, 1], label=r'Experiment')
+plt.grid()
+plt.legend()
 plt.savefig("{}/fw_average.pdf".format(root_dir))
 
 fig, ax = plt.subplots()
 ax.set_xlim([580, 780])
-plt.grid()
-plt.legend()
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
-plt.plot(aw[:, 0], aw[:, 1], label=r'$ A(\omega) $')
-plt.plot(fw[:, 0], fw[:, 1], label=r'$ F(\omega) $')
+plt.plot(aws[:, 0], aws[:, 1], label=r'$ A(\omega) $')
+plt.plot(fws[:, 0], fws[:, 1], label=r'$ F(\omega) $')
+plt.grid()
+plt.legend()
 plt.savefig("{}/aw_fw_average.pdf".format(root_dir))
