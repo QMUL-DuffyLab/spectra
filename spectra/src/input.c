@@ -40,6 +40,9 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
     strcpy(p->fw_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
+    strcpy(p->pop_file, line);
     for (i = 0; i < p->N; i++) {
       fgets(line, 199, fp);
       line[strcspn(line, "\n")] = 0;

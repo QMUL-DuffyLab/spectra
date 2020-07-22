@@ -1,6 +1,6 @@
 GF = gfortran
 SOURCE = coupling_calc.f08
-CFLAGS = -std=f2008 -ffree-form -Wall -fcheck=bounds
+CFLAGS = -std=f2008 -ffree-form -Wall -fcheck=bounds -c
 LFLAGS = -llapack
 EXEC = coupling_calc
 

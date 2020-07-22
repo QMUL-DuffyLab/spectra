@@ -328,7 +328,12 @@ main(int argc, char** argv)
 
   double t1 = 0.0; double ti = 0.0; double dt = 1.0;
   unsigned int MAX_ITER = 20000;
+  unsigned int print_pop = 0;
   status = 0;
+
+  fprintf(stdout, "\nWriting populations\n");
+  fp = fopen(p->pop_file, "w");
+
   for (i = 0; i < MAX_ITER; i++) {
     ti = (i * dt);
     for (j = 0; j < p->N; j++) {
@@ -337,11 +342,22 @@ main(int argc, char** argv)
 
     /* fprintf(stdout, "iteration %d: ", i); */
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
-    fprintf(stdout, "ti = %6.3f, ", ti);
-    for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "%+12.8e ", y[j]);
+
+    fprintf(fp, "%6.3f, ", ti);
+    if (print_pop) {
+      fprintf(stdout, "ti = %6.3f, ", ti);
     }
-    fprintf(stdout, "\n");
+    for (j = 0; j < p->N; j++) {
+      fprintf(fp, "%+12.8e ", y[j]);
+      if (print_pop) {
+        fprintf(stdout, "%+12.8e ", y[j]);
+      }
+    }
+    fprintf(fp, "\n");
+    if(print_pop) {
+      fprintf(stdout, "\n");
+    }
+
     if (status != GSL_SUCCESS) {
       fprintf(stdout, "error: return value = %d\n", status);
       exit(EXIT_FAILURE);
@@ -356,6 +372,7 @@ main(int argc, char** argv)
     }
 
   }
+  fclose(fp);
   gsl_odeiv2_driver_free(d);
 
   double *ynorm = calloc(p->N, sizeof(double));

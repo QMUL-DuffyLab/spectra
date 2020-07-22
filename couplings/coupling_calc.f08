@@ -6,7 +6,7 @@ program coupling_calc
   character(100) :: coord_fmt, ei_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: input_dir, output_dir
-  character(200) :: input_file, jij_file,&
+  character(200) :: input_file, jij_file, pop_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
   character(100), dimension(:), allocatable :: coord_files,&
@@ -38,15 +38,16 @@ program coupling_calc
     write(*,*) "Output dir = ", output_dir
   end if
 
-  jij_file      = trim(adjustl(output_dir)) // "/J_ij.out"
-  eigvecs_file  = trim(adjustl(output_dir)) // "/eigvecs.out"
-  eigvals_file  = trim(adjustl(output_dir)) // "/eigvals.out"
-  mu_n_file     = trim(adjustl(output_dir)) // "/mu_site.out"
-  mu_i_file     = trim(adjustl(output_dir)) // "/mu_exciton.out"
-  lambda_i_file = trim(adjustl(output_dir)) // "/lambda_exciton.out"
-  gamma_i_file  = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
+  jij_file        = trim(adjustl(output_dir)) // "/J_ij.out"
+  eigvecs_file    = trim(adjustl(output_dir)) // "/eigvecs.out"
+  eigvals_file    = trim(adjustl(output_dir)) // "/eigvals.out"
+  mu_n_file       = trim(adjustl(output_dir)) // "/mu_site.out"
+  mu_i_file       = trim(adjustl(output_dir)) // "/mu_exciton.out"
+  lambda_i_file   = trim(adjustl(output_dir)) // "/lambda_exciton.out"
+  gamma_i_file    = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
   aw_output_file  = trim(adjustl(output_dir)) // "/aw.dat"
   fw_output_file  = trim(adjustl(output_dir)) // "/fw.dat"
+  pop_file        = trim(adjustl(output_dir)) // "/populations.dat"
   spectra_input_file = "in/input_spectra.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
