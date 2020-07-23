@@ -58,6 +58,7 @@ plt.plot(aw_exp[:, 0], aw_exp[:, 1]/np.max(aw_exp[:, 1]),
          label=r'Experiment')
 plt.grid()
 plt.legend()
+plt.tight_layout()
 plt.savefig("{}/aw_average.pdf".format(root_dir))
 
 fig, ax = plt.subplots()
@@ -70,6 +71,7 @@ plt.plot(fw_exp[:, 0], fw_exp[:, 1]/np.max(fw_exp[:, 1]),
          label=r'Experiment')
 plt.grid()
 plt.legend()
+plt.tight_layout()
 plt.savefig("{}/fw_average.pdf".format(root_dir))
 
 fig, ax = plt.subplots()
@@ -80,4 +82,5 @@ plt.plot(aws[:, 0], aws[:, 1], label=r'$ A(\omega) $')
 plt.plot(fws[:, 0], fws[:, 1], label=r'$ F(\omega) $')
 plt.grid()
 plt.legend()
+plt.tight_layout()
 plt.savefig("{}/aw_fw_average.pdf".format(root_dir))

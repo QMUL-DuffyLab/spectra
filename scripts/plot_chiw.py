@@ -38,6 +38,7 @@ for i in range(N):
     ax.fill(chi[:, 0], chi[:, i + 1] * mu_sq[i], color=fc[i], alpha=0.25)
 
 plt.legend(fontsize=10)
+plt.tight_layout()
 plt.savefig("{}/chi_w.pdf".format(args.dir))
 plt.close()
 
@@ -56,5 +57,6 @@ for i in range(N):
     ax.fill(chi[:, 0], chi[:, i + 1] * mu_sq[i], color=fc[i], alpha=0.25)
 
 plt.legend(fontsize=10)
+plt.tight_layout()
 plt.savefig("{}/chi_bar_w.pdf".format(args.dir))
 plt.close()
