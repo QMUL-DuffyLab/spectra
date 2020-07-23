@@ -100,19 +100,21 @@ output_dir = os.path.join(os.getcwd(), args.output_dir)
 pigment_dirs = get_pigments(input_dir)
 
 # this is so ugly lol needs tidying up in future
-def run_frame(i):
+def run_frame(i, do_plots):
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
     print("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
     os.system("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
     os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
-    os.system("python ./scripts/plot_aw.py -f {}".format(i))
+    if do_plots is not 0:
+        os.system("python ./scripts/plot_aw.py -f {}".format(i))
+        os.system("python ./scripts/plot_chiw.py -d {}".format(output_path))
 
 if int(args.frame) == 0:
     for i in range(1000):
-        run_frame(i + 1) # range starts from 0
+        run_frame(i + 1, 0) # range starts from 0
 
 else:
-    run_frame(args.frame)
+    run_frame(args.frame, 1)
 

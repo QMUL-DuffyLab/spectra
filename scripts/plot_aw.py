@@ -10,6 +10,8 @@ parser.add_argument("-f", "--frame", default=1,
 
 args = parser.parse_args()
 
+print("Plotting A(w) and F(w)")
+
 aw_data = np.loadtxt("out/LHCII/{}/aw.dat".format(args.frame))
 fw_data = np.loadtxt("out/LHCII/{}/fw.dat".format(args.frame))
 

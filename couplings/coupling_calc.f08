@@ -204,18 +204,6 @@ program coupling_calc
     write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
   end if
 
-  ! if (verbose) then
-  !   write(*,*) Jeig
-  ! end if
-
-  ! do i = 1, control_len
-  !   do j = 1, control_len
-  !     if (i.gt.j) then 
-  !       Jeig(j,i) = Jeig(i,j)
-  !     end if
-  !   end do
-  ! end do
-
   if (verbose) then
     write(*,*) Jeig
   end if
