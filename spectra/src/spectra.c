@@ -150,11 +150,17 @@ main(int argc, char** argv)
 
   fprintf(stdout, "\nWriting χ_i(w) files\n");
   /* replace g_ with chi_ in gi filenames so we can print out the 
-   * individual parts of the spectra. strings in C are so annoying */
+   * individual parts of the spectra. strings in C are so annoying.
+   * NB: assumes 200 is enough bytes for gi filename + a few chars! */
   char fn[200]; char *pch;
   for (i = 0; i < p->N; i++) {
     strcpy(fn, p->gi_files[i]);
-    pch = strstr(fn, "g_");
+    if((pch = strstr(fn, "g_")) == NULL) {
+      fprintf(stdout, "Cannot find string 'g_' in "
+          "g_i filename no. %d, needed to print out chi_i. "
+          "Something got renamed accidentally?\n", i);
+      break;
+    }
     /* + 4 bc strlen("chi_") = 4; + 2 bc strlen("g_") = 2.
      * strlen(pch + 2) is the length of the string left after "g_",
      * so we move the end of the string (4 - 2) bytes along */
@@ -333,6 +339,12 @@ main(int argc, char** argv)
   for (i = 0; i < p->N; i++) {
     strcpy(fn, p->gi_files[i]);
     pch = strstr(fn, "g_");
+    if((pch = strstr(fn, "g_")) == NULL) {
+      fprintf(stdout, "Cannot find string 'g_' in "
+          "g_i filename no. %d, needed to print out chi_i. "
+          "Something got renamed accidentally?\n", i);
+      break;
+    }
     memmove(pch + 8, pch + 2, strlen(pch + 2) + 1);
     memcpy(pch, "chi_bar_", 8);
     fp = fopen(fn, "w");
