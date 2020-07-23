@@ -124,9 +124,9 @@ main(int argc, char** argv)
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
-      chiw[i][j] = creal(out[j]) * musq[i] * 2.0;
-      pump[i][j] = chiw[i][j] * ww[i];
-      integral[j] += creal(out[j]) * musq[i] * 2.0;
+      chiw[i][j] = creal(out[j]) * musq[i];
+      pump[i][j] = chiw[i][j] * ww[j];
+      integral[j] += creal(out[j]) * musq[i];
     }
 
     chi_p = pump[i];
@@ -148,6 +148,32 @@ main(int argc, char** argv)
       exit(EXIT_FAILURE);
   }
 
+  fprintf(stdout, "\nWriting χ_i(w) files\n");
+  /* replace g_ with chi_ in gi filenames so we can print out the 
+   * individual parts of the spectra. strings in C are so annoying */
+  char fn[200]; char *pch;
+  for (i = 0; i < p->N; i++) {
+    strcpy(fn, p->gi_files[i]);
+    pch = strstr(fn, "g_");
+    /* + 4 bc strlen("chi_") = 4; + 2 bc strlen("g_") = 2.
+     * strlen(pch + 2) is the length of the string left after "g_",
+     * so we move the end of the string (4 - 2) bytes along */
+    memmove(pch + 4, pch + 2, strlen(pch + 2) + 1);
+    memcpy(pch, "chi_", 4);
+    fp = fopen(fn, "w");
+    for (j = 0; j < tau; j++) {
+      /* unpack the ordering used by FFTW */
+      kd = j * 2. * M_PI / (tau);
+      fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
+          kd * creal(chiw[i][j]) * (1./ sqrt(tau)) * 6.4);
+    }
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close χ_i(w) "
+            "output file no. %d, error no. %d.\n", i, cl);
+        exit(EXIT_FAILURE);
+    }
+  }
 
   /* one with the highest oscillator strength gets excited? */
   unsigned int max = 0;
@@ -282,7 +308,8 @@ main(int argc, char** argv)
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
-      integral[j] += creal(out[j]) * musq[i];
+      chiw[i][j] = creal(out[j]) * musq[i] * 2.0;
+      integral[j] += creal(out[j]) * musq[i] * 2.0;
     }
 
   }
@@ -299,6 +326,28 @@ main(int argc, char** argv)
   if (cl != 0) {
       fprintf(stdout, "Failed to close F(w) output file %d.\n", cl);
       exit(EXIT_FAILURE);
+  }
+
+  fprintf(stdout, "\nWriting χ^{bar}_i(w) files\n");
+  /* replace with chi_bar_ this time */
+  for (i = 0; i < p->N; i++) {
+    strcpy(fn, p->gi_files[i]);
+    pch = strstr(fn, "g_");
+    memmove(pch + 8, pch + 2, strlen(pch + 2) + 1);
+    memcpy(pch, "chi_bar_", 8);
+    fp = fopen(fn, "w");
+    for (j = 0; j < tau; j++) {
+      /* unpack the ordering used by FFTW */
+      kd = j * 2. * M_PI / (tau);
+      fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
+          kd * creal(chiw[i][j]) * (1./ sqrt(tau)) * 6.4);
+    }
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close χ_i(w) "
+            "output file no. %d, error no. %d.\n", i, cl);
+        exit(EXIT_FAILURE);
+    }
   }
 
   gsl_multiroot_fdfsolver_free (s);
@@ -392,5 +441,6 @@ main(int argc, char** argv)
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
   free(in); free(out); free(y); free(f); free(boltz); free(yprev);
+  free(ynorm);
   exit(EXIT_SUCCESS);
 }
