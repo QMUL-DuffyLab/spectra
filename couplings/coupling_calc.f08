@@ -208,22 +208,27 @@ program coupling_calc
   !   write(*,*) Jeig
   ! end if
 
-  do i = 1, control_len
-    do j = 1, control_len
-      if (i.gt.j) then 
-        Jeig(j,i) = Jeig(i,j)
-      end if
-    end do
-  end do
+  ! do i = 1, control_len
+  !   do j = 1, control_len
+  !     if (i.gt.j) then 
+  !       Jeig(j,i) = Jeig(i,j)
+  !     end if
+  !   end do
+  ! end do
 
   if (verbose) then
     write(*,*) Jeig
   end if
 
+  lifetimes = 1.0 / lifetimes ! mix rates!!!!!!!!!
+  ! this is a hack - want to check if it fixes a problem later
+  ! if so will need to change some other bits of code as well
+  ! to make it more readable
   mu_ex     = matmul(mu, Jeig) ! mix transition dipole moments
   gnt       = matmul(Jeig**4, gnt) ! mix lineshape functions
   lambda    = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
+  lifetimes = 1.0 / lifetimes
 
   open(unit=20, file=spectra_input_file)
   ! stuff to read into spectra.c
