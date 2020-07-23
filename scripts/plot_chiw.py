@@ -35,6 +35,7 @@ plt.ylabel(r'Intensity (abu)')
 for i in range(N):
     label = r'$ \chi_{' + "{}".format(i + 1) + r'}(\omega) \; |\mu|^2 = ' + "{:6.3f}".format(mu_sq[i]) + r' \; \epsilon = ' + "{:5d}".format(int(eigvals[i])) + r' $'
     plt.plot(chi[:, 0], chi[:, i + 1] * mu_sq[i], color=fc[i], label=label)
+    ax.fill(chi[:, 0], chi[:, i + 1] * mu_sq[i], color=fc[i], alpha=0.25)
 
 plt.legend(fontsize=10)
 plt.savefig("{}/chi_w.pdf".format(args.dir))
@@ -52,6 +53,7 @@ plt.ylabel(r'Intensity (abu)')
 for i in range(N):
     label = r'$ \bar{\chi}_{' + "{}".format(i + 1) + r'}(\omega) \; |\mu|^2 = ' + "{:6.3f}".format(mu_sq[i]) + r' \; \epsilon = ' + "{:5d}".format(int(eigvals[i])) + r' $'
     plt.plot(chi[:, 0], chi[:, i + 1] * mu_sq[i], color=fc[i], label=label)
+    ax.fill(chi[:, 0], chi[:, i + 1] * mu_sq[i], color=fc[i], alpha=0.25)
 
 plt.legend(fontsize=10)
 plt.savefig("{}/chi_bar_w.pdf".format(args.dir))
