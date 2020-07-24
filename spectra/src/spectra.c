@@ -428,9 +428,9 @@ main(int argc, char** argv)
     /* fprintf(stdout, "iteration %d: ", i); */
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
 
-    fprintf(fp, "%6.3f, ", ti);
+    fprintf(fp, "%6.3f ", ti);
     if (print_pop) {
-      fprintf(stdout, "ti = %6.3f, ", ti);
+      fprintf(stdout, "ti = %6.3f ", ti);
     }
     for (j = 0; j < p->N; j++) {
       fprintf(fp, "%+12.8e ", y[j]);
