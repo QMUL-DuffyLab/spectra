@@ -43,6 +43,6 @@ The fortran code requires four `fmt=%16.8e` columns where the first three are co
 and the atom names match those in the PDB.
 It does this by generating dicts and checking keys in both files.
 
-The script `scripts/plot_aw.py` is run after each frame in the run script and plots A(w) and F(w), with corresponding experimental data ripped from the supplementary material in [Tomas Mancal's arxiv paper](http://arxiv.org/abs/00887) (ultimately from a different paper but I forget where).
+The script `scripts/plot_aw.py` is run after each frame in the run script and plots A(w) and F(w), with corresponding experimental data ripped from the supplementary material in [Tomas Mancal's arxiv paper](http://arxiv.org/abs/1512.00887) (ultimately from a different paper but I forget where).
 It also plots them together on the same axis without doing any normalisation to see what the raw data looks like.
 Finally the script `scripts/average_spectra.py` loops over all 1000 frames and sums A(w) and F(w), then plots their averages in the same way - reason for this being that an individual frame of MD data can have weird instantaneous couplings due to the movement of the pigments.
