@@ -293,12 +293,36 @@ main(int argc, char** argv)
   } else {
     fprintf(stdout, "Σ_i p_i = %8.6f\n", p_i_sum);
   }
+
+  /* write out the normalised steady-state populations */
+  strcpy(fn, p->pop_file);
+  pch = strstr(fn, "populations");
+  if((pch = strstr(fn, "populations")) == NULL) {
+    fprintf(stdout, "Cannot find string 'populations' in "
+        "pop_file needed to print out steady-state populations. "
+        "Something got renamed accidentally?\n");
+    exit(EXIT_FAILURE);
+  }
+  memmove(pch + 14, pch + 11, strlen(pch + 11) + 1);
+  memcpy(pch, "ss_populations", 8);
+  fp = fopen(fn, "w");
+
   fprintf(stdout, "i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz*|μ^2|\n");
+  fprintf(fp, "# i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz*|μ^2|\n");
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
     fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
         gsl_vector_get(s->x, i), p_i_equib[i],
         (boltz[i] * musq[i]) / boltz_sum);
+    fprintf(fp, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
+        gsl_vector_get(s->x, i), p_i_equib[i],
+        (boltz[i] * musq[i]) / boltz_sum);
+  }
+  cl = fclose(fp);
+  if (cl != 0) {
+      fprintf(stdout, "Failed to close steady state"
+          " population file, error no. %d.\n", cl);
+      exit(EXIT_FAILURE);
   }
 
   /* fluorescence spectrum */
@@ -314,8 +338,8 @@ main(int argc, char** argv)
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < tau; j++) {
-      chiw[i][j] = creal(out[j]) * musq[i] * 2.0;
-      integral[j] += creal(out[j]) * musq[i] * 2.0;
+      chiw[i][j] = creal(out[j]) * musq[i];
+      integral[j] += creal(out[j]) * musq[i];
     }
 
   }
