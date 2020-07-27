@@ -49,6 +49,28 @@ cw_odo(double w, void* params)
     return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
 }
 
+/* from novoderezhkin/mancal - one ODO +
+ * 48 high frequency vibrational modes */
+double
+cw_big(double w, void* params)
+{
+    Parameters *p = (Parameters *) params;
+    double c; 
+    double sum = 0.;
+    double c0 = 2 * p->l0 * (w * p->g0)
+    	    / (pow(w, 2.) + pow(p->g0, 2.));
+    for (unsigned int i = 0; i < 48; i++) {
+      /* p->gsw[j][i] is effectively 3 * 48 doubles
+       * with the g's first, s's second, w's last */
+      c = 2 * p->gsw[1][i] * p->gsw[2][i] *
+        (pow(p->gsw[2][i], 2.) * p->gsw[0][i] * w)
+        / (pow((pow(w, 2.) - pow(p->gsw[2][i], 2.)), 2.) 
+        + (pow(w, 2.) * pow(p->gsw[0][i], 2.)));
+      sum +=c;
+    }
+    return c0 + sum;
+}
+
 double
 c_n(double w, void* params)
 {

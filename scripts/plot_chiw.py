@@ -63,16 +63,15 @@ plt.close()
 
 fig, ax = plt.subplots(figsize=(10,6))
 ax.set_ylim([0, 0.25])
-# ax.set_xlim([0, 1000])
-# ignore the first entry bc it has one with pop. 1
-# and it makes the plot look silly
 pop_full = np.loadtxt("{}/populations.dat".format(args.dir))
 pop = pop_full
 dec = np.argmin(np.abs(np.sum(pop[:, 1:], axis=1) - (1./np.e)))
 print(pop[dec])
+print(np.abs(np.sum(pop[dec, 1:]) - (1./np.e)))
 print("Fluorescence lifetime is {:8.3f} ps.".format(pop[dec, 0]))
 plt.xlabel(r'Time (ps) ')
 plt.ylabel(r'Population (rel. units)')
+plt.title('Populations vs t - fluorescence lifetime = {:8.3f} ps'.format(pop[dec, 0]))
 for i in range(N):
     plt.plot(pop[:, 0], pop[:, i + 1], color=fc[i])
     # ax.fill(pop[:, 0], pop[:, i + 1], color=fc[i], alpha=0.25)

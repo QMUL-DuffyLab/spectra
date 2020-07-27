@@ -39,6 +39,8 @@ get_parameters(char *filename)
 {
     FILE *fp;
     Parameters p;
+    char s[4]; /* null char */
+    char pref[3] = "gsw";
     char line[200], key[200], val[200];
     p.s0 = 0.0; p.s1 = 0.0; p.s2 = 0.0;
     p.g0 = 0.0; p.g1 = 0.0; p.g2 = 0.0;
@@ -46,6 +48,7 @@ get_parameters(char *filename)
     p.l0 = 0.0; p.w1 = 0.0; p.w2 = 0.0;
     p.ti = 0.0; p.T = 0.0;  p.nu = 0.0;
     p.cw = NULL; p.cn = NULL;
+    memset(p.gsw, 0., 3*48*sizeof(double));
 
     /* check filename to get ligand and spectral density ansatz.
      * assign to p.ligand here because functions.h isn't included*/
@@ -121,6 +124,18 @@ get_parameters(char *filename)
 	} else if (strcmp(key, "lambda_file") == 0) {
 	    strcpy(p.lambda_file, val);
 	} 
+	/* if we're using the big Novoderezhkin/Mancal ansatz
+	 * for the spectral density we have 3 * 48 = 144 extra
+	 * parameters; generate the strings for these on the fly */
+        for (unsigned int j = 0; j < 3; j++) {
+          snprintf(s, 2, "%1s", pref + j);
+          for (unsigned int i = 0; i < 48; i++) {
+            snprintf(s + 1, 3, "%02d", i + 1);
+            if (strcmp(key, s) == 0) {
+              p.gsw[j][i] = atof(val);
+            }
+          }
+        }
     }
 
     int cl = fclose(fp);
