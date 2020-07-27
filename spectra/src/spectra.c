@@ -103,9 +103,6 @@ main(int argc, char** argv)
       exit(EXIT_FAILURE);
   }
 
-  bigParams();
-  return 0;
-
   kij = rate_calc(p->N, eig, eigvals, wij, line_params);
   rates = relaxation_rates(p->N, gamma, kij);
 
