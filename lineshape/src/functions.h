@@ -8,6 +8,7 @@
 double cw_chl(double w, void *params);
 double cw_car(double w, void *params);
 double cw_odo(double w, void *params);
+double cw_big(double w, void *params);
 double c_n(double w, void *params);
 double trig_re(double w, void *params);
 double trig_im(double w, void *params);

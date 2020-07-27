@@ -20,7 +20,7 @@ def plot(filename, *args, **kwargs):
         else:
             plt.plot(args[i], args[i + 1])
 
-    ax.set_xlim([-1000,3000])
+    ax.set_xlim([-4000, 4000])
     fig.tight_layout()
     if 'label' in kwargs:
         plt.legend(fontsize=10)

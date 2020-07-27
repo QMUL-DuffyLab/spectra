@@ -42,7 +42,8 @@ main(int argc, char** argv)
 
     if (p.ligand == 1) {
 	/* cw = &cw_chl; */
-	cw = &cw_odo;
+	/* cw = &cw_odo; */
+	cw = &cw_big;
     } else if (p.ligand == 2) {
 	cw = &cw_odo;
     } else if (p.ligand == 0) {

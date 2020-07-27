@@ -26,7 +26,7 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-  tau = 2000; /* again probably shouldn't hardcode this but oh well */
+  tau = 2048; /* again probably shouldn't hardcode this but oh well */
   pulse pump_properties = { .type=0, .centre=15000., .width=300. };
 
   Input *p = read_input_file(argv[1]);
