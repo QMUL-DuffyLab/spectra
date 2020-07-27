@@ -50,6 +50,7 @@ else:
 
 aw = np.loadtxt(args.aw_file)
 aw = aw[aw[:, 0].argsort()]
+print(aw[np.argmax(aw[:, 1])])
 aw[:,1] = aw[:,1] / np.max(aw[:,1])
 fw = np.loadtxt(args.fw_file)
 fw = fw[fw[:, 0].argsort()]

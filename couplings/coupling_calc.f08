@@ -60,7 +60,7 @@ program coupling_calc
 
  ! tau is the number of femtoseconds i calculated lineshapes for.
  ! don't like hardcoding but it shouldn't need to be dynamic, really
-  tau = 2000
+  tau = 2048
 
   ! these are the ones we read in from
   ei_file         = trim(adjustl(input_dir)) // "/ei.txt"

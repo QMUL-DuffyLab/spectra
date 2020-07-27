@@ -168,7 +168,7 @@ read_gi(char *input_files[],
     } else {
       for (j = 0; j < tau; j++) {
         int cl = fscanf(fp, "      %lf      %lf ", &real, &imag);
-        if(cl != 2) {
+        if (cl != 2) {
           fprintf(stdout, "fscanf in read_gi failed with error code %d;"
               " line number %d\n", cl, j);
           exit(EXIT_FAILURE);

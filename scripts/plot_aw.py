@@ -38,7 +38,7 @@ plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'$ A(\omega) $ (abu)')
 
 ax = plt.gca()
-ax.set_xlim([580, 700])
+ax.set_xlim([550, 750])
 plt.grid()
 plt.legend()
 plt.tight_layout()
@@ -54,14 +54,14 @@ plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'$ F(\omega) $ (abu)')
 
 ax = plt.gca()
-ax.set_xlim([640, 780])
+ax.set_xlim([600, 850])
 plt.grid()
 plt.legend()
 plt.tight_layout()
 plt.savefig("out/LHCII/{}/fw.pdf".format(args.frame))
 
 fig, ax = plt.subplots()
-ax.set_xlim([580, 780])
+ax.set_xlim([550, 850])
 plt.plot(aw_data[:, 0], aw_data[:, 1],
          label=r'$ A(\omega) $')
 plt.plot(fw_data[:, 0], fw_data[:, 1],

@@ -77,7 +77,13 @@ main(int argc, char** argv)
      * what we need for the rest of the functions. */
     double pf = 2.* M_PI * CMS * 100. * 1E-15;
     double pf_norm = pf * (1. / sqrt(pr.ns));
+
+    /* testing something - hunch */
     double w0 = 0.0;
+    for (unsigned int i = 0; i < 48; i++) {
+      w0 += p.gsw[1][i] * p.gsw[2][i];
+    }
+    fprintf(stdout, "w0 = %12.8e\n", w0);
 
     fp = fopen(p.gt_file, "w");
 
