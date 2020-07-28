@@ -82,8 +82,12 @@ main(int argc, char** argv)
      * it's set to zero in get_parameters so 
      * we're fine to just add to it in the loop */
     for (unsigned int i = 0; i < 48; i++) {
-      p.w0 += p.gsw[1][i] * p.gsw[2][i];
+      p.offset += p.gsw[1][i] * p.gsw[2][i];
     }
+    fprintf(stdout, "Anomalous phase shift = %12.8e\n", p.offset);
+    fp = fopen(p.offset_file, "w");
+    fprintf(fp, "%18.10f", p.offset);
+    fclose(fp);
 
     fp = fopen(p.gt_file, "w");
 
@@ -111,8 +115,9 @@ main(int argc, char** argv)
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
-	Atv[i] = At(p.w0, re_res, im_res, cmtime, p.l1, p.l2, 0.0);
-	Ftv[i] = Ft(p.w0, re_res, im_res, reorg_res, cmtime, 1./3);
+	Atv[i] = At(0.0, re_res, im_res, cmtime, p.offset, 0.0);
+	Ftv[i] = Ft(0.0, re_res, im_res, reorg_res,
+	            cmtime, p.offset, 1./3);
     }
     fclose(fp);
 
@@ -127,7 +132,7 @@ main(int argc, char** argv)
     }
 
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
-    plan = fftw_plan_dft_1d(pr.ns, 
+    plan = fftw_plan_dft_1d(pr.ns,
     	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(plan); 
 

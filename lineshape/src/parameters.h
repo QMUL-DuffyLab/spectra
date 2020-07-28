@@ -15,13 +15,15 @@ typedef struct {
 } Protocol;
 
 typedef struct {
-    double s0, s1, s2, g0, g1, g2, l0, l1, l2, w0, w1, w2, ti, T, nu;
+    double s0, s1, s2, g0, g1, g2, l0, l1, l2,
+           offset, w1, w2, ti, T, nu;
     double (* cw)(double, void *);
     double (* cn)(double, void *);
     double gsw[3][48];
     int ligand; /* 1 for chlorophyll, 0 for carotenoid */
     char aw_file[200], gt_file[200];
     char fw_file[200], lambda_file[200];
+    char offset_file[200];
 } Parameters;
 
 Parameters get_parameters(char* filename);

@@ -118,7 +118,7 @@ main(int argc, char** argv)
 
     for (unsigned int j = 0; j < tau; j++) {
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
-                 (double)j * TOFS, line_params[i].l1, line_params[i].l2,
+                 (double)j * TOFS, 562.3109,
                  1. / (1000 * gamma[i]));
     }
 
@@ -333,7 +333,8 @@ main(int argc, char** argv)
     for (unsigned int j = 0; j < tau; j++) {
       in[j] = p_i_equib[i] * Ft(eigvals[i],
               creal(gi_array[i][j]), cimag(gi_array[i][j]),
-              lambda[i], (double)j * TOFS, 1. / (1000 * gamma[i]));
+              lambda[i], (double)j * TOFS, 562.3109,
+              1. / (1000 * gamma[i]));
     }
 
     fftw_execute(plan); 
