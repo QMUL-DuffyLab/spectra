@@ -3,7 +3,7 @@ program coupling_calc
   implicit none
   integer, parameter :: sp = REAL64
   logical :: verbose
-  character(100) :: coord_fmt, ei_file,&
+  character(100) :: coord_fmt, ei_file, dipoles_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: input_dir, output_dir
   character(200) :: input_file, jij_file, pop_file,&
@@ -16,7 +16,7 @@ program coupling_calc
   real :: start_time, end_time
   real(sp) :: r, e2kb, kc
   real(sp), dimension(:), allocatable :: work,&
-  eigvals, ei, lambda, lifetimes
+  eigvals, ei, lambda, lifetimes, dipoles
   real(sp), dimension(:,:), allocatable :: coords_i, coords_j,&
   Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
@@ -67,6 +67,7 @@ program coupling_calc
   lambda_file     = trim(adjustl(input_dir)) // "/lambda.txt"
   gnt_file        = trim(adjustl(input_dir)) // "/gnt.txt"
   lifetimes_file  = trim(adjustl(input_dir)) // "/lifetimes.txt"
+  dipoles_file    = trim(adjustl(input_dir)) // "/dipoles.txt"
 
   ! this way we automatically deal with varying numbers of pigments
   control_len = get_file_length(input_file)
@@ -89,6 +90,7 @@ program coupling_calc
   allocate(eigvals(control_len))
   allocate(lambda(control_len))
   allocate(lifetimes(control_len))
+  allocate(dipoles(control_len))
   allocate(ei(control_len))
   allocate(gnt(control_len, tau))
 
@@ -100,6 +102,7 @@ program coupling_calc
   eigvals = 0.0
   lambda = 0.0
   lifetimes = 0.0
+  dipoles = 0.0
   ei = 0.0
   gnt = (0.0, 0.0)
 
@@ -112,12 +115,14 @@ program coupling_calc
   open(unit=12, file=lambda_file)
   open(unit=13, file=gnt_file)
   open(unit=14, file=lifetimes_file)
+  open(unit=15, file=dipoles_file)
   do i = 1, control_len
 
     read(11, *) ei(i)
     read(12, *) lambda(i)
     read(13, '(a)') gnt_files(i)
     read(14, *) lifetimes(i)
+    read(15, *) dipoles(i)
     read(10, '(a)') coord_files(i)
 
     coord_lengths(i) = get_file_length(coord_files(i))
@@ -131,6 +136,8 @@ program coupling_calc
   close(11)
   close(12)
   close(13)
+  close(14)
+  close(15)
 
   ! we multiply the whole Jij matrix later on to convert
   ! to wavenumbers; the read in excitation energies are already
@@ -169,8 +176,9 @@ program coupling_calc
       ! we also want to calculate transition dipole moments
       if (i.eq.j) then
         Jij(i, j) = ei(i)
-        mu(:,i) = mu_calc(coords_i, coord_lengths(i))
-        write(*,*) "i = ", i, "mu(i) = ", mu(:,i), "e_i = ", Jij(i,j)
+        mu(:,i) = mu_calc(coords_i, coord_lengths(i), dipoles(i))
+        write(*,*) "i = ", i, "mu(i) = ", mu(:,i),&
+        "mu^2 = ", sum(mu(:, i)**2), "e_i = ", Jij(i,j)
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
@@ -379,13 +387,15 @@ program coupling_calc
     
   end function J_calc
 
-  function mu_calc(p, len) result(res)
+  function mu_calc(p, len, D) result(res)
     implicit none
     integer, parameter :: sp = real64
     integer, intent(in) :: len
+    real(sp), intent(in) :: D
     integer :: i, j
     real(sp), dimension(4, len) :: p
     real(sp), dimension(3) :: mu, res
+    real(sp) :: mu_sq
 
     mu = 0.0
     do i = 1, len
@@ -393,6 +403,12 @@ program coupling_calc
         mu(j) = mu(j) + (p(j, i) * p(4, i))
       end do
     end do
+
+    mu_sq = 0.0
+    do i = 1, 3
+      mu_sq = mu_sq + mu(i)**2
+    end do
+    mu = mu * D / sqrt(mu_sq)
     res = mu
     
   end function mu_calc
