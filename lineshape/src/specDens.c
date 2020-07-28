@@ -78,12 +78,12 @@ main(int argc, char** argv)
     double pf = 2.* M_PI * CMS * 100. * 1E-15;
     double pf_norm = pf * (1. / sqrt(pr.ns));
 
-    /* testing something - hunch */
-    double w0 = 0.0;
+    /* w0 is the offset to put the 0-0 line at 0;
+     * it's set to zero in get_parameters so 
+     * we're fine to just add to it in the loop */
     for (unsigned int i = 0; i < 48; i++) {
-      w0 += p.gsw[1][i] * p.gsw[2][i];
+      p.w0 += p.gsw[1][i] * p.gsw[2][i];
     }
-    fprintf(stdout, "w0 = %12.8e\n", w0);
 
     fp = fopen(p.gt_file, "w");
 
@@ -104,19 +104,15 @@ main(int argc, char** argv)
 	gsl_integration_qagiu(&gsl_im, 0., 1e-8, 1e-8, 1000,
 			      work, &im_res, &im_err);
 
-	re_res = re_res + small_t;
-	re_err = re_err + small_t_err;
+	re_res = p.nu * (re_res + small_t);
+	re_err = p.nu * (re_err + small_t_err);
+	im_res = p.nu * (im_res);
 
-	/* the 6.4 here is from an N in the python code */
-	/* fprintf(fp, "%18.10f %18.10f %18.10f\n", */
-	/* 	(float) i, re_res * pf_norm * 6.4, */
-	/* 	im_res * pf_norm * 6.4); */
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
-        /* check this soon - leaving gamma as 0? */
-	Atv[i] = At(w0, re_res, im_res, cmtime, p.l1, p.l2, 0.0);
-	Ftv[i] = Ft(w0, re_res, im_res, reorg_res, cmtime, 1./3);
+	Atv[i] = At(p.w0, re_res, im_res, cmtime, p.l1, p.l2, 0.0);
+	Ftv[i] = Ft(p.w0, re_res, im_res, reorg_res, cmtime, 1./3);
     }
     fclose(fp);
 

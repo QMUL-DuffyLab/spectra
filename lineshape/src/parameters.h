@@ -15,7 +15,7 @@ typedef struct {
 } Protocol;
 
 typedef struct {
-    double s0, s1, s2, g0, g1, g2, l0, l1, l2, w1, w2, ti, T, nu;
+    double s0, s1, s2, g0, g1, g2, l0, l1, l2, w0, w1, w2, ti, T, nu;
     double (* cw)(double, void *);
     double (* cn)(double, void *);
     double gsw[3][48];
