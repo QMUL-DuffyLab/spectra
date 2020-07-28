@@ -57,6 +57,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     lifetimes_file = "{}/lifetimes.txt".format(output_path) 
     lambda_file    = "{}/lambda.txt".format(output_path) 
     gnt_file       = "{}/gnt.txt".format(output_path) 
+    dipole_file    = "{}/dipoles.txt".format(output_path) 
     lineshape_file = "{}/lineshapes.{}".format(output_path, snapshot_number) 
     f = open(input_file, "w")
     g = open(energy_file, "w")
@@ -64,6 +65,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     j = open(lambda_file, "w")
     k = open(gnt_file, "w")
     l = open(lineshape_file, "w")
+    m = open(dipole_file, "w")
     for p in pigment_dirs:
         gt = "lineshape/out/{}_gt.dat".format(p[0:3])
         if not os.path.isfile(gt):
@@ -84,6 +86,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
                 print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
 
             print(pigment_data.pigment_data[p[0:3]]["S1"]["lifetime"], file=h)
+            print(pigment_data.pigment_data[p[0:3]]["D"], file=m)
 
         print(reorg, file=j)
         print(gt, file=k)
