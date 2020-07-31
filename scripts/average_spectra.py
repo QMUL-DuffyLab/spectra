@@ -16,7 +16,7 @@ initial_data = np.loadtxt("{}/1/aw.dat".format(root_dir))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 
-resum = 0
+resum = 1
 if resum is not 0:
     print("Summing A(w) and F(w) per frame")
     for i in range(1000):

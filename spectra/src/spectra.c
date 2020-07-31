@@ -117,8 +117,8 @@ main(int argc, char** argv)
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
     for (unsigned int j = 0; j < tau; j++) {
-      in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
-                 (double)j * TOFS, 562.3109,
+      in[j] = At(0.0, eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
+                 (double)j * TOFS,
                  1. / (1000 * gamma[i]));
     }
 
@@ -331,9 +331,9 @@ main(int argc, char** argv)
   integral = calloc(tau, sizeof(double));
   for (i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < tau; j++) {
-      in[j] = p_i_equib[i] * Ft(eigvals[i],
+      in[j] = p_i_equib[i] * Ft(0.0, eigvals[i],
               creal(gi_array[i][j]), cimag(gi_array[i][j]),
-              lambda[i], (double)j * TOFS, 562.3109,
+              lambda[i], (double)j * TOFS,
               1. / (1000 * gamma[i]));
     }
 

@@ -110,14 +110,14 @@ main(int argc, char** argv)
 
 	re_res = p.nu * (re_res + small_t);
 	re_err = p.nu * (re_err + small_t_err);
-	im_res = p.nu * (im_res);
+	im_res = p.nu * (im_res + (p.offset * p.ti));
 
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
-	Atv[i] = At(0.0, re_res, im_res, cmtime, p.offset, 0.0);
-	Ftv[i] = Ft(0.0, re_res, im_res, reorg_res,
-	            cmtime, p.offset, 1./3);
+	Atv[i] = At(0.0, 0.0, re_res, im_res, cmtime, 0.0);
+	Ftv[i] = Ft(0.0, 0.0, re_res, im_res, reorg_res,
+	            cmtime, 1./3);
     }
     fclose(fp);
 
