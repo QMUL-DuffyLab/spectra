@@ -59,13 +59,25 @@ main(int argc, char** argv)
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
 
     /* reorganisation energy */
+    /* w0 is the offset to put the 0-0 line at 0;
+     * it's set to zero in get_parameters so 
+     * we're fine to just add to it in the loop */
+    for (unsigned int i = 0; i < 48; i++) {
+      p.offset += p.gsw[1][i] * p.gsw[2][i];
+    }
+    fprintf(stdout, "Anomalous phase shift = %12.8e\n", p.offset);
+    FILE *fp = fopen(p.offset_file, "w");
+    fprintf(fp, "%18.10f", p.offset);
+    fclose(fp);
+
     re = &reorg_int;
     gsl_reorg.function = re;
     gsl_reorg.params = &p;
     gsl_integration_qagiu(&gsl_reorg, 0., 1e-4, 1e-7, 1000,
 			  work, &reorg_res, &reorg_err);
     fprintf(stdout, "Reorganisation energy lambda = %12.8f\n",reorg_res);
-    FILE *fp = fopen(p.lambda_file, "w");
+    reorg_res -= p.offset;
+    fp = fopen(p.lambda_file, "w");
     fprintf(fp, "%18.10f %18.10f\n", reorg_res, reorg_err);
     fclose(fp);
 
@@ -77,17 +89,6 @@ main(int argc, char** argv)
      * what we need for the rest of the functions. */
     double pf = 2.* M_PI * CMS * 100. * 1E-15;
     double pf_norm = pf * (1. / sqrt(pr.ns));
-
-    /* w0 is the offset to put the 0-0 line at 0;
-     * it's set to zero in get_parameters so 
-     * we're fine to just add to it in the loop */
-    for (unsigned int i = 0; i < 48; i++) {
-      p.offset += p.gsw[1][i] * p.gsw[2][i];
-    }
-    fprintf(stdout, "Anomalous phase shift = %12.8e\n", p.offset);
-    fp = fopen(p.offset_file, "w");
-    fprintf(fp, "%18.10f", p.offset);
-    fclose(fp);
 
     fp = fopen(p.gt_file, "w");
 
@@ -115,8 +116,8 @@ main(int argc, char** argv)
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
-	Atv[i] = At(0.0, 0.0, re_res, im_res, cmtime, 0.0);
-	Ftv[i] = Ft(0.0, 0.0, re_res, im_res, reorg_res,
+	Atv[i] = At(0.0, re_res, im_res, cmtime, 0.0);
+	Ftv[i] = Ft(0.0, re_res, im_res, reorg_res,
 	            cmtime, 1./3);
     }
     fclose(fp);

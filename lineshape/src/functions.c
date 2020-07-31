@@ -119,22 +119,22 @@ reorg_int(double w, void* params)
 }
 
 double complex
-At(double w, double w0, double re, double im, double t,
+At(double w0, double re, double im, double t,
    double gamma)
 {
     /* l1 and l2 from chris's python code - check */
-    double complex exponent = -I * ((w - w0) * t) - (re + (I * im))
+    double complex exponent = -I * ((w0) * t) - (re + (I * im))
       - (0.5 * gamma * t);
     return cexp(exponent);
 }
 
 double complex
-Ft(double w, double w0, double re, double im, double reorg,
+Ft(double w0, double re, double im, double reorg,
    double t, double gamma)
 {
     /* hbar in lambda term??? */
     double hbar = 1.;
-    double complex exponent = -I * ((w - w0) - (2. * (reorg/hbar))) * t 
+    double complex exponent = -I * ((w0) - (2. * (reorg/hbar))) * t 
                             - (re - (I * im) - (0.5 * t * gamma));
     return cexp(exponent);
 }
