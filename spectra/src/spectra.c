@@ -461,6 +461,28 @@ main(int argc, char** argv)
   fclose(fp);
   gsl_odeiv2_driver_free(d);
 
+  fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
+      "-------------------\n\n");
+  /* first assign the transfer matrix to a GSL matrix,
+   * then call the relevant eigensystem function; we can
+   * use the eigendecomposed bits to calculate <\tau> */
+  gsl_eigen_nonsymmv_workspace *w = gsl_eigen_nonsymmv_alloc(p->N);
+  gsl_matrix *Tij_gsl = array_to_gsl_matrix(p->N, p->N, odep.Tij);
+  gsl_vector_complex *eval = gsl_vector_complex_alloc(p->N);
+  gsl_matrix_complex *evec = gsl_matrix_complex_alloc(p->N, p->N);
+  status = gsl_eigen_nonsymmv(Tij_gsl, eval, evec, w);
+  /* now we need to invert the eigenvector matrix as well */
+  gsl_vector_complex *eval_temp = gsl_vector_complex_alloc(p->N);
+  gsl_matrix_complex *evec_inv  = gsl_matrix_complex_alloc(p->N, p->N);
+  status = gsl_eigen_nonsymmv(evec, eval_temp, evec_inv, w);
+  /* now we do evec * eval^-1 * evec^-1 * P(0) */
+
+  /* do stuff */
+
+  gsl_matrix_free(Tij_gsl); gsl_vector_free(eval);
+  gsl_matrix_free(evec);
+  gsl_matrix_free(evec_inv); gsl_vector_free(eval_temp);
+
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;
   fprintf(stdout, "\n----------------------\nNORMALISED POPULATIONS\n"

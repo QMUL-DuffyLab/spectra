@@ -1,5 +1,18 @@
 #include "fluorescence.h"
 
+gsl_matrix*
+array_to_gsl_matrix(unsigned int n1, unsigned int n2, double** mat)
+{
+  /* take n1*n2 double array, return equivalent gsl_matrix * */
+  gsl_matrix *res = gsl_matrix_alloc(n1, n2);
+  for (unsigned int i = 0; i < n1; i++) {
+    for (unsigned int j = 0; j < n2; j++) {
+      gsl_matrix_set(res, i, j, mat[i][j]);
+    }
+  }
+  return res;
+}
+
 double**
 rate_calc(unsigned int N, double **eig, 
           double *eigvals, double** wij, Parameters *p)
