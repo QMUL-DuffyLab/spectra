@@ -2,6 +2,7 @@
 #include "steady_state.h"
 #include <fftw3.h>
 #include <stdio.h>
+#include <gsl/gsl_eigen.h>
 
 int
 main(int argc, char** argv)
@@ -184,6 +185,7 @@ main(int argc, char** argv)
   /* one with the highest oscillator strength gets excited? */
   unsigned int max = 0;
   double musq_max = musq[0];
+  double musq_sum = 0.;
   fprintf(stdout, "\n----------------------------------\n"
       "OSC. STRENGTHS AND CHI(W) INTEGRAL\n"
       "----------------------------------\n\n");
@@ -193,6 +195,7 @@ main(int argc, char** argv)
     if (musq[i] > musq_max) {
       max = i;
       musq_max = musq[i];
+      musq_sum += musq[i];
     }
   }
 
@@ -463,6 +466,8 @@ main(int argc, char** argv)
 
   fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
       "-------------------\n\n");
+  gsl_complex one, item;
+  GSL_SET_COMPLEX(&one, 1., 0.);
   /* first assign the transfer matrix to a GSL matrix,
    * then call the relevant eigensystem function; we can
    * use the eigendecomposed bits to calculate <\tau> */
@@ -470,18 +475,53 @@ main(int argc, char** argv)
   gsl_matrix *Tij_gsl = array_to_gsl_matrix(p->N, p->N, odep.Tij);
   gsl_vector_complex *eval = gsl_vector_complex_alloc(p->N);
   gsl_matrix_complex *evec = gsl_matrix_complex_alloc(p->N, p->N);
+
   status = gsl_eigen_nonsymmv(Tij_gsl, eval, evec, w);
+
   /* now we need to invert the eigenvector matrix as well */
+  /* there must be a more efficient way of doing this! */
   gsl_vector_complex *eval_temp = gsl_vector_complex_alloc(p->N);
   gsl_matrix_complex *evec_inv  = gsl_matrix_complex_alloc(p->N, p->N);
+  gsl_matrix_complex *intermed  = gsl_matrix_complex_alloc(p->N, p->N);
+  gsl_matrix_complex *eval_m1   = gsl_matrix_complex_calloc(p->N, p->N);
+  gsl_vector_complex *p_vector  = gsl_vector_complex_alloc(p->N);
+  gsl_vector_complex *final_vec = gsl_vector_complex_alloc(p->N);
+
+  for (i = 0; i < p->N; i++) {
+    /* this is so dumb. idk if we can assume everything's real or not */
+    GSL_SET_COMPLEX(&item,
+        1. / GSL_REAL(gsl_vector_complex_get(eval, i)), 0.);
+    /* set diagonals to 1/eigenvalues */
+    gsl_matrix_complex_set(eval_m1, i, i, item);
+    /* GSL_SET_COMPLEX(&item, p_i_equib[i], 0.); */
+    GSL_SET_COMPLEX(&item, musq[i] / musq_sum, 0.);
+    gsl_vector_complex_set(p_vector, i, item);
+  }
+
   status = gsl_eigen_nonsymmv(evec, eval_temp, evec_inv, w);
+
   /* now we do evec * eval^-1 * evec^-1 * P(0) */
+  gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, one,
+      evec, eval_m1, one, intermed);
+  gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, one,
+      intermed, evec_inv, one, evec);
+  gsl_blas_zgemv(CblasNoTrans, one,
+      evec, p_vector, one, final_vec);
+  double excite = 0.;
+  for (i = 0; i < p->N; i++) {
+    excite += GSL_REAL(gsl_vector_complex_get(final_vec, i));
+  }
+  fprintf(stdout, "mean excitation lifetime = %12.8e\n", excite);
 
-  /* do stuff */
-
-  gsl_matrix_free(Tij_gsl); gsl_vector_free(eval);
-  gsl_matrix_free(evec);
-  gsl_matrix_free(evec_inv); gsl_vector_free(eval_temp);
+  gsl_matrix_free(Tij_gsl);
+  gsl_vector_complex_free(eval);
+  gsl_vector_complex_free(eval_temp);
+  gsl_vector_complex_free(p_vector);
+  gsl_vector_complex_free(final_vec);
+  gsl_matrix_complex_free(evec);
+  gsl_matrix_complex_free(evec_inv);
+  gsl_matrix_complex_free(intermed);
+  gsl_matrix_complex_free(eval_m1);
 
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;

@@ -16,6 +16,8 @@ typedef struct {
   double *chiw;
 } ode_params;
 
+gsl_matrix* array_to_gsl_matrix(unsigned int n1,
+            unsigned int n2, double** mat);
 double** rate_calc (unsigned int N, double **eig, double *eigvals,
                     double** wij, Parameters *p);
 double* relaxation_rates (unsigned int N, double* gamma, double** kij);
