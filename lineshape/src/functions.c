@@ -132,9 +132,16 @@ double complex
 Ft(double w0, double re, double im, double reorg,
    double t, double gamma)
 {
-    /* hbar in lambda term??? */
-    double hbar = 1.;
-    double complex exponent = -I * ((w0) - (2. * (reorg/hbar))) * t 
+    /* hbar   = 1.054571817E-34 Js
+     * 1J     = 6.24150974E18 eV
+     * 1ev/hc ~ 8065.5439 cm^-1
+     * so 1J  = 5.034117081E22 cm^-1
+     * hbar   = (1.054E-34 * 5.034E22) cm^-1 s
+     *        = 5.3088E-12 cm^-1 s
+     *        = 5.3088 cm^-1 ps
+    */
+    double hbar = 5.3088;
+    double complex exponent = -I * ((w0) + (2. * (reorg/hbar))) * t 
                             - (re - (I * im) - (0.5 * t * gamma));
     return cexp(exponent);
 }

@@ -30,6 +30,8 @@ aw_data = np.delete(aw_data, 0, 0)
 fw_data = np.delete(fw_data, 0, 0)
 aw_data[:, 0] = 10000000/aw_data[:, 0]
 fw_data[:, 0] = 10000000/fw_data[:, 0]
+print("Max of A(w):     {}".format(aw_data[np.argmax(aw_data[:, 1])]))
+print("Max of A(w) exp: {}".format(aw_exp[np.argmax(aw_exp[:, 1])]))
 plt.plot(aw_data[:, 0], aw_data[:, 1]/max(aw_data[:, 1]),
          label=r'$ A(\omega) $')
 plt.plot(aw_exp[:, 0], aw_exp[:, 1]/max(aw_exp[:, 1]),
@@ -52,6 +54,8 @@ plt.plot(fw_exp[:, 0], fw_exp[:, 1]/max(fw_exp[:, 1]),
          label='Mancal')
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'$ F(\omega) $ (abu)')
+print("Max of F(w):     {}".format(fw_data[np.argmax(fw_data[:, 1])]))
+print("Max of F(w) exp: {}".format(fw_exp[np.argmax(fw_exp[:, 1])]))
 
 ax = plt.gca()
 ax.set_xlim([600, 850])

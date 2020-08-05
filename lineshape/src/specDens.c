@@ -63,6 +63,8 @@ main(int argc, char** argv)
      * it's set to zero in get_parameters so 
      * we're fine to just add to it in the loop */
     for (unsigned int i = 0; i < 48; i++) {
+      /* only for big ansatz lol need to write code 
+       * to check which ansatz and calculate properly */
       p.offset += p.gsw[1][i] * p.gsw[2][i];
     }
     fprintf(stdout, "Anomalous phase shift = %12.8e\n", p.offset);

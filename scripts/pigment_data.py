@@ -95,7 +95,8 @@ pigment_data = {
             }
         }
 
-
+# check where these are from!!!
+# muh and renger 
 site_energies = {
         'CHL601' : 15405,
         'CLA602' : 14940,
