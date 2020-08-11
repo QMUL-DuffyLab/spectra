@@ -15,6 +15,7 @@ root_dir = "out/LHCII"
 initial_data = np.loadtxt("{}/1/aw.dat".format(root_dir))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
+jij = np.zeros_like(np.loadtxt("{}/1/J_ij.out".format(root_dir)))
 
 resum = 1
 if resum is not 0:
@@ -26,16 +27,20 @@ if resum is not 0:
         direc = "{}/{}".format(root_dir, i + 1)
         aws = aws + np.loadtxt("{}/aw.dat".format(direc))
         fws = fws + np.loadtxt("{}/fw.dat".format(direc))
+        jij = jij + np.loadtxt("{}/J_ij.out".format(direc))
 
-    print("Done.")
+    print("\nDone.")
     aws = aws / 1000.
     fws = fws / 1000.
+    jij = jij / 1000.
 else:
     aws = np.loadtxt("{}/aw_average.dat".format(root_dir))
     fws = np.loadtxt("{}/fw_average.dat".format(root_dir))
+    jij = np.loadtxt("{}/jij_average.dat".format(root_dir))
 
 np.savetxt("{}/aw_average.dat".format(root_dir), aws)
 np.savetxt("{}/fw_average.dat".format(root_dir), fws)
+np.savetxt("{}/jij_average.dat".format(root_dir), jij)
 
 # delete 0 wavenumber rows to prevent divide-by-zero warning
 aws = np.delete(aws, 0, 0)

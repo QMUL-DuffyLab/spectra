@@ -473,13 +473,24 @@ main(int argc, char** argv)
    * use the eigendecomposed bits to calculate <\tau> */
   gsl_eigen_nonsymmv_workspace *w = gsl_eigen_nonsymmv_alloc(p->N);
   gsl_matrix *Tij_gsl = array_to_gsl_matrix(p->N, p->N, odep.Tij);
+  /* these are real actually */
   gsl_vector_complex *eval = gsl_vector_complex_alloc(p->N);
   gsl_matrix_complex *evec = gsl_matrix_complex_alloc(p->N, p->N);
 
   status = gsl_eigen_nonsymmv(Tij_gsl, eval, evec, w);
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      fprintf(stdout, "(%+10.6e %+10.6e) ",
+          GSL_REAL(gsl_matrix_complex_get(evec, i, j)),
+          GSL_IMAG(gsl_matrix_complex_get(evec, i, j)));
+    }
+    fprintf(stdout, "\n");
+  }
 
   /* now we need to invert the eigenvector matrix as well */
   /* there must be a more efficient way of doing this! */
+  /* the matrix C^-1, the inverse of the eigenvector matrix,
+   * is complex; so are the corresponding eigenvalues */
   gsl_vector_complex *eval_temp = gsl_vector_complex_alloc(p->N);
   gsl_matrix_complex *evec_inv  = gsl_matrix_complex_alloc(p->N, p->N);
   gsl_matrix_complex *intermed  = gsl_matrix_complex_alloc(p->N, p->N);
@@ -493,8 +504,9 @@ main(int argc, char** argv)
         1. / GSL_REAL(gsl_vector_complex_get(eval, i)), 0.);
     /* set diagonals to 1/eigenvalues */
     gsl_matrix_complex_set(eval_m1, i, i, item);
-    /* GSL_SET_COMPLEX(&item, p_i_equib[i], 0.); */
-    GSL_SET_COMPLEX(&item, musq[i] / musq_sum, 0.);
+    GSL_SET_COMPLEX(&item, p_i_equib[i], 0.);
+    /* GSL_SET_COMPLEX(&item, musq[i] / musq_sum, 0.); */
+    /* GSL_SET_COMPLEX(&item, 1./p->N, 0.); */
     gsl_vector_complex_set(p_vector, i, item);
   }
 
