@@ -2,7 +2,7 @@ trajin 1rwt_monomer_lipidtip3p_wt_6.dcd 1 last 20
 # 1433-1446 is the whole lot of CHL and CLA
 # but it goes all CHL then all CLA
 # so can't just use i = 601;i++. need to think about it
-for residues R0 inmask :1433-1446
+for residues R0 inmask :1433-1446 i=601;i++
 strip !($R0)
 trajout ./TEST/$i pdb multi nobox
 run

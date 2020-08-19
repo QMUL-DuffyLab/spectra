@@ -307,7 +307,7 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
   memmove(pch + 14, pch + 11, strlen(pch + 11) + 1);
-  memcpy(pch, "ss_populations", 8);
+  memcpy(pch, "ss_populations", 14);
   fp = fopen(fn, "w");
 
   fprintf(stdout, "i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz*|μ^2|\n");
@@ -317,7 +317,7 @@ main(int argc, char** argv)
     fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
         gsl_vector_get(s->x, i), p_i_equib[i],
         (boltz[i] * musq[i]) / boltz_sum);
-    fprintf(fp, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
+    fprintf(fp, "%3d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
         gsl_vector_get(s->x, i), p_i_equib[i],
         (boltz[i] * musq[i]) / boltz_sum);
   }
@@ -552,6 +552,6 @@ main(int argc, char** argv)
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
   free(in); free(out); free(y); free(f); free(boltz); free(yprev);
-  free(ynorm);
+  free(ynorm); free(ww);
   exit(EXIT_SUCCESS);
 }
