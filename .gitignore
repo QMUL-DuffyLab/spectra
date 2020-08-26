@@ -9,6 +9,6 @@ pigme*
 *.txt
 *.mod
 *.o
-test
+test*
 in/*
 exec*

@@ -82,6 +82,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
         else:
             if p in pigment_data.site_energies.keys():
                 print(pigment_data.site_energies[p], file=g)
+                # print(pigment_data.novod_energies[p], file=g)
             else:
                 print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
 
