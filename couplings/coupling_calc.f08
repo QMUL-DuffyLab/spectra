@@ -344,22 +344,6 @@ program coupling_calc
 
   end function get_file_length
 
-  function parse_tresp_line(buffer) result(res)
-    implicit none
-    character(len=*), intent(in) :: buffer
-    character(len=len(buffer)) :: line
-    integer :: pos
-    real(kind=8) :: res
-    line = buffer
-    ! for some reason read didn't like hard tab delimiters and
-    ! kept breaking, so this is a bit of a hack: the decimal point
-    ! is the only full stop on each line, so find that and work back
-    pos = scan(line, '.')
-    line = line(pos - 2:)
-    read(line, *) res
-
-  end function parse_tresp_line
-
   function J_calc(p1, p2, len1, len2) result(res)
     implicit none
     integer, parameter :: sp = real64

@@ -104,8 +104,8 @@ main(int argc, char** argv)
       exit(EXIT_FAILURE);
   }
 
-  kij = rate_calc(p->N, eig, eigvals, wij, line_params);
-  rates = relaxation_rates(p->N, gamma, kij);
+  kij = rate_calc(p->N, eig, wij, line_params);
+  rates = relaxation_rates(p->N, gamma);
 
   integral = calloc(tau, sizeof(double));
 

@@ -15,7 +15,7 @@ array_to_gsl_matrix(unsigned int n1, unsigned int n2, double** mat)
 
 double**
 rate_calc(unsigned int N, double **eig, 
-          double *eigvals, double** wij, Parameters *p)
+          double** wij, Parameters *p)
 {
   /* this function returns the transfer rates between states -
    * it's *not* the transfer matrix! separate function for that */
@@ -58,7 +58,7 @@ rate_calc(unsigned int N, double **eig,
 
 double*
 relaxation_rates
-(unsigned int N, double *gamma, double **kij)
+(unsigned int N, double *gamma)
 {
   /* take vector of lifetimes in ns,
    * output relaxation rates in ps^{-1} */

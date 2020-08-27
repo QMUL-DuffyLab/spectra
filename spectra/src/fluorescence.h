@@ -18,9 +18,9 @@ typedef struct {
 
 gsl_matrix* array_to_gsl_matrix(unsigned int n1,
             unsigned int n2, double** mat);
-double** rate_calc (unsigned int N, double **eig, double *eigvals,
+double** rate_calc (unsigned int N, double **eig,
                     double** wij, Parameters *p);
-double* relaxation_rates (unsigned int N, double* gamma, double** kij);
+double* relaxation_rates (unsigned int N, double* gamma);
 double **transfer_matrix (unsigned int N, double* relax, double** kij);
 double **final_matrix    (unsigned int N, double* relax, double** Tij);
 double **jacmat (ode_params p);
