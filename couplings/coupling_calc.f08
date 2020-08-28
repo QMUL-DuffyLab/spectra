@@ -213,19 +213,22 @@ program coupling_calc
   end if
 
   if (verbose) then
+    write(*,*) mu
+    write(*,*)
     write(*,*) Jeig
   end if
 
   lifetimes = 1.0 / lifetimes ! mix rates not lifetimes!!
 
-  ! the Jeig's have to go on the right because the 
-  ! columns are the eigenvectors, not the rows.
-  ! for gnt it has to stay on the left because of
-  ! the shape of the array, so transpose it instead.
+  ! transpose Jeig because we want to multiply the columns of
+  ! Jeig with our quantitites (columns are eigenvectors), this
+  ! ensures that the C code (row-major) will read mu's correctly
   mu_ex     = matmul(mu, Jeig) ! mix transition dipole moments
-  gnt       = matmul((transpose(Jeig))**4, gnt) ! mix lineshape functions
-  lambda    = matmul(lambda, Jeig**4) ! mix reorganisation energies
-  lifetimes = matmul(lifetimes, Jeig**2) ! mix relaxation times
+  Jeig = transpose(Jeig)
+  gnt       = matmul(Jeig**4, gnt) ! mix lineshape functions
+  lambda    = matmul(Jeig**4, lambda) ! mix reorganisation energies
+  lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
+  Jeig = transpose(Jeig)
 
   lifetimes = 1.0 / lifetimes ! get back lifetimes
 
@@ -248,6 +251,20 @@ program coupling_calc
   open(unit=14, file=mu_i_file)
   open(unit=15, file=lambda_i_file)
   open(unit=16, file=gamma_i_file)
+
+  write(*,'(a)') "site"
+  do i = 1, 3
+    do j = 1, control_len
+      write(*, '(2I2, F18.10, 1X)') i, j, mu(i, j)
+    end do
+  end do
+  write(*,*)
+  write(*,'(a)') "exciton"
+  do i = 1, 3
+    do j = 1, control_len
+      write(*, '(2I2, F18.10, 1X)') i, j, mu_ex(i, j)
+    end do
+  end do
 
   do i = 1, control_len
     do j = 1, control_len

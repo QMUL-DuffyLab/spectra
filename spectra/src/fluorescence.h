@@ -23,7 +23,6 @@ double** rate_calc (unsigned int N, double **eig,
 double* relaxation_rates (unsigned int N, double* gamma);
 double **transfer_matrix (unsigned int N, double* relax, double** kij);
 double **final_matrix    (unsigned int N, double* relax, double** Tij);
-double **jacmat (ode_params p);
 int odefunc (double x, const double *y, double *f, void *params);
 int jacobian (double t, const double y[], double *dfdy,
               double dfdt[], void *params);

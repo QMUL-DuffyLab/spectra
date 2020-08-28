@@ -30,6 +30,7 @@ rate_calc(unsigned int N, double **eig,
   double elem = 0.0;
   double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
   unsigned short print_kij = 0;
+  unsigned short print_details = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       if (i == j) {
@@ -41,6 +42,14 @@ rate_calc(unsigned int N, double **eig,
          * hold the normalised eigenvectors, not the rows */
         elem = cmperps * (pow(eig[k][i], 2.) * pow(eig[k][j], 2.) *
           p[k].nu * p[k].cn((wij[i][j]), vptr));
+        if (print_details) {
+          fprintf(stdout, "\ni j k = %2d %2d %2d:\n"
+              "c_k^i^2 = %8.6e\nc_k^j^2 = %8.6e\n"
+              "nu_k = %8.6e\nw_ij = %8.6e\nC_n(w_ij) = %8.6e\n"
+              "product = %8.6e\n",
+              i, j, k, pow(eig[k][i], 2.), pow(eig[k][j], 2.),
+              p[k].nu, wij[i][j], p[k].cn(wij[i][j], vptr), elem);
+        }
         kij[i][j] += elem;
       }
       if (print_kij) {
@@ -169,30 +178,6 @@ bcs (unsigned int N, double* eigvals)
     populations[i] = exp(-1. * beta * eigvals[i]) / sum;
   }
   return populations;
-}
-
-double**
-jacmat (ode_params p)
-{
-  double **Jij = calloc(p.N, sizeof(double));
-  for (unsigned int i = 0; i < p.N; i++) {
-    Jij[i] = calloc(p.N, sizeof(double));
-  }
-  fprintf(stdout, "\n---------------\nJacobian\n"
-      "---------------\n\n");
-  for (unsigned int i = 0; i < p.N; i++) {
-    for (unsigned int j = 0; j < p.N; j++) {
-      if (i == j) {
-        Jij[i][j] = p.kij[i][j] - p.rates[i];
-        fprintf(stdout, "%8.6f ", Jij[i][j]);
-      } else {
-        Jij[i][j] = p.kij[i][j];
-        fprintf(stdout, "%8.6f ", Jij[i][j]);
-      }
-    }
-    fprintf(stdout,"\n");
-  }
-  return Jij;
 }
 
 double
