@@ -81,7 +81,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
 
         if recalc_lineshapes:
             print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
-            os.system("cd lineshape && ./test ./in/prot ./in/{}.def".format(p[0:3]))
+            os.system("cd lineshape && ./test ./in/protocol ./in/{}.def".format(p[0:3]))
 
         reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
         lineshape = "lineshape/in/{}.def".format(p[0:3])

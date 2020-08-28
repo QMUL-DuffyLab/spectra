@@ -18,10 +18,19 @@
 #define TOFS (2. * M_PI * CMS * 100. * 1E-15)
 #define TOCM1 ((1.295E3 * 8.988E9 * 0.5))
 
+/** Input struct for important parameters and filenames where
+ * the exciton-basis data is to be read in from.
+ * 
+ * This struct mainly holds a list of filenames which have been
+ * output by the fortran code, listing where all the data is for
+ * the eigenstates of our Hamiltonian (the exciton basis data).
+ * Also holds a few parameters that aren't specific
+ *  to any particular pigment or exciton.
+ */
 typedef struct {
-  unsigned int N;
-  double T;
-  unsigned int tau;
+  unsigned int N; /**< Number of pigments/excitons */
+  double T; /**< Temperature */
+  unsigned int tau; /**< number of steps in g(t) arrays (\equiv fs) */
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200], aw_file[200], fw_file[200],
   pop_file[200];

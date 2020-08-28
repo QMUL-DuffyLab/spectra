@@ -1,6 +1,28 @@
 #include <string.h>
 #include "input.h"
 
+/** Reads in the output from the fortran code, returns Input struct.
+ *
+ * This is not very portable and to some extent is duplicating effort
+ * made in the lineshape code (lineshape/src/parameters.c) - there's
+ * probably a way of fixing that / a library I could use instead but
+ * whatever.
+ *
+ * Note that the number of gi_files isn't known till runtime because
+ * neither is N, the number of pigments; luckily C99 allows us to leave
+ * the last member of a struct with variable size and then malloc it
+ * later, which is what I do here.
+ *
+ * fgets() reads in the newline at the end of the line as well; to
+ * stop that newline from being passed to fopen() later I use the
+ * line[strcspn()] = 0 trick to set the newline to a null char.
+ *
+ * strndup is the last remaining gnu99 extension I use in the whole
+ * repo; I will eventually get around to fixing that but I'm lazy :)
+ *
+ * NB: check how to free those malloc'd struct members, I can't
+ * remember if there's some fancy stuff you have to do or not.
+ */
 Input*
 read_input_file(char* filename)
 {
@@ -23,7 +45,7 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     p->T = atof(line);
     fgets(line, 199, fp);
-    /* from stackoverflow - sets the newline to a null char */
+    /* below is from stackoverflow - sets the newline to a null char */
     line[strcspn(line, "\n")] = 0;
     strcpy(p->eigvecs_file, line);
     fgets(line, 199, fp);
@@ -56,6 +78,11 @@ read_input_file(char* filename)
   return p;
 }
 
+/** Reads a file with one double per line and returns it as an array.
+ *
+ * Note that this and every other function in here returns a pointer
+ * to a malloc'd object, so they all need to be freed somewhere!
+ */
 double*
 read(char *input_file, unsigned int N)
 {
@@ -79,6 +106,14 @@ read(char *input_file, unsigned int N)
   return arr;
 }
 
+/** Reads transition dipole moments from file and returns array.
+ *
+ * This one (and the others below) are extremely hacky - the numbers
+ * are hardcoded (19, 20, 22) based on the output format of the fortran
+ * code. It disgusts me a little bit every time I remember writing it.
+ * Not much going on other than that - reads 3 doubles a line, N lines,
+ * returns a pointer to the resulting array.
+ */
 double**
 read_mu(char *input_file, unsigned int N)
 {
@@ -112,6 +147,15 @@ read_mu(char *input_file, unsigned int N)
   return mu;
 }
 
+/** Reads in N x N eigenvector matrix and returns as an array.
+ *
+ * It occurs to me as I write these docs that I could do away with
+ * separate functions just by taking two ints n and m and reading in
+ * an n x m array from those. Would only require a check that both
+ * are greater than 1.
+ *
+ * Other than that same deal, reads N x N floats, outputs N x N array.
+ */
 double**
 read_eigvecs(char *input_file, unsigned int N)
 {
@@ -135,20 +179,28 @@ read_eigvecs(char *input_file, unsigned int N)
     for (i = 0; i < N; i++) {
         fgets(token, 17, fp);
         eig[i][0] = atof(token); 
-        /* fprintf(stdout, "%d 0 %10.6e ", i, eig[i][0]); */
         for (j = 1; j < N - 1; j++) {
           fgets(token, 17, fp);
           eig[i][j] = atof(token); 
-          /* fprintf(stdout, "%d %d %10.6e ", i, j, eig[i][j]); */
         }
         fgets(token, 18, fp); /* make sure we get to the newline! */
         eig[i][N - 1] = atof(token); 
-        /* fprintf(stdout, "%d 13 %10.6e\n", i, eig[i][0]); */
       }
   }
   return eig;
 }
 
+/** Read in the set of line-broadening functions, return as 2d array.
+ *
+ * The g_i(t) functions are the mixed line-broadening functions output
+ * by the fortran code, consisting of tau complex elements each.
+ *
+ * Honestly it's been a while since I wrote these functions and I can't
+ * remember now why this one uses fscanf instead of the fgets etc. from
+ * the other functions - maybe I could edit the others to use fscanf
+ * instead and save myself some duplication of effort. Either way,
+ * it generates gi[i][j], where i ∈ 0 -> N -1, j ∈ 0 -> tau - 1.
+ */
 double complex**
 read_gi(char *input_files[], 
     unsigned int N, unsigned int tau)
@@ -171,6 +223,8 @@ read_gi(char *input_files[],
       exit(EXIT_FAILURE);
     } else {
       for (j = 0; j < tau; j++) {
+        /* the space after the second %lf is required - the
+         * fortran code adds a space after the imaginary part */
         int cl = fscanf(fp, "      %lf      %lf ", &real, &imag);
         if (cl != 2) {
           fprintf(stdout, "fscanf in read_gi failed with error code %d;"
