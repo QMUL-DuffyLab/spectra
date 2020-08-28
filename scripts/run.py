@@ -19,6 +19,13 @@ parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
 parser.add_argument("-f", "--frame", default=1,
         help="MD frame to calculate for - pass 0 to loop over all frames")
+parser.add_argument("-T", "--temperature", type=float, default=300.0,
+        help="The temperature you want to calculate the spectra for")
+parser.add_argument("-t", "--tau", type=int, default=2048,
+        help='''The length of the lineshape function - this is in 
+              picoseconds. Default is 2048 since it's a power of 2,
+              which makes the FFTs slightly more optimised later.
+              ''')
 
 args = parser.parse_args()
 
@@ -44,8 +51,8 @@ def get_pigments(input_dir):
     numbers, pigment_dirs = zip(*sorted(zip(numbers, pigment_dirs)))
     return pigment_dirs
 
-
-def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
+def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
+    recalc_lineshapes):
     # fortran won't create the directory; do it here
     output_path = "{}/{}/{}".format(direc, args.input_dir, snapshot_number)
     os.makedirs(output_path, exist_ok=True)
@@ -99,13 +106,18 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein):
     j.close()
     return (input_file, output_path)
 
+with open("./lineshape/in/prot") as f:
+    lineshape_dict = dict([tuple(line.rstrip().split(" = ")) for line in f.readlines()])
+
+recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau)
+print(recalc_lineshapes)
 input_dir  = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 pigment_dirs = get_pigments(input_dir)
 
 # this is so ugly lol needs tidying up in future
 def run_frame(i, do_plots):
-    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir) # NB: assumes input_dir is just the name of the protein
+    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
     print("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
