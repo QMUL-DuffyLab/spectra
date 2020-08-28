@@ -34,9 +34,9 @@ just do `./scripts/run.py -f NUM` in the root folder for whichever frame number 
 Running it with `-f 0` will loop over 1000 frames; I haven't bothered yet to put in a check and see how many frames there are although that'd probably be easy enough.
 
 the python script is clever enough to notice if the required lineshape data isn't there and will attempt to create it if it isn't.
-there are also two parameters which affect everything; $T$, the temperature we're simulating at and $\tau$, the length (in femtoseconds) that we've calculated line-broadening functions for.
+there are also two parameters which affect everything; T, the temperature we're simulating at and τ, the length (in femtoseconds) that we've calculated line-broadening functions for.
 the defaults are set in the run script as 300K and 2048 (setting 2048 instead of, say, 2000, makes basically no difference. but I get to choose because I'm writing the code.); the script checks whether these match the values in the `lineshape` directory, specifically in `lineshape/in/prot`.
-if they don't, it recalculates the line-broadening functions with whatever $T, \tau$ you give it.
+if they don't, it recalculates the line-broadening functions with whatever T, τ you give it.
 it doesn't check for the executable files being there because if they're not it'll just fail; you can run `make clean && make all` yourself.
 
 A note on input file setup: the big folder of LHCII snapshots isn't included here because it's like 100MB or whatever, but `scripts/fix_files.sh` is set up to generate input files in the right way.
