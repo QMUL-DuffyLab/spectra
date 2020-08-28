@@ -216,15 +216,18 @@ program coupling_calc
     write(*,*) Jeig
   end if
 
-  lifetimes = 1.0 / lifetimes ! mix rates!!!!!!!!!
-  ! this is a hack - want to check if it fixes a problem later
-  ! if so will need to change some other bits of code as well
-  ! to make it more readable
+  lifetimes = 1.0 / lifetimes ! mix rates not lifetimes!!
+
+  ! the Jeig's have to go on the right because the 
+  ! columns are the eigenvectors, not the rows.
+  ! for gnt it has to stay on the left because of
+  ! the shape of the array, so transpose it instead.
   mu_ex     = matmul(mu, Jeig) ! mix transition dipole moments
-  gnt       = matmul(Jeig**4, gnt) ! mix lineshape functions
-  lambda    = matmul(Jeig**4, lambda) ! mix reorganisation energies
-  lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
-  lifetimes = 1.0 / lifetimes
+  gnt       = matmul((transpose(Jeig))**4, gnt) ! mix lineshape functions
+  lambda    = matmul(lambda, Jeig**4) ! mix reorganisation energies
+  lifetimes = matmul(lifetimes, Jeig**2) ! mix relaxation times
+
+  lifetimes = 1.0 / lifetimes ! get back lifetimes
 
   open(unit=20, file=spectra_input_file)
   ! stuff to read into spectra.c
