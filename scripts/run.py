@@ -79,6 +79,10 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
             print("Lineshape data does not exist for ligand {}. Generating now.".format(p[0:3]))
             os.system("cd lineshape && ./test ./in/prot ./in/{}.def".format(p[0:3]))
 
+        if recalc_lineshapes:
+            print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
+            os.system("cd lineshape && ./test ./in/prot ./in/{}.def".format(p[0:3]))
+
         reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
         lineshape = "lineshape/in/{}.def".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
