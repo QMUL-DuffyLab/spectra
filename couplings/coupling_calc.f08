@@ -85,8 +85,8 @@ program coupling_calc
   allocate(coord_lengths(control_len))
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
-  allocate(mu(3, control_len)) ! fortran is column major
-  allocate(mu_ex(3, control_len)) ! fortran is column major
+  allocate(mu(control_len, 3))
+  allocate(mu_ex(control_len, 3)) ! fortran is column major
   allocate(eigvals(control_len))
   allocate(lambda(control_len))
   allocate(lifetimes(control_len))
@@ -176,9 +176,9 @@ program coupling_calc
       ! we also want to calculate transition dipole moments
       if (i.eq.j) then
         Jij(i, j) = ei(i)
-        mu(:,i) = mu_calc(coords_i, coord_lengths(i), dipoles(i))
-        write(*,*) "i = ", i, "mu(i) = ", mu(:,i),&
-        "mu^2 = ", sum(mu(:, i)**2), "e_i = ", Jij(i,j)
+        mu(i, :) = mu_calc(coords_i, coord_lengths(i), dipoles(i))
+        write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
+        "mu^2 = ", sum(mu(i, :)**2), "e_i = ", Jij(i,j)
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
@@ -213,7 +213,7 @@ program coupling_calc
   end if
 
   if (verbose) then
-    write(*,*) mu
+    ! write(*,*) mu
     write(*,*)
     write(*,*) Jeig
   end if
@@ -221,13 +221,14 @@ program coupling_calc
   lifetimes = 1.0 / lifetimes ! mix rates not lifetimes!!
 
   ! transpose Jeig because we want to multiply the columns of
-  ! Jeig with our quantitites (columns are eigenvectors), this
-  ! ensures that the C code (row-major) will read mu's correctly
-  mu_ex     = matmul(mu, Jeig) ! mix transition dipole moments
+  ! Jeig with our quantitites (columns are eigenvectors)
   Jeig = transpose(Jeig)
+  mu_ex     = matmul(Jeig, mu) ! mix transition dipole moments
   gnt       = matmul(Jeig**4, gnt) ! mix lineshape functions
   lambda    = matmul(Jeig**4, lambda) ! mix reorganisation energies
   lifetimes = matmul(Jeig**2, lifetimes) ! mix relaxation times
+  ! transpose back to ensure the C code calculates Redfield rates
+  ! correctly (it goes down the columns as you'd expect)
   Jeig = transpose(Jeig)
 
   lifetimes = 1.0 / lifetimes ! get back lifetimes
@@ -252,19 +253,21 @@ program coupling_calc
   open(unit=15, file=lambda_i_file)
   open(unit=16, file=gamma_i_file)
 
-  write(*,'(a)') "site"
-  do i = 1, 3
-    do j = 1, control_len
-      write(*, '(2I2, F18.10, 1X)') i, j, mu(i, j)
+  if (verbose) then
+    write(*,'(a)') "site"
+    do i = 1, control_len
+      do j = 1, 3
+        write(*, '(2I2, F18.10, 1X)') i, j, mu(i, j)
+      end do
     end do
-  end do
-  write(*,*)
-  write(*,'(a)') "exciton"
-  do i = 1, 3
-    do j = 1, control_len
-      write(*, '(2I2, F18.10, 1X)') i, j, mu_ex(i, j)
+    write(*,*)
+    write(*,'(a)') "exciton"
+    do i = 1, control_len
+      do j = 1, 3
+        write(*, '(2I2, F18.10, 1X)') i, j, mu_ex(i, j)
+      end do
     end do
-  end do
+  end if
 
   do i = 1, control_len
     do j = 1, control_len
@@ -280,10 +283,10 @@ program coupling_calc
     end do
     write(10,*) ! blank line between rows!
     write(11,*)
-    write(13, '(F18.10, 1X, F18.10, 1X, F18.10)') mu(1, i),&
-      mu(2, i), mu(3, i)
-    write(14, '(F18.10, 1X, F18.10, 1X, F18.10)') mu_ex(1, i),&
-      mu_ex(2, i), mu_ex(3, i)
+    write(13, '(F18.10, 1X, F18.10, 1X, F18.10)') mu(i, 1),&
+      mu(i, 2), mu(i, 3)
+    write(14, '(F18.10, 1X, F18.10, 1X, F18.10)') mu_ex(i, 1),&
+      mu_ex(i, 2), mu_ex(i, 3)
     write(12, '(F18.10)') eigvals(i)
     write(15, '(F18.10)') lambda(i)
     write(16, '(F18.10)') lifetimes(i)
