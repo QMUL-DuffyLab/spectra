@@ -26,7 +26,8 @@ double **final_matrix    (unsigned int N, double* relax, double** Tij);
 int odefunc (double x, const double *y, double *f, void *params);
 int jacobian (double t, const double y[], double *dfdy,
               double dfdt[], void *params);
-double* bcs (unsigned int N, double* eigvals);
+double* bcs (unsigned const int N, const double* eigvals,
+             const double T);
 double trapezoid(double *f, unsigned int n);
 
 #endif

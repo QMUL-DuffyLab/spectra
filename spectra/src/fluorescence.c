@@ -98,7 +98,7 @@ transfer_matrix
       if (i == j) {
         /* comment out next line to turn off 
          * relaxation to check we get Boltzmann */
-        /* Tij[i][j] = -1. * relax[i]; */
+        Tij[i][j] = -1. * relax[i];
         for (k = 0; k < N; k++) {
           /* kij will be 0 on the diagonal so we
            * don't need to worry about excluding it */
@@ -164,11 +164,10 @@ odefunc(double x, const double *y, double *f, void *params)
 }
 
 double*
-bcs (unsigned int N, double* eigvals)
+bcs (unsigned const int N, const double* eigvals, const double T)
 {
   /* calculate t = 0 boltzmannised exciton populations */
-  double temp = 300.0; /* probably shouldn't hardcode this lmao */
-  double beta = 1./temp;
+  double beta = 1./T;
   double sum = 0.0;
   double *populations = calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {

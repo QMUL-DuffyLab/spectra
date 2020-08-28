@@ -215,7 +215,7 @@ main(int argc, char** argv)
   double *yprev = calloc(p->N, sizeof(double));
   double *boltz = calloc(p->N, sizeof(double));
 
-  boltz = bcs(p->N, eigvals);
+  boltz = bcs(p->N, eigvals, 300.0); /* still hardcoded! need to fix */
   fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
                   "-----------------\n\n");
   fprintf(stdout, "Pigment    p_i   |μ^2|*p_i\n");

@@ -121,7 +121,7 @@ pop_steady_f
   for (i = 0; i < p->N; i++) {
     gsl_vector_set(chiw_gsl, i, p->chiw[i]);
   }
-  /* gsl_vector_add(f, chiw_gsl); */
+  gsl_vector_add(f, chiw_gsl);
 
   gsl_vector_free(chiw_gsl);
   gsl_matrix_free(Tij_gsl);
