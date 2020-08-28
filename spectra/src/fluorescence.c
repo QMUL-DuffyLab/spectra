@@ -98,7 +98,7 @@ transfer_matrix
       if (i == j) {
         /* comment out next line to turn off 
          * relaxation to check we get Boltzmann */
-        Tij[i][j] = -1. * relax[i];
+        /* Tij[i][j] = -1. * relax[i]; */
         for (k = 0; k < N; k++) {
           /* kij will be 0 on the diagonal so we
            * don't need to worry about excluding it */

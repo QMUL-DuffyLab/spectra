@@ -18,6 +18,39 @@ pop_converge(double *y, double *yprev, unsigned int N, double thresh)
   return result;
 }
 
+gsl_vector*
+guess(const ss_init p, const double* boltz, const double* musq,
+      unsigned const int max, unsigned const int N)
+{
+  gsl_vector *x = gsl_vector_alloc(N);
+  fprintf(stdout, "Initial population guess:\n");
+  for (unsigned i = 0; i < N; i++){
+    if (p == BOLTZ) {
+      gsl_vector_set(x, i, boltz[i]);
+      fprintf(stdout, "%d %12.8e ", i, boltz[i]);
+    } else if (p == BOLTZ_MUSQ) {
+      gsl_vector_set(x, i, boltz[i] * musq[i]);
+      fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
+    } else if (p == CONST) {
+      gsl_vector_set(x, i, 1. / N);
+      fprintf(stdout, "%d %8.6f ", i, 1. / N);
+    } else if (p == MAX) {
+      if (i == max) {
+        gsl_vector_set(x, i, 1.);
+        fprintf(stdout, "%d %12.8e ", i, gsl_vector_get(x, i));
+      } else {
+        gsl_vector_set(x, i, 0.);
+        fprintf(stdout, "%d %12.8e ", i, gsl_vector_get(x, i));
+      }
+    } else {
+      fprintf(stdout, "ss_init given false value\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  fprintf(stdout, "\n");
+  return x;
+}
+
 double*
 incident(pulse p, unsigned int tau)
 {
@@ -88,7 +121,7 @@ pop_steady_f
   for (i = 0; i < p->N; i++) {
     gsl_vector_set(chiw_gsl, i, p->chiw[i]);
   }
-  gsl_vector_add(f, chiw_gsl);
+  /* gsl_vector_add(f, chiw_gsl); */
 
   gsl_vector_free(chiw_gsl);
   gsl_matrix_free(Tij_gsl);

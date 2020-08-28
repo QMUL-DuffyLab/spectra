@@ -28,7 +28,11 @@ main(int argc, char** argv)
   }
 
   tau = 2048; /* again probably shouldn't hardcode this but oh well */
+
+  /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = { .type=0, .centre=15000., .width=300. };
+  /* form of P_i(0) - check steady_state.h for details */
+  ss_init population_guess = MAX;
 
   Input *p = read_input_file(argv[1]);
 
@@ -234,17 +238,7 @@ main(int argc, char** argv)
 
   const gsl_multiroot_fdfsolver_type *T;
   gsl_multiroot_fdfsolver *s;
-  gsl_vector *x = gsl_vector_alloc(p->N);
-  /* initial guesses for populations */
-  fprintf(stdout, "Initial population guess:\n");
-  for (i = 0; i < p->N; i++){
-    gsl_vector_set(x, i, boltz[i] * musq[i]);
-    fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
-    /* gsl_vector_set(x, i, 1. / p->N); */
-    /* fprintf(stdout, "%d %8.6f ", i, 1. / p->N); */
-  }
-  fprintf(stdout, "\n");
-
+  gsl_vector *x = guess(population_guess, boltz, musq, max, p->N);
   gsl_multiroot_function_fdf FDF;
   FDF.f = &pop_steady_f;
   FDF.df = &pop_steady_df;
@@ -390,8 +384,8 @@ main(int argc, char** argv)
     }
   }
 
-  gsl_multiroot_fdfsolver_free (s);
-  gsl_vector_free (x);
+  gsl_multiroot_fdfsolver_free(s);
+  gsl_vector_free(x);
 
   /* do ODE solving
    * this doesn't work yet */
