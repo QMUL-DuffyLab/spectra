@@ -123,9 +123,9 @@ pigment_dirs = get_pigments(input_dir)
 def run_frame(i, do_plots):
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
-    print("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
+    print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     print("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
-    os.system("./couplings/coupling_calc {} {} {}".format(input_file, output_path, output_path))
+    os.system("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
     if do_plots is not 0:
         os.system("python ./scripts/plot_aw.py -f {}".format(i))

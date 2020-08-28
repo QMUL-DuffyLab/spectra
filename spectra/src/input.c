@@ -19,6 +19,10 @@ read_input_file(char* filename)
     p = malloc(sizeof(Input) + N * 200 * sizeof(char));
     p->N = N;
     fgets(line, 199, fp);
+    p->tau = atoi(line);
+    fgets(line, 199, fp);
+    p->T = atof(line);
+    fgets(line, 199, fp);
     /* from stackoverflow - sets the newline to a null char */
     line[strcspn(line, "\n")] = 0;
     strcpy(p->eigvecs_file, line);

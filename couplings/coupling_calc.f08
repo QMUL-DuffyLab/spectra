@@ -5,7 +5,7 @@ program coupling_calc
   logical :: verbose
   character(100) :: coord_fmt, ei_file, dipoles_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
-  character(100) :: input_dir, output_dir
+  character(100) :: input_dir, temp_string, tau_string
   character(200) :: input_file, jij_file, pop_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
@@ -14,7 +14,7 @@ program coupling_calc
   integer :: i, j, k, coord_stat, control_len, tau
   integer, dimension(:), allocatable :: coord_lengths
   real :: start_time, end_time
-  real(sp) :: r, e2kb, kc
+  real(sp) :: r, e2kb, kc, temperature
   real(sp), dimension(:), allocatable :: work,&
   eigvals, ei, lambda, lifetimes, dipoles
   real(sp), dimension(:,:), allocatable :: coords_i, coords_j,&
@@ -25,29 +25,34 @@ program coupling_calc
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
-  if (command_argument_count().ne.3) then
+  if (command_argument_count().ne.4) then
     write (*,*) "Wrong number of arguments. Try again."
   else
     call get_command_argument(1, input_file)
     call get_command_argument(2, input_dir)
-    call get_command_argument(3, output_dir)
+    call get_command_argument(3, temp_string)
+    call get_command_argument(4, tau_string)
+    read(temp_string, '(F16.1)') temperature
+    read(tau_string, '(I5)') tau
   end if
 
   if (verbose) then
     write(*,*) "Input file = ", input_file
-    write(*,*) "Output dir = ", output_dir
+    write(*,*) "Directory = ", input_dir
+    write(*,*) "Temperature = ", temperature
+    write(*,*) "Tau = ", tau
   end if
 
-  jij_file        = trim(adjustl(output_dir)) // "/J_ij.out"
-  eigvecs_file    = trim(adjustl(output_dir)) // "/eigvecs.out"
-  eigvals_file    = trim(adjustl(output_dir)) // "/eigvals.out"
-  mu_n_file       = trim(adjustl(output_dir)) // "/mu_site.out"
-  mu_i_file       = trim(adjustl(output_dir)) // "/mu_exciton.out"
-  lambda_i_file   = trim(adjustl(output_dir)) // "/lambda_exciton.out"
-  gamma_i_file    = trim(adjustl(output_dir)) // "/lifetimes_exciton.out"
-  aw_output_file  = trim(adjustl(output_dir)) // "/aw.dat"
-  fw_output_file  = trim(adjustl(output_dir)) // "/fw.dat"
-  pop_file        = trim(adjustl(output_dir)) // "/populations.dat"
+  jij_file        = trim(adjustl(input_dir)) // "/J_ij.out"
+  eigvecs_file    = trim(adjustl(input_dir)) // "/eigvecs.out"
+  eigvals_file    = trim(adjustl(input_dir)) // "/eigvals.out"
+  mu_n_file       = trim(adjustl(input_dir)) // "/mu_site.out"
+  mu_i_file       = trim(adjustl(input_dir)) // "/mu_exciton.out"
+  lambda_i_file   = trim(adjustl(input_dir)) // "/lambda_exciton.out"
+  gamma_i_file    = trim(adjustl(input_dir)) // "/lifetimes_exciton.out"
+  aw_output_file  = trim(adjustl(input_dir)) // "/aw.dat"
+  fw_output_file  = trim(adjustl(input_dir)) // "/fw.dat"
+  pop_file        = trim(adjustl(input_dir)) // "/populations.dat"
   spectra_input_file = "in/input_spectra.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
@@ -57,10 +62,6 @@ program coupling_calc
   ! the 0.5 is because e_r = 2 for proteins
   e2kb = 1.2955E-5
   kc = 8.988E9 * 0.5
-
- ! tau is the number of femtoseconds i calculated lineshapes for.
- ! don't like hardcoding but it shouldn't need to be dynamic, really
-  tau = 2048
 
   ! these are the ones we read in from
   ei_file         = trim(adjustl(input_dir)) // "/ei.txt"
@@ -236,6 +237,8 @@ program coupling_calc
   open(unit=20, file=spectra_input_file)
   ! stuff to read into spectra.c
   write(20, *) control_len
+  write(20, *) tau
+  write(20, *) temperature
   write(20, '(a)') adjustl(trim(adjustl(eigvecs_file)))
   write(20, '(a)') adjustl(trim(adjustl(eigvals_file)))
   write(20, '(a)') adjustl(trim(adjustl(mu_i_file)))
@@ -293,8 +296,8 @@ program coupling_calc
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
-    open(unit=17, file=trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
-    write(20, '(a)') trim(adjustl(output_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
+    open(unit=17, file=trim(adjustl(input_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
+    write(20, '(a)') trim(adjustl(input_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     do j = 1, tau
       write(17, '(F18.10, 1X, F18.10)') gnt(i, j)
     end do

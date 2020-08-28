@@ -8,7 +8,7 @@ int
 main(int argc, char** argv)
 {
   FILE *fp;
-  unsigned int tau, i, j;
+  unsigned int i, j;
   char *line, **lineshape_files;
   double kd;
   double complex **gi_array;
@@ -27,14 +27,13 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-  tau = 2048; /* again probably shouldn't hardcode this but oh well */
-
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = { .type=0, .centre=15000., .width=300. };
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MAX;
 
   Input *p = read_input_file(argv[1]);
+  fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
 
   /* malloc 1d stuff, read them in */
   eigvals = calloc(p->N, sizeof(double));
@@ -44,7 +43,7 @@ main(int argc, char** argv)
   lambda = calloc(p->N, sizeof(double));
   line_params = malloc(p->N * sizeof(Parameters));
   chiw_ints = calloc(p->N, sizeof(double));
-  ww = calloc(tau, sizeof(double));
+  ww = calloc(p->tau, sizeof(double));
   gamma = read(p->gamma_file, p->N);
   lambda = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
@@ -62,20 +61,20 @@ main(int argc, char** argv)
   pump = calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
-    gi_array[i] = calloc(tau, sizeof(double complex));
+    gi_array[i] = calloc(p->tau, sizeof(double complex));
     mu[i] = calloc(3, sizeof(double));
     eig[i] = calloc(p->N, sizeof(double));
     wij[i] = calloc(p->N, sizeof(double));
     kij[i] = calloc(p->N, sizeof(double));
     Jij[i] = calloc(p->N, sizeof(double));
-    chiw[i] = calloc(tau, sizeof(double));
-    pump[i] = calloc(tau, sizeof(double));
+    chiw[i] = calloc(p->tau, sizeof(double));
+    pump[i] = calloc(p->tau, sizeof(double));
   }
 
-  gi_array = read_gi(p->gi_files, p->N, tau);
+  gi_array = read_gi(p->gi_files, p->N, p->tau);
   eig = read_eigvecs(p->eigvecs_file, p->N);
   mu = read_mu(p->mu_file, p->N);
-  ww = incident(pump_properties, tau);
+  ww = incident(pump_properties, p->tau);
 
   fp = fopen(argv[2], "r"); /* read in list of lineshape files here */
   for (i = 0; i < p->N; i++) {
@@ -97,6 +96,7 @@ main(int argc, char** argv)
           i, line_params[i].ligand);
     }
     line_params[i].cn = &c_n;
+    line_params[i].T = p->T;
 
     for (j = 0; j < p->N; j++) {
       wij[i][j] = ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
@@ -111,41 +111,41 @@ main(int argc, char** argv)
   kij = rate_calc(p->N, eig, wij, line_params);
   rates = relaxation_rates(p->N, gamma);
 
-  integral = calloc(tau, sizeof(double));
+  integral = calloc(p->tau, sizeof(double));
 
-  in =  (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
-  out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * tau);
-  plan = fftw_plan_dft_1d(tau, 
+  in =  (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * p->tau);
+  out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * p->tau);
+  plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
   for (i = 0; i < p->N; i++) {
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
-    for (unsigned int j = 0; j < tau; j++) {
+    for (unsigned int j = 0; j < p->tau; j++) {
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
                  (double)j * TOFS,
                  1. / (1000 * gamma[i]));
     }
 
     fftw_execute(plan); 
-    for (unsigned int j = 0; j < tau; j++) {
+    for (unsigned int j = 0; j < p->tau; j++) {
       chiw[i][j] = creal(out[j]) * musq[i];
       pump[i][j] = chiw[i][j] * ww[j];
       integral[j] += creal(out[j]) * musq[i];
     }
 
     chi_p = pump[i];
-    chiw_ints[i] = trapezoid(chi_p, tau);
+    chiw_ints[i] = trapezoid(chi_p, p->tau);
 
   }
 
   fprintf(stdout, "\nWriting A(w) file\n");
   fp = fopen(p->aw_file, "w");
-  for (i = 0; i < tau; i++) {
+  for (i = 0; i < p->tau; i++) {
     /* unpack the ordering used by FFTW */
-    kd = i * 2. * M_PI / (tau);
+    kd = i * 2. * M_PI / (p->tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        kd * creal(integral[i]) * (1./ sqrt(tau)) * 6.4);
+        kd * creal(integral[i]) * (1./ sqrt(p->tau)) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -172,11 +172,11 @@ main(int argc, char** argv)
     memmove(pch + 4, pch + 2, strlen(pch + 2) + 1);
     memcpy(pch, "chi_", 4);
     fp = fopen(fn, "w");
-    for (j = 0; j < tau; j++) {
+    for (j = 0; j < p->tau; j++) {
       /* unpack the ordering used by FFTW */
-      kd = j * 2. * M_PI / (tau);
+      kd = j * 2. * M_PI / (p->tau);
       fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-          kd * creal(chiw[i][j]) * (1./ sqrt(tau)) * 6.4);
+          kd * creal(chiw[i][j]) * (1./ sqrt(p->tau)) * 6.4);
     }
     cl = fclose(fp);
     if (cl != 0) {
@@ -325,9 +325,9 @@ main(int argc, char** argv)
   /* fluorescence spectrum */
   /* need to zero the running integral before FFT! */
   free(integral);
-  integral = calloc(tau, sizeof(double));
+  integral = calloc(p->tau, sizeof(double));
   for (i = 0; i < p->N; i++) {
-    for (unsigned int j = 0; j < tau; j++) {
+    for (unsigned int j = 0; j < p->tau; j++) {
       in[j] = p_i_equib[i] * Ft(eigvals[i],
               creal(gi_array[i][j]), cimag(gi_array[i][j]),
               lambda[i], (double)j * TOFS,
@@ -335,7 +335,7 @@ main(int argc, char** argv)
     }
 
     fftw_execute(plan); 
-    for (unsigned int j = 0; j < tau; j++) {
+    for (unsigned int j = 0; j < p->tau; j++) {
       chiw[i][j] = creal(out[j]) * musq[i];
       integral[j] += creal(out[j]) * musq[i];
     }
@@ -344,11 +344,11 @@ main(int argc, char** argv)
 
   fprintf(stdout, "\nWriting F(w) file\n");
   fp = fopen(p->fw_file, "w");
-  for (i = 0; i < tau; i++) {
+  for (i = 0; i < p->tau; i++) {
     /* unpack the ordering used by FFTW */
-    kd = i * 2. * M_PI / (tau);
+    kd = i * 2. * M_PI / (p->tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        (pow(kd, 3.) * creal(integral[i]) * (1./ sqrt(tau))) * 6.4);
+        (pow(kd, 3.) * creal(integral[i]) * (1./ sqrt(p->tau))) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -370,11 +370,11 @@ main(int argc, char** argv)
     memmove(pch + 8, pch + 2, strlen(pch + 2) + 1);
     memcpy(pch, "chi_bar_", 8);
     fp = fopen(fn, "w");
-    for (j = 0; j < tau; j++) {
+    for (j = 0; j < p->tau; j++) {
       /* unpack the ordering used by FFTW */
-      kd = j * 2. * M_PI / (tau);
+      kd = j * 2. * M_PI / (p->tau);
       fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-          kd * creal(chiw[i][j]) * (1./ sqrt(tau)) * 6.4);
+          kd * creal(chiw[i][j]) * (1./ sqrt(p->tau)) * 6.4);
     }
     cl = fclose(fp);
     if (cl != 0) {
@@ -517,7 +517,7 @@ main(int argc, char** argv)
   for (i = 0; i < p->N; i++) {
     excite += GSL_REAL(gsl_vector_complex_get(final_vec, i));
   }
-  fprintf(stdout, "mean excitation lifetime = %12.8e\n", excite);
+  fprintf(stdout, "<τ> = %12.8e\n", excite);
 
   gsl_matrix_free(Tij_gsl);
   gsl_vector_complex_free(eval);

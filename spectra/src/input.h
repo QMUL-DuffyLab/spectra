@@ -21,7 +21,7 @@
 typedef struct {
   unsigned int N;
   double T;
-  double tau;
+  unsigned int tau;
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200], aw_file[200], fw_file[200],
   pop_file[200];
