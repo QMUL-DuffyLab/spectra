@@ -1,0 +1,57 @@
+\hypertarget{steady__state_8c}{}\doxysection{spectra/src/steady\+\_\+state.c File Reference}
+\label{steady__state_8c}\index{spectra/src/steady\_state.c@{spectra/src/steady\_state.c}}
+{\ttfamily \#include \char`\"{}steady\+\_\+state.\+h\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+unsigned short int \mbox{\hyperlink{steady__state_8c_ae4679f517439011ea823bb8d4d7091c8}{pop\+\_\+converge}} (double $\ast$y, double $\ast$yprev, unsigned int N, double thresh)
+\item 
+gsl\+\_\+vector $\ast$ \mbox{\hyperlink{steady__state_8c_a72613f3b55833d1d5e398034ddaabeff}{guess}} (const \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6}{ss\+\_\+init}} p, const double $\ast$boltz, const double $\ast$musq, unsigned const int max, unsigned const int N)
+\item 
+double $\ast$ \mbox{\hyperlink{steady__state_8c_a5d4fb41c9928c5a81f123a062f47247c}{incident}} (\mbox{\hyperlink{structpulse}{pulse}} p, unsigned int tau)
+\item 
+int \mbox{\hyperlink{steady__state_8c_a32640caca2276258e0552bf0d118b55e}{pop\+\_\+steady\+\_\+f}} (const gsl\+\_\+vector $\ast$x, void $\ast$params, gsl\+\_\+vector $\ast$f)
+\item 
+int \mbox{\hyperlink{steady__state_8c_a1efc4f7eba36eb599dac7f3c90bd00f7}{pop\+\_\+steady\+\_\+df}} (const gsl\+\_\+vector $\ast$x, void $\ast$params, gsl\+\_\+matrix $\ast$J)
+\item 
+int \mbox{\hyperlink{steady__state_8c_aeae618acaf0d7b9658e8d0d9c7b9245e}{pop\+\_\+steady\+\_\+fdf}} (const gsl\+\_\+vector $\ast$x, void $\ast$params, gsl\+\_\+vector $\ast$f, gsl\+\_\+matrix $\ast$J)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{steady__state_8c_a72613f3b55833d1d5e398034ddaabeff}\label{steady__state_8c_a72613f3b55833d1d5e398034ddaabeff}} 
+\index{steady\_state.c@{steady\_state.c}!guess@{guess}}
+\index{guess@{guess}!steady\_state.c@{steady\_state.c}}
+\doxysubsubsection{\texorpdfstring{guess()}{guess()}}
+{\footnotesize\ttfamily gsl\+\_\+vector$\ast$ guess (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6}{ss\+\_\+init}}}]{p,  }\item[{const double $\ast$}]{boltz,  }\item[{const double $\ast$}]{musq,  }\item[{unsigned const int}]{max,  }\item[{unsigned const int}]{N }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{steady__state_8c_a5d4fb41c9928c5a81f123a062f47247c}\label{steady__state_8c_a5d4fb41c9928c5a81f123a062f47247c}} 
+\index{steady\_state.c@{steady\_state.c}!incident@{incident}}
+\index{incident@{incident}!steady\_state.c@{steady\_state.c}}
+\doxysubsubsection{\texorpdfstring{incident()}{incident()}}
+{\footnotesize\ttfamily double$\ast$ incident (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structpulse}{pulse}}}]{p,  }\item[{unsigned int}]{tau }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{steady__state_8c_ae4679f517439011ea823bb8d4d7091c8}\label{steady__state_8c_ae4679f517439011ea823bb8d4d7091c8}} 
+\index{steady\_state.c@{steady\_state.c}!pop\_converge@{pop\_converge}}
+\index{pop\_converge@{pop\_converge}!steady\_state.c@{steady\_state.c}}
+\doxysubsubsection{\texorpdfstring{pop\_converge()}{pop\_converge()}}
+{\footnotesize\ttfamily unsigned short int pop\+\_\+converge (\begin{DoxyParamCaption}\item[{double $\ast$}]{y,  }\item[{double $\ast$}]{yprev,  }\item[{unsigned int}]{N,  }\item[{double}]{thresh }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{steady__state_8c_a1efc4f7eba36eb599dac7f3c90bd00f7}\label{steady__state_8c_a1efc4f7eba36eb599dac7f3c90bd00f7}} 
+\index{steady\_state.c@{steady\_state.c}!pop\_steady\_df@{pop\_steady\_df}}
+\index{pop\_steady\_df@{pop\_steady\_df}!steady\_state.c@{steady\_state.c}}
+\doxysubsubsection{\texorpdfstring{pop\_steady\_df()}{pop\_steady\_df()}}
+{\footnotesize\ttfamily int pop\+\_\+steady\+\_\+df (\begin{DoxyParamCaption}\item[{const gsl\+\_\+vector $\ast$}]{x,  }\item[{void $\ast$}]{params,  }\item[{gsl\+\_\+matrix $\ast$}]{J }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{steady__state_8c_a32640caca2276258e0552bf0d118b55e}\label{steady__state_8c_a32640caca2276258e0552bf0d118b55e}} 
+\index{steady\_state.c@{steady\_state.c}!pop\_steady\_f@{pop\_steady\_f}}
+\index{pop\_steady\_f@{pop\_steady\_f}!steady\_state.c@{steady\_state.c}}
+\doxysubsubsection{\texorpdfstring{pop\_steady\_f()}{pop\_steady\_f()}}
+{\footnotesize\ttfamily int pop\+\_\+steady\+\_\+f (\begin{DoxyParamCaption}\item[{const gsl\+\_\+vector $\ast$}]{x,  }\item[{void $\ast$}]{params,  }\item[{gsl\+\_\+vector $\ast$}]{f }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{steady__state_8c_aeae618acaf0d7b9658e8d0d9c7b9245e}\label{steady__state_8c_aeae618acaf0d7b9658e8d0d9c7b9245e}} 
+\index{steady\_state.c@{steady\_state.c}!pop\_steady\_fdf@{pop\_steady\_fdf}}
+\index{pop\_steady\_fdf@{pop\_steady\_fdf}!steady\_state.c@{steady\_state.c}}
+\doxysubsubsection{\texorpdfstring{pop\_steady\_fdf()}{pop\_steady\_fdf()}}
+{\footnotesize\ttfamily int pop\+\_\+steady\+\_\+fdf (\begin{DoxyParamCaption}\item[{const gsl\+\_\+vector $\ast$}]{x,  }\item[{void $\ast$}]{params,  }\item[{gsl\+\_\+vector $\ast$}]{f,  }\item[{gsl\+\_\+matrix $\ast$}]{J }\end{DoxyParamCaption})}
+

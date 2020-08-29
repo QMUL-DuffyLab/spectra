@@ -1,0 +1,83 @@
+\hypertarget{input_8c}{}\doxysection{spectra/src/input.c File Reference}
+\label{input_8c}\index{spectra/src/input.c@{spectra/src/input.c}}
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}input.\+h\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structInput}{Input}} $\ast$ \mbox{\hyperlink{input_8c_afe82bf3e4a5eaab78fd2b6fafc71385e}{read\+\_\+input\+\_\+file}} (char $\ast$filename)
+\begin{DoxyCompactList}\small\item\em Reads in the output from the fortran code, returns \mbox{\hyperlink{structInput}{Input}} struct. \end{DoxyCompactList}\item 
+double $\ast$ \mbox{\hyperlink{input_8c_aca86a581177852bac7f607ba4a0d62b4}{read}} (char $\ast$input\+\_\+file, unsigned int N)
+\begin{DoxyCompactList}\small\item\em Reads a file with one double per line and returns it as an array. \end{DoxyCompactList}\item 
+double $\ast$$\ast$ \mbox{\hyperlink{input_8c_a7a9c614508eb70065d1fac49dbb6a38a}{read\+\_\+mu}} (char $\ast$input\+\_\+file, unsigned int N)
+\begin{DoxyCompactList}\small\item\em Reads transition dipole moments from file and returns array. \end{DoxyCompactList}\item 
+double $\ast$$\ast$ \mbox{\hyperlink{input_8c_af474d86499b3c3f224327c7f59b50e33}{read\+\_\+eigvecs}} (char $\ast$input\+\_\+file, unsigned int N)
+\begin{DoxyCompactList}\small\item\em Reads in N x N eigenvector matrix and returns as an array. \end{DoxyCompactList}\item 
+double complex $\ast$$\ast$ \mbox{\hyperlink{input_8c_acba6a24db8518501663fad92f6e721e4}{read\+\_\+gi}} (char $\ast$input\+\_\+files\mbox{[}$\,$\mbox{]}, unsigned int N, unsigned int tau)
+\begin{DoxyCompactList}\small\item\em Read in the set of line-\/broadening functions, return as 2d array. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{input_8c_aca86a581177852bac7f607ba4a0d62b4}\label{input_8c_aca86a581177852bac7f607ba4a0d62b4}} 
+\index{input.c@{input.c}!read@{read}}
+\index{read@{read}!input.c@{input.c}}
+\doxysubsubsection{\texorpdfstring{read()}{read()}}
+{\footnotesize\ttfamily double$\ast$ read (\begin{DoxyParamCaption}\item[{char $\ast$}]{input\+\_\+file,  }\item[{unsigned int}]{N }\end{DoxyParamCaption})}
+
+
+
+Reads a file with one double per line and returns it as an array. 
+
+Note that this and every other function in here returns a pointer to a malloc\textquotesingle{}d object, so they all need to be freed somewhere! \mbox{\Hypertarget{input_8c_af474d86499b3c3f224327c7f59b50e33}\label{input_8c_af474d86499b3c3f224327c7f59b50e33}} 
+\index{input.c@{input.c}!read\_eigvecs@{read\_eigvecs}}
+\index{read\_eigvecs@{read\_eigvecs}!input.c@{input.c}}
+\doxysubsubsection{\texorpdfstring{read\_eigvecs()}{read\_eigvecs()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ read\+\_\+eigvecs (\begin{DoxyParamCaption}\item[{char $\ast$}]{input\+\_\+file,  }\item[{unsigned int}]{N }\end{DoxyParamCaption})}
+
+
+
+Reads in N x N eigenvector matrix and returns as an array. 
+
+It occurs to me as I write these docs that I could do away with separate functions just by taking two ints n and m and reading in an n x m array from those. Would only require a check that both are greater than 1.
+
+Other than that same deal, reads N x N floats, outputs N x N array. \mbox{\Hypertarget{input_8c_acba6a24db8518501663fad92f6e721e4}\label{input_8c_acba6a24db8518501663fad92f6e721e4}} 
+\index{input.c@{input.c}!read\_gi@{read\_gi}}
+\index{read\_gi@{read\_gi}!input.c@{input.c}}
+\doxysubsubsection{\texorpdfstring{read\_gi()}{read\_gi()}}
+{\footnotesize\ttfamily double complex$\ast$$\ast$ read\+\_\+gi (\begin{DoxyParamCaption}\item[{char $\ast$}]{input\+\_\+files\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{N,  }\item[{unsigned int}]{tau }\end{DoxyParamCaption})}
+
+
+
+Read in the set of line-\/broadening functions, return as 2d array. 
+
+The g\+\_\+i(t) functions are the mixed line-\/broadening functions output by the fortran code, consisting of tau complex elements each.
+
+Honestly it\textquotesingle{}s been a while since I wrote these functions and I can\textquotesingle{}t remember now why this one uses fscanf instead of the fgets etc. from the other functions -\/ maybe I could edit the others to use fscanf instead and save myself some duplication of effort. Either way, it generates gi\mbox{[}i\mbox{]}\mbox{[}j\mbox{]}, where $ i \in 0 \rightarrow N - 1 $, $ j \in 0 \rightarrow \tau - 1 $ . \mbox{\Hypertarget{input_8c_afe82bf3e4a5eaab78fd2b6fafc71385e}\label{input_8c_afe82bf3e4a5eaab78fd2b6fafc71385e}} 
+\index{input.c@{input.c}!read\_input\_file@{read\_input\_file}}
+\index{read\_input\_file@{read\_input\_file}!input.c@{input.c}}
+\doxysubsubsection{\texorpdfstring{read\_input\_file()}{read\_input\_file()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structInput}{Input}}$\ast$ read\+\_\+input\+\_\+file (\begin{DoxyParamCaption}\item[{char $\ast$}]{filename }\end{DoxyParamCaption})}
+
+
+
+Reads in the output from the fortran code, returns \mbox{\hyperlink{structInput}{Input}} struct. 
+
+This is not very portable and to some extent is duplicating effort made in the lineshape code (\mbox{\hyperlink{parameters_8c}{lineshape/src/parameters.\+c}}) -\/ there\textquotesingle{}s probably a way of fixing that / a library I could use instead but whatever.
+
+Note that the number of gi\+\_\+files isn\textquotesingle{}t known till runtime because neither is N, the number of pigments; luckily C99 allows us to leave the last member of a struct with variable size and then malloc it later, which is what I do here.
+
+fgets() reads in the newline at the end of the line as well; to stop that newline from being passed to fopen() later I use the line\mbox{[}strcspn()\mbox{]} = 0 trick to set the newline to a null char.
+
+strndup is the last remaining gnu99 extension I use in the whole repo; I will eventually get around to fixing that but I\textquotesingle{}m lazy \+:)
+
+NB\+: check how to free those malloc\textquotesingle{}d struct members, I can\textquotesingle{}t remember if there\textquotesingle{}s some fancy stuff you have to do or not. \mbox{\Hypertarget{input_8c_a7a9c614508eb70065d1fac49dbb6a38a}\label{input_8c_a7a9c614508eb70065d1fac49dbb6a38a}} 
+\index{input.c@{input.c}!read\_mu@{read\_mu}}
+\index{read\_mu@{read\_mu}!input.c@{input.c}}
+\doxysubsubsection{\texorpdfstring{read\_mu()}{read\_mu()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ read\+\_\+mu (\begin{DoxyParamCaption}\item[{char $\ast$}]{input\+\_\+file,  }\item[{unsigned int}]{N }\end{DoxyParamCaption})}
+
+
+
+Reads transition dipole moments from file and returns array. 
+
+This one (and the others below) are extremely hacky -\/ the numbers are hardcoded (19, 20, 22) based on the output format of the fortran code. It disgusts me a little bit every time I remember writing it. Not much going on other than that -\/ reads 3 doubles a line, N lines, returns a pointer to the resulting array. 

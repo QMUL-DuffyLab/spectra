@@ -199,7 +199,8 @@ read_eigvecs(char *input_file, unsigned int N)
  * remember now why this one uses fscanf instead of the fgets etc. from
  * the other functions - maybe I could edit the others to use fscanf
  * instead and save myself some duplication of effort. Either way,
- * it generates gi[i][j], where i ∈ 0 -> N -1, j ∈ 0 -> tau - 1.
+ * it generates gi[i][j], where \f$ i \in 0 \rightarrow N - 1 \f$, 
+ * \f$ j \in 0 \rightarrow \tau - 1 \f$ .
  */
 double complex**
 read_gi(char *input_files[], 

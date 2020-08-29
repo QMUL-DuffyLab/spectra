@@ -1,0 +1,180 @@
+\@ifundefined {etoctocstyle}{\let \etoc@startlocaltoc \@gobble \let \etoc@settocdepth \@gobble \let \etoc@depthtag \@gobble \let \etoc@setlocaltop \@gobble }{}
+\contentsline {chapter}{\numberline {1}Data Type Index}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Data Types List}{1}{section.1.1}%
+\contentsline {chapter}{\numberline {2}File Index}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}File List}{3}{section.2.1}%
+\contentsline {chapter}{\numberline {3}Data Type Documentation}{5}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Input Struct Reference}{5}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Detailed Description}{5}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Field Documentation}{6}{subsection.3.1.2}%
+\contentsline {subsubsection}{\numberline {3.1.2.1}aw\_file}{6}{subsubsection.3.1.2.1}%
+\contentsline {subsubsection}{\numberline {3.1.2.2}eigvals\_file}{6}{subsubsection.3.1.2.2}%
+\contentsline {subsubsection}{\numberline {3.1.2.3}eigvecs\_file}{6}{subsubsection.3.1.2.3}%
+\contentsline {subsubsection}{\numberline {3.1.2.4}fw\_file}{6}{subsubsection.3.1.2.4}%
+\contentsline {subsubsection}{\numberline {3.1.2.5}gamma\_file}{6}{subsubsection.3.1.2.5}%
+\contentsline {subsubsection}{\numberline {3.1.2.6}gi\_files}{6}{subsubsection.3.1.2.6}%
+\contentsline {subsubsection}{\numberline {3.1.2.7}lambda\_file}{6}{subsubsection.3.1.2.7}%
+\contentsline {subsubsection}{\numberline {3.1.2.8}mu\_file}{7}{subsubsection.3.1.2.8}%
+\contentsline {subsubsection}{\numberline {3.1.2.9}N}{7}{subsubsection.3.1.2.9}%
+\contentsline {subsubsection}{\numberline {3.1.2.10}pop\_file}{7}{subsubsection.3.1.2.10}%
+\contentsline {subsubsection}{\numberline {3.1.2.11}T}{7}{subsubsection.3.1.2.11}%
+\contentsline {subsubsection}{\numberline {3.1.2.12}tau}{7}{subsubsection.3.1.2.12}%
+\contentsline {section}{\numberline {3.2}ode\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}\_\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}params Struct Reference}{7}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Field Documentation}{8}{subsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.1.1}chiw}{8}{subsubsection.3.2.1.1}%
+\contentsline {subsubsection}{\numberline {3.2.1.2}kij}{8}{subsubsection.3.2.1.2}%
+\contentsline {subsubsection}{\numberline {3.2.1.3}N}{8}{subsubsection.3.2.1.3}%
+\contentsline {subsubsection}{\numberline {3.2.1.4}rates}{8}{subsubsection.3.2.1.4}%
+\contentsline {subsubsection}{\numberline {3.2.1.5}Tij}{8}{subsubsection.3.2.1.5}%
+\contentsline {section}{\numberline {3.3}Parameters Struct Reference}{8}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Field Documentation}{9}{subsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.1.1}aw\_file}{9}{subsubsection.3.3.1.1}%
+\contentsline {subsubsection}{\numberline {3.3.1.2}cn}{9}{subsubsection.3.3.1.2}%
+\contentsline {subsubsection}{\numberline {3.3.1.3}cw}{9}{subsubsection.3.3.1.3}%
+\contentsline {subsubsection}{\numberline {3.3.1.4}fw\_file}{10}{subsubsection.3.3.1.4}%
+\contentsline {subsubsection}{\numberline {3.3.1.5}g0}{10}{subsubsection.3.3.1.5}%
+\contentsline {subsubsection}{\numberline {3.3.1.6}g1}{10}{subsubsection.3.3.1.6}%
+\contentsline {subsubsection}{\numberline {3.3.1.7}g2}{10}{subsubsection.3.3.1.7}%
+\contentsline {subsubsection}{\numberline {3.3.1.8}gsw}{10}{subsubsection.3.3.1.8}%
+\contentsline {subsubsection}{\numberline {3.3.1.9}gt\_file}{10}{subsubsection.3.3.1.9}%
+\contentsline {subsubsection}{\numberline {3.3.1.10}l0}{10}{subsubsection.3.3.1.10}%
+\contentsline {subsubsection}{\numberline {3.3.1.11}l1}{10}{subsubsection.3.3.1.11}%
+\contentsline {subsubsection}{\numberline {3.3.1.12}l2}{11}{subsubsection.3.3.1.12}%
+\contentsline {subsubsection}{\numberline {3.3.1.13}lambda\_file}{11}{subsubsection.3.3.1.13}%
+\contentsline {subsubsection}{\numberline {3.3.1.14}ligand}{11}{subsubsection.3.3.1.14}%
+\contentsline {subsubsection}{\numberline {3.3.1.15}nu}{11}{subsubsection.3.3.1.15}%
+\contentsline {subsubsection}{\numberline {3.3.1.16}offset}{11}{subsubsection.3.3.1.16}%
+\contentsline {subsubsection}{\numberline {3.3.1.17}offset\_file}{11}{subsubsection.3.3.1.17}%
+\contentsline {subsubsection}{\numberline {3.3.1.18}s0}{11}{subsubsection.3.3.1.18}%
+\contentsline {subsubsection}{\numberline {3.3.1.19}s1}{11}{subsubsection.3.3.1.19}%
+\contentsline {subsubsection}{\numberline {3.3.1.20}s2}{12}{subsubsection.3.3.1.20}%
+\contentsline {subsubsection}{\numberline {3.3.1.21}T}{12}{subsubsection.3.3.1.21}%
+\contentsline {subsubsection}{\numberline {3.3.1.22}ti}{12}{subsubsection.3.3.1.22}%
+\contentsline {subsubsection}{\numberline {3.3.1.23}w1}{12}{subsubsection.3.3.1.23}%
+\contentsline {subsubsection}{\numberline {3.3.1.24}w2}{12}{subsubsection.3.3.1.24}%
+\contentsline {section}{\numberline {3.4}Protocol Struct Reference}{12}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Field Documentation}{12}{subsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.1.1}ns}{13}{subsubsection.3.4.1.1}%
+\contentsline {subsubsection}{\numberline {3.4.1.2}T}{13}{subsubsection.3.4.1.2}%
+\contentsline {section}{\numberline {3.5}pulse Struct Reference}{13}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Field Documentation}{13}{subsection.3.5.1}%
+\contentsline {subsubsection}{\numberline {3.5.1.1}centre}{13}{subsubsection.3.5.1.1}%
+\contentsline {subsubsection}{\numberline {3.5.1.2}type}{13}{subsubsection.3.5.1.2}%
+\contentsline {subsubsection}{\numberline {3.5.1.3}width}{13}{subsubsection.3.5.1.3}%
+\contentsline {chapter}{\numberline {4}File Documentation}{15}{chapter.4}%
+\contentsline {section}{\numberline {4.1}couplings/coupling\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}\_\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}calc.f08 File Reference}{15}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Function/\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}Subroutine Documentation}{15}{subsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.1.1}coupling\_calc()}{15}{subsubsection.4.1.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.1.2}get\_file\_length()}{15}{subsubsection.4.1.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.1.3}j\_calc()}{15}{subsubsection.4.1.1.3}%
+\contentsline {subsubsection}{\numberline {4.1.1.4}mu\_calc()}{16}{subsubsection.4.1.1.4}%
+\contentsline {section}{\numberline {4.2}lineshape/src/functions.c File Reference}{16}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Macro Definition Documentation}{16}{subsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.1.1}M\_PI}{16}{subsubsection.4.2.1.1}%
+\contentsline {subsection}{\numberline {4.2.2}Function Documentation}{16}{subsection.4.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.2.1}At()}{17}{subsubsection.4.2.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2.2}c\_n()}{17}{subsubsection.4.2.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.2.3}cw\_big()}{17}{subsubsection.4.2.2.3}%
+\contentsline {subsubsection}{\numberline {4.2.2.4}cw\_car()}{17}{subsubsection.4.2.2.4}%
+\contentsline {subsubsection}{\numberline {4.2.2.5}cw\_chl()}{17}{subsubsection.4.2.2.5}%
+\contentsline {subsubsection}{\numberline {4.2.2.6}cw\_odo()}{17}{subsubsection.4.2.2.6}%
+\contentsline {subsubsection}{\numberline {4.2.2.7}Ft()}{18}{subsubsection.4.2.2.7}%
+\contentsline {subsubsection}{\numberline {4.2.2.8}reorg\_int()}{18}{subsubsection.4.2.2.8}%
+\contentsline {subsubsection}{\numberline {4.2.2.9}trig\_im()}{18}{subsubsection.4.2.2.9}%
+\contentsline {subsubsection}{\numberline {4.2.2.10}trig\_re()}{18}{subsubsection.4.2.2.10}%
+\contentsline {section}{\numberline {4.3}lineshape/src/functions.h File Reference}{18}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Function Documentation}{19}{subsection.4.3.1}%
+\contentsline {subsubsection}{\numberline {4.3.1.1}At()}{19}{subsubsection.4.3.1.1}%
+\contentsline {subsubsection}{\numberline {4.3.1.2}c\_n()}{19}{subsubsection.4.3.1.2}%
+\contentsline {subsubsection}{\numberline {4.3.1.3}cw\_big()}{19}{subsubsection.4.3.1.3}%
+\contentsline {subsubsection}{\numberline {4.3.1.4}cw\_car()}{19}{subsubsection.4.3.1.4}%
+\contentsline {subsubsection}{\numberline {4.3.1.5}cw\_chl()}{19}{subsubsection.4.3.1.5}%
+\contentsline {subsubsection}{\numberline {4.3.1.6}cw\_odo()}{20}{subsubsection.4.3.1.6}%
+\contentsline {subsubsection}{\numberline {4.3.1.7}Ft()}{20}{subsubsection.4.3.1.7}%
+\contentsline {subsubsection}{\numberline {4.3.1.8}reorg\_int()}{20}{subsubsection.4.3.1.8}%
+\contentsline {subsubsection}{\numberline {4.3.1.9}trig\_im()}{20}{subsubsection.4.3.1.9}%
+\contentsline {subsubsection}{\numberline {4.3.1.10}trig\_re()}{20}{subsubsection.4.3.1.10}%
+\contentsline {section}{\numberline {4.4}lineshape/src/parameters.c File Reference}{20}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Function Documentation}{21}{subsection.4.4.1}%
+\contentsline {subsubsection}{\numberline {4.4.1.1}get\_parameters()}{21}{subsubsection.4.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.4.1.2}get\_protocol()}{21}{subsubsection.4.4.1.2}%
+\contentsline {section}{\numberline {4.5}lineshape/src/parameters.h File Reference}{21}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Macro Definition Documentation}{22}{subsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.1.1}CMS}{22}{subsubsection.4.5.1.1}%
+\contentsline {subsection}{\numberline {4.5.2}Function Documentation}{22}{subsection.4.5.2}%
+\contentsline {subsubsection}{\numberline {4.5.2.1}fortran\_wrapper()}{22}{subsubsection.4.5.2.1}%
+\contentsline {subsubsection}{\numberline {4.5.2.2}get\_parameters()}{22}{subsubsection.4.5.2.2}%
+\contentsline {subsubsection}{\numberline {4.5.2.3}get\_protocol()}{22}{subsubsection.4.5.2.3}%
+\contentsline {section}{\numberline {4.6}lineshape/src/spec\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}Dens.c File Reference}{22}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}Function Documentation}{23}{subsection.4.6.1}%
+\contentsline {subsubsection}{\numberline {4.6.1.1}main()}{23}{subsubsection.4.6.1.1}%
+\contentsline {section}{\numberline {4.7}spectra/src/fluorescence.c File Reference}{23}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}Function Documentation}{23}{subsection.4.7.1}%
+\contentsline {subsubsection}{\numberline {4.7.1.1}array\_to\_gsl\_matrix()}{23}{subsubsection.4.7.1.1}%
+\contentsline {subsubsection}{\numberline {4.7.1.2}bcs()}{23}{subsubsection.4.7.1.2}%
+\contentsline {subsubsection}{\numberline {4.7.1.3}jacobian()}{24}{subsubsection.4.7.1.3}%
+\contentsline {subsubsection}{\numberline {4.7.1.4}odefunc()}{24}{subsubsection.4.7.1.4}%
+\contentsline {subsubsection}{\numberline {4.7.1.5}rate\_calc()}{24}{subsubsection.4.7.1.5}%
+\contentsline {subsubsection}{\numberline {4.7.1.6}relaxation\_rates()}{24}{subsubsection.4.7.1.6}%
+\contentsline {subsubsection}{\numberline {4.7.1.7}transfer\_matrix()}{24}{subsubsection.4.7.1.7}%
+\contentsline {subsubsection}{\numberline {4.7.1.8}trapezoid()}{25}{subsubsection.4.7.1.8}%
+\contentsline {section}{\numberline {4.8}spectra/src/fluorescence.h File Reference}{25}{section.4.8}%
+\contentsline {subsection}{\numberline {4.8.1}Function Documentation}{25}{subsection.4.8.1}%
+\contentsline {subsubsection}{\numberline {4.8.1.1}array\_to\_gsl\_matrix()}{25}{subsubsection.4.8.1.1}%
+\contentsline {subsubsection}{\numberline {4.8.1.2}bcs()}{26}{subsubsection.4.8.1.2}%
+\contentsline {subsubsection}{\numberline {4.8.1.3}final\_matrix()}{26}{subsubsection.4.8.1.3}%
+\contentsline {subsubsection}{\numberline {4.8.1.4}jacobian()}{26}{subsubsection.4.8.1.4}%
+\contentsline {subsubsection}{\numberline {4.8.1.5}odefunc()}{26}{subsubsection.4.8.1.5}%
+\contentsline {subsubsection}{\numberline {4.8.1.6}rate\_calc()}{26}{subsubsection.4.8.1.6}%
+\contentsline {subsubsection}{\numberline {4.8.1.7}relaxation\_rates()}{27}{subsubsection.4.8.1.7}%
+\contentsline {subsubsection}{\numberline {4.8.1.8}transfer\_matrix()}{27}{subsubsection.4.8.1.8}%
+\contentsline {subsubsection}{\numberline {4.8.1.9}trapezoid()}{27}{subsubsection.4.8.1.9}%
+\contentsline {section}{\numberline {4.9}spectra/src/input.c File Reference}{27}{section.4.9}%
+\contentsline {subsection}{\numberline {4.9.1}Function Documentation}{27}{subsection.4.9.1}%
+\contentsline {subsubsection}{\numberline {4.9.1.1}read()}{28}{subsubsection.4.9.1.1}%
+\contentsline {subsubsection}{\numberline {4.9.1.2}read\_eigvecs()}{28}{subsubsection.4.9.1.2}%
+\contentsline {subsubsection}{\numberline {4.9.1.3}read\_gi()}{28}{subsubsection.4.9.1.3}%
+\contentsline {subsubsection}{\numberline {4.9.1.4}read\_input\_file()}{28}{subsubsection.4.9.1.4}%
+\contentsline {subsubsection}{\numberline {4.9.1.5}read\_mu()}{29}{subsubsection.4.9.1.5}%
+\contentsline {section}{\numberline {4.10}spectra/src/input.h File Reference}{29}{section.4.10}%
+\contentsline {subsection}{\numberline {4.10.1}Macro Definition Documentation}{30}{subsection.4.10.1}%
+\contentsline {subsubsection}{\numberline {4.10.1.1}E0}{30}{subsubsection.4.10.1.1}%
+\contentsline {subsubsection}{\numberline {4.10.1.2}EC}{30}{subsubsection.4.10.1.2}%
+\contentsline {subsubsection}{\numberline {4.10.1.3}JPERINVCM}{30}{subsubsection.4.10.1.3}%
+\contentsline {subsubsection}{\numberline {4.10.1.4}KCOUL}{30}{subsubsection.4.10.1.4}%
+\contentsline {subsubsection}{\numberline {4.10.1.5}MAX\_PIGMENT\_NUMBER}{30}{subsubsection.4.10.1.5}%
+\contentsline {subsubsection}{\numberline {4.10.1.6}TOCM1}{30}{subsubsection.4.10.1.6}%
+\contentsline {subsubsection}{\numberline {4.10.1.7}TOFS}{30}{subsubsection.4.10.1.7}%
+\contentsline {subsection}{\numberline {4.10.2}Function Documentation}{31}{subsection.4.10.2}%
+\contentsline {subsubsection}{\numberline {4.10.2.1}read()}{31}{subsubsection.4.10.2.1}%
+\contentsline {subsubsection}{\numberline {4.10.2.2}read\_eigvecs()}{31}{subsubsection.4.10.2.2}%
+\contentsline {subsubsection}{\numberline {4.10.2.3}read\_gi()}{31}{subsubsection.4.10.2.3}%
+\contentsline {subsubsection}{\numberline {4.10.2.4}read\_input\_file()}{32}{subsubsection.4.10.2.4}%
+\contentsline {subsubsection}{\numberline {4.10.2.5}read\_mu()}{32}{subsubsection.4.10.2.5}%
+\contentsline {section}{\numberline {4.11}spectra/src/spectra.c File Reference}{32}{section.4.11}%
+\contentsline {subsection}{\numberline {4.11.1}Function Documentation}{32}{subsection.4.11.1}%
+\contentsline {subsubsection}{\numberline {4.11.1.1}main()}{33}{subsubsection.4.11.1.1}%
+\contentsline {section}{\numberline {4.12}spectra/src/steady\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}\_\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}state.c File Reference}{33}{section.4.12}%
+\contentsline {subsection}{\numberline {4.12.1}Function Documentation}{33}{subsection.4.12.1}%
+\contentsline {subsubsection}{\numberline {4.12.1.1}guess()}{33}{subsubsection.4.12.1.1}%
+\contentsline {subsubsection}{\numberline {4.12.1.2}incident()}{33}{subsubsection.4.12.1.2}%
+\contentsline {subsubsection}{\numberline {4.12.1.3}pop\_converge()}{34}{subsubsection.4.12.1.3}%
+\contentsline {subsubsection}{\numberline {4.12.1.4}pop\_steady\_df()}{34}{subsubsection.4.12.1.4}%
+\contentsline {subsubsection}{\numberline {4.12.1.5}pop\_steady\_f()}{34}{subsubsection.4.12.1.5}%
+\contentsline {subsubsection}{\numberline {4.12.1.6}pop\_steady\_fdf()}{34}{subsubsection.4.12.1.6}%
+\contentsline {section}{\numberline {4.13}spectra/src/steady\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}\_\discretionary {\mbox {\scriptsize $\DOTSB \leftarrow \joinrel \rhook $}}{}{}state.h File Reference}{34}{section.4.13}%
+\contentsline {subsection}{\numberline {4.13.1}Typedef Documentation}{35}{subsection.4.13.1}%
+\contentsline {subsubsection}{\numberline {4.13.1.1}pulse}{35}{subsubsection.4.13.1.1}%
+\contentsline {subsubsection}{\numberline {4.13.1.2}pulse\_type}{35}{subsubsection.4.13.1.2}%
+\contentsline {subsubsection}{\numberline {4.13.1.3}ss\_init}{35}{subsubsection.4.13.1.3}%
+\contentsline {subsection}{\numberline {4.13.2}Enumeration Type Documentation}{35}{subsection.4.13.2}%
+\contentsline {subsubsection}{\numberline {4.13.2.1}pulse\_type}{35}{subsubsection.4.13.2.1}%
+\contentsline {subsubsection}{\numberline {4.13.2.2}ss\_init}{36}{subsubsection.4.13.2.2}%
+\contentsline {subsection}{\numberline {4.13.3}Function Documentation}{36}{subsection.4.13.3}%
+\contentsline {subsubsection}{\numberline {4.13.3.1}guess()}{36}{subsubsection.4.13.3.1}%
+\contentsline {subsubsection}{\numberline {4.13.3.2}incident()}{36}{subsubsection.4.13.3.2}%
+\contentsline {subsubsection}{\numberline {4.13.3.3}pop\_converge()}{37}{subsubsection.4.13.3.3}%
+\contentsline {subsubsection}{\numberline {4.13.3.4}pop\_steady\_df()}{37}{subsubsection.4.13.3.4}%
+\contentsline {subsubsection}{\numberline {4.13.3.5}pop\_steady\_f()}{37}{subsubsection.4.13.3.5}%
+\contentsline {subsubsection}{\numberline {4.13.3.6}pop\_steady\_fdf()}{37}{subsubsection.4.13.3.6}%
+\contentsline {chapter}{Index}{39}{section*.28}%

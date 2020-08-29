@@ -1,0 +1,73 @@
+\hypertarget{fluorescence_8c}{}\doxysection{spectra/src/fluorescence.c File Reference}
+\label{fluorescence_8c}\index{spectra/src/fluorescence.c@{spectra/src/fluorescence.c}}
+{\ttfamily \#include \char`\"{}fluorescence.\+h\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{fluorescence_8c_a0ea71b5d330168eae55461398526df06}{array\+\_\+to\+\_\+gsl\+\_\+matrix}} (unsigned int n1, unsigned int n2, double $\ast$$\ast$mat)
+\item 
+double $\ast$$\ast$ \mbox{\hyperlink{fluorescence_8c_a0586b3e99f7bb6665d7cdc5543c65464}{rate\+\_\+calc}} (unsigned int N, double $\ast$$\ast$eig, double $\ast$$\ast$wij, \mbox{\hyperlink{structParameters}{Parameters}} $\ast$p)
+\item 
+double $\ast$ \mbox{\hyperlink{fluorescence_8c_a1044ec268cd76d46e146c6f8d7a4adf5}{relaxation\+\_\+rates}} (unsigned int N, double $\ast$gamma)
+\item 
+double $\ast$$\ast$ \mbox{\hyperlink{fluorescence_8c_aebbf6055c3c679c8e1551608ed4f7465}{transfer\+\_\+matrix}} (unsigned int N, double $\ast$relax, double $\ast$$\ast$kij)
+\item 
+int \mbox{\hyperlink{fluorescence_8c_a85587bd6d6c0280774f04dad91662782}{jacobian}} (double t, const double y\mbox{[}$\,$\mbox{]}, double $\ast$dfdy, double dfdt\mbox{[}$\,$\mbox{]}, void $\ast$params)
+\item 
+int \mbox{\hyperlink{fluorescence_8c_a6e5a46c2978f2fae8f44aa2863233361}{odefunc}} (double x, const double $\ast$y, double $\ast$f, void $\ast$params)
+\item 
+double $\ast$ \mbox{\hyperlink{fluorescence_8c_a2faa8ed27801b107411509af2a30b3f5}{bcs}} (unsigned const int N, const double $\ast$eigvals, const double T)
+\item 
+double \mbox{\hyperlink{fluorescence_8c_a6b396594c1e1bb339613c09d7747385b}{trapezoid}} (double $\ast$f, unsigned int n)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{fluorescence_8c_a0ea71b5d330168eae55461398526df06}\label{fluorescence_8c_a0ea71b5d330168eae55461398526df06}} 
+\index{fluorescence.c@{fluorescence.c}!array\_to\_gsl\_matrix@{array\_to\_gsl\_matrix}}
+\index{array\_to\_gsl\_matrix@{array\_to\_gsl\_matrix}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{array\_to\_gsl\_matrix()}{array\_to\_gsl\_matrix()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix$\ast$ array\+\_\+to\+\_\+gsl\+\_\+matrix (\begin{DoxyParamCaption}\item[{unsigned int}]{n1,  }\item[{unsigned int}]{n2,  }\item[{double $\ast$$\ast$}]{mat }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_a2faa8ed27801b107411509af2a30b3f5}\label{fluorescence_8c_a2faa8ed27801b107411509af2a30b3f5}} 
+\index{fluorescence.c@{fluorescence.c}!bcs@{bcs}}
+\index{bcs@{bcs}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{bcs()}{bcs()}}
+{\footnotesize\ttfamily double$\ast$ bcs (\begin{DoxyParamCaption}\item[{unsigned const int}]{N,  }\item[{const double $\ast$}]{eigvals,  }\item[{const double}]{T }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_a85587bd6d6c0280774f04dad91662782}\label{fluorescence_8c_a85587bd6d6c0280774f04dad91662782}} 
+\index{fluorescence.c@{fluorescence.c}!jacobian@{jacobian}}
+\index{jacobian@{jacobian}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{jacobian()}{jacobian()}}
+{\footnotesize\ttfamily int jacobian (\begin{DoxyParamCaption}\item[{double}]{t,  }\item[{const double}]{y\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{dfdy,  }\item[{double}]{dfdt\mbox{[}$\,$\mbox{]},  }\item[{void $\ast$}]{params }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_a6e5a46c2978f2fae8f44aa2863233361}\label{fluorescence_8c_a6e5a46c2978f2fae8f44aa2863233361}} 
+\index{fluorescence.c@{fluorescence.c}!odefunc@{odefunc}}
+\index{odefunc@{odefunc}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{odefunc()}{odefunc()}}
+{\footnotesize\ttfamily int odefunc (\begin{DoxyParamCaption}\item[{double}]{x,  }\item[{const double $\ast$}]{y,  }\item[{double $\ast$}]{f,  }\item[{void $\ast$}]{params }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_a0586b3e99f7bb6665d7cdc5543c65464}\label{fluorescence_8c_a0586b3e99f7bb6665d7cdc5543c65464}} 
+\index{fluorescence.c@{fluorescence.c}!rate\_calc@{rate\_calc}}
+\index{rate\_calc@{rate\_calc}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{rate\_calc()}{rate\_calc()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ rate\+\_\+calc (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$$\ast$}]{eig,  }\item[{double $\ast$$\ast$}]{wij,  }\item[{\mbox{\hyperlink{structParameters}{Parameters}} $\ast$}]{p }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_a1044ec268cd76d46e146c6f8d7a4adf5}\label{fluorescence_8c_a1044ec268cd76d46e146c6f8d7a4adf5}} 
+\index{fluorescence.c@{fluorescence.c}!relaxation\_rates@{relaxation\_rates}}
+\index{relaxation\_rates@{relaxation\_rates}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{relaxation\_rates()}{relaxation\_rates()}}
+{\footnotesize\ttfamily double$\ast$ relaxation\+\_\+rates (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$}]{gamma }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_aebbf6055c3c679c8e1551608ed4f7465}\label{fluorescence_8c_aebbf6055c3c679c8e1551608ed4f7465}} 
+\index{fluorescence.c@{fluorescence.c}!transfer\_matrix@{transfer\_matrix}}
+\index{transfer\_matrix@{transfer\_matrix}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{transfer\_matrix()}{transfer\_matrix()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ transfer\+\_\+matrix (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$}]{relax,  }\item[{double $\ast$$\ast$}]{kij }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8c_a6b396594c1e1bb339613c09d7747385b}\label{fluorescence_8c_a6b396594c1e1bb339613c09d7747385b}} 
+\index{fluorescence.c@{fluorescence.c}!trapezoid@{trapezoid}}
+\index{trapezoid@{trapezoid}!fluorescence.c@{fluorescence.c}}
+\doxysubsubsection{\texorpdfstring{trapezoid()}{trapezoid()}}
+{\footnotesize\ttfamily double trapezoid (\begin{DoxyParamCaption}\item[{double $\ast$}]{f,  }\item[{unsigned int}]{n }\end{DoxyParamCaption})}
+

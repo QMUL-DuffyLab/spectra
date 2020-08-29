@@ -1,0 +1,39 @@
+\hypertarget{fluorescence_8h_source}{}\doxysection{fluorescence.\+h}
+\label{fluorescence_8h_source}\index{spectra/src/fluorescence.h@{spectra/src/fluorescence.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001 \textcolor{preprocessor}{\#include <gsl/gsl\_integration.h>}}
+\DoxyCodeLine{00002 \textcolor{preprocessor}{\#include <gsl/gsl\_errno.h>}}
+\DoxyCodeLine{00003 \textcolor{preprocessor}{\#include <gsl/gsl\_matrix.h>}}
+\DoxyCodeLine{00004 \textcolor{preprocessor}{\#include <gsl/gsl\_odeiv2.h>}}
+\DoxyCodeLine{00005 \textcolor{preprocessor}{\#include "\mbox{\hyperlink{input_8h}{input.h}}"}}
+\DoxyCodeLine{00006 \textcolor{preprocessor}{\#include "../../lineshape/src/parameters.h"}}
+\DoxyCodeLine{00007 }
+\DoxyCodeLine{00008 \textcolor{preprocessor}{\#ifndef \_\_FLUORESCENCE\_H\_\_}}
+\DoxyCodeLine{00009 \textcolor{preprocessor}{\#define \_\_FLUORESCENCE\_H\_\_}}
+\DoxyCodeLine{00010 }
+\DoxyCodeLine{\Hypertarget{fluorescence_8h_source_l00011}\mbox{\hyperlink{structode__params}{00011}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
+\DoxyCodeLine{\Hypertarget{fluorescence_8h_source_l00012}\mbox{\hyperlink{structode__params_a5ad5bd274c25d491f8eefc80e8eea2a4}{00012}}   \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} \mbox{\hyperlink{structode__params_a5ad5bd274c25d491f8eefc80e8eea2a4}{N}};}
+\DoxyCodeLine{\Hypertarget{fluorescence_8h_source_l00013}\mbox{\hyperlink{structode__params_a6ddcb6ccf93c2b5f49a1cb730777ec81}{00013}}   \textcolor{keywordtype}{double} **\mbox{\hyperlink{structode__params_a6ddcb6ccf93c2b5f49a1cb730777ec81}{kij}};}
+\DoxyCodeLine{\Hypertarget{fluorescence_8h_source_l00014}\mbox{\hyperlink{structode__params_a70a893e25525b652b615fcd6303bfeb8}{00014}}   \textcolor{keywordtype}{double} **\mbox{\hyperlink{structode__params_a70a893e25525b652b615fcd6303bfeb8}{Tij}};}
+\DoxyCodeLine{\Hypertarget{fluorescence_8h_source_l00015}\mbox{\hyperlink{structode__params_a14a9469928e9607667225173b8b71f6f}{00015}}   \textcolor{keywordtype}{double} *\mbox{\hyperlink{structode__params_a14a9469928e9607667225173b8b71f6f}{rates}};}
+\DoxyCodeLine{\Hypertarget{fluorescence_8h_source_l00016}\mbox{\hyperlink{structode__params_a7051e3ac18962cf8cc29036a299e1c68}{00016}}   \textcolor{keywordtype}{double} *\mbox{\hyperlink{structode__params_a7051e3ac18962cf8cc29036a299e1c68}{chiw}};}
+\DoxyCodeLine{00017 \} \mbox{\hyperlink{structode__params}{ode\_params}};}
+\DoxyCodeLine{00018 }
+\DoxyCodeLine{00019 gsl\_matrix* \mbox{\hyperlink{fluorescence_8h_a0ea71b5d330168eae55461398526df06}{array\_to\_gsl\_matrix}}(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} n1,}
+\DoxyCodeLine{00020             \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{double}** mat);}
+\DoxyCodeLine{00021 \textcolor{keywordtype}{double}** \mbox{\hyperlink{fluorescence_8h_a0586b3e99f7bb6665d7cdc5543c65464}{rate\_calc}} (\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} N, \textcolor{keywordtype}{double} **eig,}
+\DoxyCodeLine{00022                     \textcolor{keywordtype}{double}** wij, \mbox{\hyperlink{structParameters}{Parameters}} *p);}
+\DoxyCodeLine{00023 \textcolor{keywordtype}{double}* \mbox{\hyperlink{fluorescence_8h_a1044ec268cd76d46e146c6f8d7a4adf5}{relaxation\_rates}} (\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} N, \textcolor{keywordtype}{double}* gamma);}
+\DoxyCodeLine{00024 \textcolor{keywordtype}{double} **\mbox{\hyperlink{fluorescence_8h_aebbf6055c3c679c8e1551608ed4f7465}{transfer\_matrix}} (\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} N, \textcolor{keywordtype}{double}* relax, \textcolor{keywordtype}{double}** kij);}
+\DoxyCodeLine{00025 \textcolor{keywordtype}{double} **\mbox{\hyperlink{fluorescence_8h_af99e257e811666bec8dd8be3826c0a8b}{final\_matrix}}    (\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} N, \textcolor{keywordtype}{double}* relax, \textcolor{keywordtype}{double}** Tij);}
+\DoxyCodeLine{00026 \textcolor{keywordtype}{int} \mbox{\hyperlink{fluorescence_8h_a6e5a46c2978f2fae8f44aa2863233361}{odefunc}} (\textcolor{keywordtype}{double} x, \textcolor{keyword}{const} \textcolor{keywordtype}{double} *y, \textcolor{keywordtype}{double} *f, \textcolor{keywordtype}{void} *params);}
+\DoxyCodeLine{00027 \textcolor{keywordtype}{int} \mbox{\hyperlink{fluorescence_8h_a85587bd6d6c0280774f04dad91662782}{jacobian}} (\textcolor{keywordtype}{double} t, \textcolor{keyword}{const} \textcolor{keywordtype}{double} y[], \textcolor{keywordtype}{double} *dfdy,}
+\DoxyCodeLine{00028               \textcolor{keywordtype}{double} dfdt[], \textcolor{keywordtype}{void} *params);}
+\DoxyCodeLine{00029 \textcolor{keywordtype}{double}* \mbox{\hyperlink{fluorescence_8h_a2faa8ed27801b107411509af2a30b3f5}{bcs}} (\textcolor{keywordtype}{unsigned} \textcolor{keyword}{const} \textcolor{keywordtype}{int} N, \textcolor{keyword}{const} \textcolor{keywordtype}{double}* eigvals,}
+\DoxyCodeLine{00030              \textcolor{keyword}{const} \textcolor{keywordtype}{double} T);}
+\DoxyCodeLine{00031 \textcolor{keywordtype}{double} \mbox{\hyperlink{fluorescence_8h_a6b396594c1e1bb339613c09d7747385b}{trapezoid}}(\textcolor{keywordtype}{double} *f, \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} n);}
+\DoxyCodeLine{00032 }
+\DoxyCodeLine{00033 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

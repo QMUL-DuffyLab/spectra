@@ -1,0 +1,12 @@
+var searchData=
+[
+  ['rate_5fcalc_84',['rate_calc',['../fluorescence_8c.html#a0586b3e99f7bb6665d7cdc5543c65464',1,'rate_calc(unsigned int N, double **eig, double **wij, Parameters *p):&#160;fluorescence.c'],['../fluorescence_8h.html#a0586b3e99f7bb6665d7cdc5543c65464',1,'rate_calc(unsigned int N, double **eig, double **wij, Parameters *p):&#160;fluorescence.c']]],
+  ['rates_85',['rates',['../structode__params.html#a14a9469928e9607667225173b8b71f6f',1,'ode_params']]],
+  ['read_86',['read',['../input_8c.html#aca86a581177852bac7f607ba4a0d62b4',1,'read(char *input_file, unsigned int N):&#160;input.c'],['../input_8h.html#aca86a581177852bac7f607ba4a0d62b4',1,'read(char *input_file, unsigned int N):&#160;input.c']]],
+  ['read_5feigvecs_87',['read_eigvecs',['../input_8c.html#af474d86499b3c3f224327c7f59b50e33',1,'read_eigvecs(char *input_file, unsigned int N):&#160;input.c'],['../input_8h.html#af474d86499b3c3f224327c7f59b50e33',1,'read_eigvecs(char *input_file, unsigned int N):&#160;input.c']]],
+  ['read_5fgi_88',['read_gi',['../input_8c.html#acba6a24db8518501663fad92f6e721e4',1,'read_gi(char *input_files[], unsigned int N, unsigned int tau):&#160;input.c'],['../input_8h.html#acba6a24db8518501663fad92f6e721e4',1,'read_gi(char *input_files[], unsigned int N, unsigned int tau):&#160;input.c']]],
+  ['read_5finput_5ffile_89',['read_input_file',['../input_8c.html#afe82bf3e4a5eaab78fd2b6fafc71385e',1,'read_input_file(char *filename):&#160;input.c'],['../input_8h.html#afe82bf3e4a5eaab78fd2b6fafc71385e',1,'read_input_file(char *filename):&#160;input.c']]],
+  ['read_5fmu_90',['read_mu',['../input_8c.html#a7a9c614508eb70065d1fac49dbb6a38a',1,'read_mu(char *input_file, unsigned int N):&#160;input.c'],['../input_8h.html#a7a9c614508eb70065d1fac49dbb6a38a',1,'read_mu(char *input_file, unsigned int N):&#160;input.c']]],
+  ['relaxation_5frates_91',['relaxation_rates',['../fluorescence_8c.html#a1044ec268cd76d46e146c6f8d7a4adf5',1,'relaxation_rates(unsigned int N, double *gamma):&#160;fluorescence.c'],['../fluorescence_8h.html#a1044ec268cd76d46e146c6f8d7a4adf5',1,'relaxation_rates(unsigned int N, double *gamma):&#160;fluorescence.c']]],
+  ['reorg_5fint_92',['reorg_int',['../functions_8c.html#a034fae9636411544cbb5857a66b6c232',1,'reorg_int(double w, void *params):&#160;functions.c'],['../functions_8h.html#a034fae9636411544cbb5857a66b6c232',1,'reorg_int(double w, void *params):&#160;functions.c']]]
+];

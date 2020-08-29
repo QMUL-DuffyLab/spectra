@@ -1,0 +1,91 @@
+\hypertarget{fluorescence_8h}{}\doxysection{spectra/src/fluorescence.h File Reference}
+\label{fluorescence_8h}\index{spectra/src/fluorescence.h@{spectra/src/fluorescence.h}}
+{\ttfamily \#include $<$gsl/gsl\+\_\+integration.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+errno.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+matrix.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+odeiv2.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}input.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}../../lineshape/src/parameters.\+h\char`\"{}}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structode__params}{ode\+\_\+params}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{fluorescence_8h_a0ea71b5d330168eae55461398526df06}{array\+\_\+to\+\_\+gsl\+\_\+matrix}} (unsigned int n1, unsigned int n2, double $\ast$$\ast$mat)
+\item 
+double $\ast$$\ast$ \mbox{\hyperlink{fluorescence_8h_a0586b3e99f7bb6665d7cdc5543c65464}{rate\+\_\+calc}} (unsigned int N, double $\ast$$\ast$eig, double $\ast$$\ast$wij, \mbox{\hyperlink{structParameters}{Parameters}} $\ast$p)
+\item 
+double $\ast$ \mbox{\hyperlink{fluorescence_8h_a1044ec268cd76d46e146c6f8d7a4adf5}{relaxation\+\_\+rates}} (unsigned int N, double $\ast$gamma)
+\item 
+double $\ast$$\ast$ \mbox{\hyperlink{fluorescence_8h_aebbf6055c3c679c8e1551608ed4f7465}{transfer\+\_\+matrix}} (unsigned int N, double $\ast$relax, double $\ast$$\ast$kij)
+\item 
+double $\ast$$\ast$ \mbox{\hyperlink{fluorescence_8h_af99e257e811666bec8dd8be3826c0a8b}{final\+\_\+matrix}} (unsigned int N, double $\ast$relax, double $\ast$$\ast$Tij)
+\item 
+int \mbox{\hyperlink{fluorescence_8h_a6e5a46c2978f2fae8f44aa2863233361}{odefunc}} (double x, const double $\ast$y, double $\ast$f, void $\ast$params)
+\item 
+int \mbox{\hyperlink{fluorescence_8h_a85587bd6d6c0280774f04dad91662782}{jacobian}} (double t, const double y\mbox{[}$\,$\mbox{]}, double $\ast$dfdy, double dfdt\mbox{[}$\,$\mbox{]}, void $\ast$params)
+\item 
+double $\ast$ \mbox{\hyperlink{fluorescence_8h_a2faa8ed27801b107411509af2a30b3f5}{bcs}} (unsigned const int N, const double $\ast$eigvals, const double T)
+\item 
+double \mbox{\hyperlink{fluorescence_8h_a6b396594c1e1bb339613c09d7747385b}{trapezoid}} (double $\ast$f, unsigned int n)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{fluorescence_8h_a0ea71b5d330168eae55461398526df06}\label{fluorescence_8h_a0ea71b5d330168eae55461398526df06}} 
+\index{fluorescence.h@{fluorescence.h}!array\_to\_gsl\_matrix@{array\_to\_gsl\_matrix}}
+\index{array\_to\_gsl\_matrix@{array\_to\_gsl\_matrix}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{array\_to\_gsl\_matrix()}{array\_to\_gsl\_matrix()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix$\ast$ array\+\_\+to\+\_\+gsl\+\_\+matrix (\begin{DoxyParamCaption}\item[{unsigned int}]{n1,  }\item[{unsigned int}]{n2,  }\item[{double $\ast$$\ast$}]{mat }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_a2faa8ed27801b107411509af2a30b3f5}\label{fluorescence_8h_a2faa8ed27801b107411509af2a30b3f5}} 
+\index{fluorescence.h@{fluorescence.h}!bcs@{bcs}}
+\index{bcs@{bcs}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{bcs()}{bcs()}}
+{\footnotesize\ttfamily double$\ast$ bcs (\begin{DoxyParamCaption}\item[{unsigned const int}]{N,  }\item[{const double $\ast$}]{eigvals,  }\item[{const double}]{T }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_af99e257e811666bec8dd8be3826c0a8b}\label{fluorescence_8h_af99e257e811666bec8dd8be3826c0a8b}} 
+\index{fluorescence.h@{fluorescence.h}!final\_matrix@{final\_matrix}}
+\index{final\_matrix@{final\_matrix}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{final\_matrix()}{final\_matrix()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ final\+\_\+matrix (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$}]{relax,  }\item[{double $\ast$$\ast$}]{Tij }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_a85587bd6d6c0280774f04dad91662782}\label{fluorescence_8h_a85587bd6d6c0280774f04dad91662782}} 
+\index{fluorescence.h@{fluorescence.h}!jacobian@{jacobian}}
+\index{jacobian@{jacobian}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{jacobian()}{jacobian()}}
+{\footnotesize\ttfamily int jacobian (\begin{DoxyParamCaption}\item[{double}]{t,  }\item[{const double}]{y\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{dfdy,  }\item[{double}]{dfdt\mbox{[}$\,$\mbox{]},  }\item[{void $\ast$}]{params }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_a6e5a46c2978f2fae8f44aa2863233361}\label{fluorescence_8h_a6e5a46c2978f2fae8f44aa2863233361}} 
+\index{fluorescence.h@{fluorescence.h}!odefunc@{odefunc}}
+\index{odefunc@{odefunc}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{odefunc()}{odefunc()}}
+{\footnotesize\ttfamily int odefunc (\begin{DoxyParamCaption}\item[{double}]{x,  }\item[{const double $\ast$}]{y,  }\item[{double $\ast$}]{f,  }\item[{void $\ast$}]{params }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_a0586b3e99f7bb6665d7cdc5543c65464}\label{fluorescence_8h_a0586b3e99f7bb6665d7cdc5543c65464}} 
+\index{fluorescence.h@{fluorescence.h}!rate\_calc@{rate\_calc}}
+\index{rate\_calc@{rate\_calc}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{rate\_calc()}{rate\_calc()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ rate\+\_\+calc (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$$\ast$}]{eig,  }\item[{double $\ast$$\ast$}]{wij,  }\item[{\mbox{\hyperlink{structParameters}{Parameters}} $\ast$}]{p }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_a1044ec268cd76d46e146c6f8d7a4adf5}\label{fluorescence_8h_a1044ec268cd76d46e146c6f8d7a4adf5}} 
+\index{fluorescence.h@{fluorescence.h}!relaxation\_rates@{relaxation\_rates}}
+\index{relaxation\_rates@{relaxation\_rates}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{relaxation\_rates()}{relaxation\_rates()}}
+{\footnotesize\ttfamily double$\ast$ relaxation\+\_\+rates (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$}]{gamma }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_aebbf6055c3c679c8e1551608ed4f7465}\label{fluorescence_8h_aebbf6055c3c679c8e1551608ed4f7465}} 
+\index{fluorescence.h@{fluorescence.h}!transfer\_matrix@{transfer\_matrix}}
+\index{transfer\_matrix@{transfer\_matrix}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{transfer\_matrix()}{transfer\_matrix()}}
+{\footnotesize\ttfamily double$\ast$$\ast$ transfer\+\_\+matrix (\begin{DoxyParamCaption}\item[{unsigned int}]{N,  }\item[{double $\ast$}]{relax,  }\item[{double $\ast$$\ast$}]{kij }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{fluorescence_8h_a6b396594c1e1bb339613c09d7747385b}\label{fluorescence_8h_a6b396594c1e1bb339613c09d7747385b}} 
+\index{fluorescence.h@{fluorescence.h}!trapezoid@{trapezoid}}
+\index{trapezoid@{trapezoid}!fluorescence.h@{fluorescence.h}}
+\doxysubsubsection{\texorpdfstring{trapezoid()}{trapezoid()}}
+{\footnotesize\ttfamily double trapezoid (\begin{DoxyParamCaption}\item[{double $\ast$}]{f,  }\item[{unsigned int}]{n }\end{DoxyParamCaption})}
+

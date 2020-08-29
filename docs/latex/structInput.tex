@@ -1,0 +1,135 @@
+\hypertarget{structInput}{}\doxysection{Input Struct Reference}
+\label{structInput}\index{Input@{Input}}
+
+
+\mbox{\hyperlink{structInput}{Input}} struct for important parameters and filenames where the exciton-\/basis data is to be read in from.  
+
+
+
+
+{\ttfamily \#include $<$input.\+h$>$}
+
+\doxysubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+unsigned int \mbox{\hyperlink{structInput_aafb5e03b70ed0966a01e666342258ffc}{N}}
+\begin{DoxyCompactList}\small\item\em Number of pigments/excitons. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structInput_a3bcd57452ca5587edcbb6d3e0b0f08f2}{T}}
+\begin{DoxyCompactList}\small\item\em Temperature. \end{DoxyCompactList}\item 
+unsigned int \mbox{\hyperlink{structInput_adb7de9018b263d3070e1263d5e10de79}{tau}}
+\begin{DoxyCompactList}\small\item\em number of steps in g(t) arrays ( $ \equiv $ fs) \end{DoxyCompactList}\item 
+char \mbox{\hyperlink{structInput_a74b27af0f1adc4c969dd86f53d5760ed}{eigvecs\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_a0c4a9953a6a3ce23060f7c4f4caa807c}{eigvals\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_a247ba1d118bc7e99ff85321eeb8bdb38}{mu\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_a44fe59633eb7a204352bc9277ec601f0}{lambda\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_a26b885ab6550cf32d77d03badf18ee4f}{gamma\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_a1db805c26a7f7f4d59ddfe2ce85ed4da}{aw\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_ac161a3c2d1cda2fcd5e18b2955f700ec}{fw\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char \mbox{\hyperlink{structInput_a4a97775a5f361143c00fbc73bb07434c}{pop\+\_\+file}} \mbox{[}200\mbox{]}
+\item 
+char $\ast$ \mbox{\hyperlink{structInput_a16e2747083169bc551ed948b47b33620}{gi\+\_\+files}} \mbox{[}$\,$\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\mbox{\hyperlink{structInput}{Input}} struct for important parameters and filenames where the exciton-\/basis data is to be read in from. 
+
+This struct mainly holds a list of filenames which have been output by the fortran code, listing where all the data is for the eigenstates of our Hamiltonian (the exciton basis data). Also holds a few parameters that aren\textquotesingle{}t specific to any particular pigment or exciton. 
+
+\doxysubsection{Field Documentation}
+\mbox{\Hypertarget{structInput_a1db805c26a7f7f4d59ddfe2ce85ed4da}\label{structInput_a1db805c26a7f7f4d59ddfe2ce85ed4da}} 
+\index{Input@{Input}!aw\_file@{aw\_file}}
+\index{aw\_file@{aw\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{aw\_file}{aw\_file}}
+{\footnotesize\ttfamily char Input\+::aw\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a0c4a9953a6a3ce23060f7c4f4caa807c}\label{structInput_a0c4a9953a6a3ce23060f7c4f4caa807c}} 
+\index{Input@{Input}!eigvals\_file@{eigvals\_file}}
+\index{eigvals\_file@{eigvals\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{eigvals\_file}{eigvals\_file}}
+{\footnotesize\ttfamily char Input\+::eigvals\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a74b27af0f1adc4c969dd86f53d5760ed}\label{structInput_a74b27af0f1adc4c969dd86f53d5760ed}} 
+\index{Input@{Input}!eigvecs\_file@{eigvecs\_file}}
+\index{eigvecs\_file@{eigvecs\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{eigvecs\_file}{eigvecs\_file}}
+{\footnotesize\ttfamily char Input\+::eigvecs\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_ac161a3c2d1cda2fcd5e18b2955f700ec}\label{structInput_ac161a3c2d1cda2fcd5e18b2955f700ec}} 
+\index{Input@{Input}!fw\_file@{fw\_file}}
+\index{fw\_file@{fw\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{fw\_file}{fw\_file}}
+{\footnotesize\ttfamily char Input\+::fw\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a26b885ab6550cf32d77d03badf18ee4f}\label{structInput_a26b885ab6550cf32d77d03badf18ee4f}} 
+\index{Input@{Input}!gamma\_file@{gamma\_file}}
+\index{gamma\_file@{gamma\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{gamma\_file}{gamma\_file}}
+{\footnotesize\ttfamily char Input\+::gamma\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a16e2747083169bc551ed948b47b33620}\label{structInput_a16e2747083169bc551ed948b47b33620}} 
+\index{Input@{Input}!gi\_files@{gi\_files}}
+\index{gi\_files@{gi\_files}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{gi\_files}{gi\_files}}
+{\footnotesize\ttfamily char$\ast$ Input\+::gi\+\_\+files\mbox{[}$\,$\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a44fe59633eb7a204352bc9277ec601f0}\label{structInput_a44fe59633eb7a204352bc9277ec601f0}} 
+\index{Input@{Input}!lambda\_file@{lambda\_file}}
+\index{lambda\_file@{lambda\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{lambda\_file}{lambda\_file}}
+{\footnotesize\ttfamily char Input\+::lambda\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a247ba1d118bc7e99ff85321eeb8bdb38}\label{structInput_a247ba1d118bc7e99ff85321eeb8bdb38}} 
+\index{Input@{Input}!mu\_file@{mu\_file}}
+\index{mu\_file@{mu\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{mu\_file}{mu\_file}}
+{\footnotesize\ttfamily char Input\+::mu\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_aafb5e03b70ed0966a01e666342258ffc}\label{structInput_aafb5e03b70ed0966a01e666342258ffc}} 
+\index{Input@{Input}!N@{N}}
+\index{N@{N}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{N}{N}}
+{\footnotesize\ttfamily unsigned int Input\+::N}
+
+
+
+Number of pigments/excitons. 
+
+\mbox{\Hypertarget{structInput_a4a97775a5f361143c00fbc73bb07434c}\label{structInput_a4a97775a5f361143c00fbc73bb07434c}} 
+\index{Input@{Input}!pop\_file@{pop\_file}}
+\index{pop\_file@{pop\_file}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{pop\_file}{pop\_file}}
+{\footnotesize\ttfamily char Input\+::pop\+\_\+file\mbox{[}200\mbox{]}}
+
+\mbox{\Hypertarget{structInput_a3bcd57452ca5587edcbb6d3e0b0f08f2}\label{structInput_a3bcd57452ca5587edcbb6d3e0b0f08f2}} 
+\index{Input@{Input}!T@{T}}
+\index{T@{T}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{T}{T}}
+{\footnotesize\ttfamily double Input\+::T}
+
+
+
+Temperature. 
+
+\mbox{\Hypertarget{structInput_adb7de9018b263d3070e1263d5e10de79}\label{structInput_adb7de9018b263d3070e1263d5e10de79}} 
+\index{Input@{Input}!tau@{tau}}
+\index{tau@{tau}!Input@{Input}}
+\doxysubsubsection{\texorpdfstring{tau}{tau}}
+{\footnotesize\ttfamily unsigned int Input\+::tau}
+
+
+
+number of steps in g(t) arrays ( $ \equiv $ fs) 
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+spectra/src/\mbox{\hyperlink{input_8h}{input.\+h}}\end{DoxyCompactItemize}

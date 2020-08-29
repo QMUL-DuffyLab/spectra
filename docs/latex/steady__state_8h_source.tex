@@ -1,0 +1,55 @@
+\hypertarget{steady__state_8h_source}{}\doxysection{steady\+\_\+state.\+h}
+\label{steady__state_8h_source}\index{spectra/src/steady\_state.h@{spectra/src/steady\_state.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001 \textcolor{preprocessor}{\#include "\mbox{\hyperlink{fluorescence_8h}{fluorescence.h}}"}}
+\DoxyCodeLine{00002 \textcolor{preprocessor}{\#include <gsl/gsl\_multiroots.h>}}
+\DoxyCodeLine{00003 \textcolor{preprocessor}{\#include <gsl/gsl\_errno.h>}}
+\DoxyCodeLine{00004 \textcolor{preprocessor}{\#include <gsl/gsl\_matrix.h>}}
+\DoxyCodeLine{00005 \textcolor{preprocessor}{\#include <gsl/gsl\_odeiv2.h>}}
+\DoxyCodeLine{00006 \textcolor{preprocessor}{\#include <gsl/gsl\_blas.h>}}
+\DoxyCodeLine{00007 \textcolor{preprocessor}{\#include <gsl/gsl\_math.h>}}
+\DoxyCodeLine{00008 }
+\DoxyCodeLine{00009 \textcolor{preprocessor}{\#ifndef \_\_STEADY\_STATE\_H\_\_}}
+\DoxyCodeLine{00010 \textcolor{preprocessor}{\#define \_\_STEADY\_STATE\_H\_\_}}
+\DoxyCodeLine{00011 }
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00012}\mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dc}{00012}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dc}{pulse\_type}} \{}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00013}\mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dca0338024d4d0d5bffed604c279f8f5550}{00013}}   \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dca0338024d4d0d5bffed604c279f8f5550}{FLAT}} = 0,}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00014}\mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dca21e5ca8f4173042cee0ec4a52b331fc5}{00014}}   \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dca21e5ca8f4173042cee0ec4a52b331fc5}{LORENTZIAN}} = 1,}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00015}\mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dcafca8f51c9117fbb492a2184e9df9e412}{00015}}   \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dcafca8f51c9117fbb492a2184e9df9e412}{GAUSSIAN}} = 2,}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00016}\mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dca826f7fa03272bd9a96356f099b8904dc}{00016}}   \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dca826f7fa03272bd9a96356f099b8904dc}{DELTA}} = 3,}
+\DoxyCodeLine{00017 \} \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dc}{pulse\_type}};}
+\DoxyCodeLine{00018 }
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00019}\mbox{\hyperlink{structpulse}{00019}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\mbox{\hyperlink{structpulse}{pulse}} \{}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00020}\mbox{\hyperlink{structpulse_a042d6af99ffeacc1e57ee9d32fedf2b7}{00020}}   \mbox{\hyperlink{steady__state_8h_abfa6cf503a6d58f6cd6029fad3e349dc}{pulse\_type}} \mbox{\hyperlink{structpulse_a042d6af99ffeacc1e57ee9d32fedf2b7}{type}};}
+\DoxyCodeLine{00021   \textcolor{comment}{/* centre and width should be in cm\string^\{-\/1\}}}
+\DoxyCodeLine{00022 \textcolor{comment}{   * for LORENTZIAN they're x\_0 and \(\backslash\)gamma (FWHM)}}
+\DoxyCodeLine{00023 \textcolor{comment}{   * for GAUSSIAN they're \(\backslash\)mu and \(\backslash\)sigma}}
+\DoxyCodeLine{00024 \textcolor{comment}{   * for DELTA width is meaningless */}}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00025}\mbox{\hyperlink{structpulse_a8beb3c74bde1b35c0ff4361eb210b76d}{00025}}   \textcolor{keywordtype}{double} \mbox{\hyperlink{structpulse_a8beb3c74bde1b35c0ff4361eb210b76d}{centre}};}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00026}\mbox{\hyperlink{structpulse_a7ab1a8a13fd7b43bc112d4f830ede0c7}{00026}}   \textcolor{keywordtype}{double} \mbox{\hyperlink{structpulse_a7ab1a8a13fd7b43bc112d4f830ede0c7}{width}};}
+\DoxyCodeLine{00027 \} \mbox{\hyperlink{steady__state_8h_a1f9bf63e18b9e0e161f7fcd56b53db4a}{pulse}};}
+\DoxyCodeLine{00028 }
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00029}\mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6}{00029}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6}{ss\_init}} \{}
+\DoxyCodeLine{00030   \textcolor{comment}{/* decides what the P\_i(0) should look like as the initial input}}
+\DoxyCodeLine{00031 \textcolor{comment}{   * for the steady-\/state solver (multidim. root finder in GSL) */}}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00032}\mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6abb92dee7a64be1d8b7820f5723076133}{00032}}     \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6abb92dee7a64be1d8b7820f5723076133}{BOLTZ}} = 0,      \textcolor{comment}{/* straight Boltzmann factors */}}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00033}\mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6a4c8c5e68db62684f0fb57e4163911107}{00033}}     \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6a4c8c5e68db62684f0fb57e4163911107}{BOLTZ\_MUSQ}} = 1, \textcolor{comment}{/* Boltzmann weighted by oscillator strength */}}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00034}\mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6a3d044162d972156d897cea80f216b9ca}{00034}}     \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6a3d044162d972156d897cea80f216b9ca}{CONST}} = 2,      \textcolor{comment}{/* flat probability distribution */}}
+\DoxyCodeLine{\Hypertarget{steady__state_8h_source_l00035}\mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6ad7e097bda6d981de2520f49fe74c25b7}{00035}}     \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6ad7e097bda6d981de2520f49fe74c25b7}{MAX}} = 3,        \textcolor{comment}{/* excite only state with highest |μ\string^2| */}}
+\DoxyCodeLine{00036 \} \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6}{ss\_init}};}
+\DoxyCodeLine{00037 }
+\DoxyCodeLine{00038 \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{short} \textcolor{keywordtype}{int} \mbox{\hyperlink{steady__state_8h_ae4679f517439011ea823bb8d4d7091c8}{pop\_converge}}(\textcolor{keywordtype}{double} *y, \textcolor{keywordtype}{double} *yprev, }
+\DoxyCodeLine{00039                                 \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} N, \textcolor{keywordtype}{double} thresh);}
+\DoxyCodeLine{00040 \textcolor{keywordtype}{double}* \mbox{\hyperlink{steady__state_8h_a5d4fb41c9928c5a81f123a062f47247c}{incident}}(\mbox{\hyperlink{structpulse}{pulse}} p, \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} tau);}
+\DoxyCodeLine{00041 gsl\_vector* \mbox{\hyperlink{steady__state_8h_a72613f3b55833d1d5e398034ddaabeff}{guess}}(\textcolor{keyword}{const} \mbox{\hyperlink{steady__state_8h_aa8ce763325d7e5b265c6c2a8921d25d6}{ss\_init}} p,}
+\DoxyCodeLine{00042                   \textcolor{keyword}{const} \textcolor{keywordtype}{double}* boltz, \textcolor{keyword}{const} \textcolor{keywordtype}{double}* musq,}
+\DoxyCodeLine{00043                   \textcolor{keywordtype}{unsigned} \textcolor{keyword}{const} \textcolor{keywordtype}{int} max, \textcolor{keywordtype}{unsigned} \textcolor{keyword}{const} \textcolor{keywordtype}{int} N);}
+\DoxyCodeLine{00044 \textcolor{keywordtype}{int} \mbox{\hyperlink{steady__state_8h_a32640caca2276258e0552bf0d118b55e}{pop\_steady\_f}}   (\textcolor{keyword}{const} gsl\_vector *x, \textcolor{keywordtype}{void} *params, gsl\_vector *f);}
+\DoxyCodeLine{00045 \textcolor{keywordtype}{int} \mbox{\hyperlink{steady__state_8h_a1efc4f7eba36eb599dac7f3c90bd00f7}{pop\_steady\_df}}  (\textcolor{keyword}{const} gsl\_vector *x, \textcolor{keywordtype}{void} *params, gsl\_matrix *J);}
+\DoxyCodeLine{00046 \textcolor{keywordtype}{int} \mbox{\hyperlink{steady__state_8h_aeae618acaf0d7b9658e8d0d9c7b9245e}{pop\_steady\_fdf}} (\textcolor{keyword}{const} gsl\_vector *x, \textcolor{keywordtype}{void} *params,}
+\DoxyCodeLine{00047                     gsl\_vector *f, gsl\_matrix *J);}
+\DoxyCodeLine{00048 }
+\DoxyCodeLine{00049 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}
