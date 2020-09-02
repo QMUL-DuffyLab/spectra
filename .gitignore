@@ -12,6 +12,7 @@ pigme*
 *.o
 test*
 in/*
+!in/*_tresp*
 exec*
 docs/html/*
 docs/latex/*
