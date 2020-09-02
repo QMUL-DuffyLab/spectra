@@ -13,7 +13,7 @@ import subprocess
 import pigment_data
 
 parser = argparse.ArgumentParser(description="Generate control and osc. strength files")
-parser.add_argument("-i", "--input_dir", default='LHCII',
+parser.add_argument("-i", "--input_dir", default='structures/LHCII',
         help="Relative path to input directory.")
 parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
@@ -54,7 +54,7 @@ def get_pigments(input_dir):
 def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
     recalc_lineshapes):
     # fortran won't create the directory; do it here
-    output_path = "{}/{}/{}".format(direc, args.input_dir, snapshot_number)
+    output_path = "{}/{}/{}".format(direc, protein, snapshot_number)
     os.makedirs(output_path, exist_ok=True)
     # there must be a nicer way of doing this but i can't think of it:
     # different information needs to be printed to the file based on
@@ -110,7 +110,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
     j.close()
     return (input_file, output_path)
 
-with open("./lineshape/in/prot") as f:
+with open("./lineshape/in/protocol") as f:
     lineshape_dict = dict([tuple(line.rstrip().split(" = ")) for line in f.readlines()])
 
 recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau)
@@ -121,7 +121,9 @@ pigment_dirs = get_pigments(input_dir)
 
 # this is so ugly lol needs tidying up in future
 def run_frame(i, do_plots):
-    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, args.input_dir, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
+    protein = args.input_dir.split('/')[-1]
+    print(protein)
+    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     print("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))

@@ -3,6 +3,7 @@ coupling_calc.dSYM
 .DS_Store
 out/
 */obj/*
+structures/
 LHCII/
 dimer/
 pigme*
