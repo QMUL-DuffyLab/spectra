@@ -32,6 +32,7 @@ args = parser.parse_args()
 def get_pigments(input_dir):
     pigment_dirs = []
     numbers = []
+    pigment_names = ['CLA', 'CHL', 'KC' , 'NEX', 'LUT', 'XAT', 'A86']
     # programatically get pigment name/numbers
     for item in os.scandir(input_dir):
         if item.is_dir():
@@ -44,9 +45,10 @@ def get_pigments(input_dir):
             the list of numbers, and sort both arrays based on
             number. don't need numbers so just return pigments
             '''
-            code = str(''.join(filter(str.isdigit, str(item))))[-3:]
-            numbers.append(int(code))
-            pigment_dirs.append(item.name)
+            if (any(p in str(item) for p in pigment_names)):
+                code = str(''.join(filter(str.isdigit, str(item))))[-3:]
+                numbers.append(int(code))
+                pigment_dirs.append(item.name)
 
     numbers, pigment_dirs = zip(*sorted(zip(numbers, pigment_dirs)))
     return pigment_dirs
@@ -130,7 +132,7 @@ def run_frame(i, do_plots):
     os.system("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
     if do_plots is not 0:
-        os.system("python ./scripts/plot_aw.py -f {}".format(i))
+        os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
         os.system("python ./scripts/plot_chiw.py -d {}".format(output_path))
 
 if int(args.frame) == 0:
