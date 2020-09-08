@@ -30,7 +30,7 @@ main(int argc, char** argv)
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = { .type=0, .centre=15000., .width=300. };
   /* form of P_i(0) - check steady_state.h for details */
-  ss_init population_guess = MAX;
+  ss_init population_guess = CONST;
 
   Input *p = read_input_file(argv[1]);
   fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
@@ -268,7 +268,7 @@ main(int argc, char** argv)
         break;
 
       status =
-        gsl_multiroot_test_residual (s->f, 1e-7);
+        gsl_multiroot_test_residual (s->f, 1e-8);
     }
   while (status == GSL_CONTINUE && iter < 1000);
 
@@ -304,15 +304,15 @@ main(int argc, char** argv)
   memcpy(pch, "ss_populations", 14);
   fp = fopen(fn, "w");
 
-  fprintf(stdout, "i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz*|μ^2|\n");
-  fprintf(fp, "# i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz*|μ^2|\n");
+  fprintf(stdout, "i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
+  fprintf(fp, "# i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
   for (i = 0; i < p->N; i++) {
     p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
-    fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
-        gsl_vector_get(s->x, i), p_i_equib[i],
+    fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
+        gsl_vector_get(s->x, i), p_i_equib[i], boltz[i],
         (boltz[i] * musq[i]) / boltz_sum);
-    fprintf(fp, "%3d\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
-        gsl_vector_get(s->x, i), p_i_equib[i],
+    fprintf(fp, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
+        gsl_vector_get(s->x, i), p_i_equib[i], boltz[i],
         (boltz[i] * musq[i]) / boltz_sum);
   }
   cl = fclose(fp);

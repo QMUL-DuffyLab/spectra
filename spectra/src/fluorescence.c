@@ -30,7 +30,7 @@ rate_calc(unsigned int N, double **eig,
   double elem = 0.0;
   double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
   unsigned short print_kij = 0;
-  unsigned short print_details = 0;
+  unsigned short print_details = 1;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       if (i == j) {
@@ -167,10 +167,11 @@ double*
 bcs (unsigned const int N, const double* eigvals, const double T)
 {
   /* calculate t = 0 boltzmannised exciton populations */
-  double beta = 1./T;
+  double beta = 1.439 / T;
   double sum = 0.0;
   double *populations = calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {
+    fprintf(stdout, "%d %16.12e\n", i, exp(-1. * beta * eigvals[i]));
     sum += exp(-1. * beta * eigvals[i]);
   }
   for (unsigned int i = 0; i < N; i++) {
