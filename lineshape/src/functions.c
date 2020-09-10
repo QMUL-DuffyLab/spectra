@@ -140,8 +140,8 @@ Ft(double w0, double re, double im, double reorg,
      *        = 5.3088E-12 cm^-1 s
      *        = 5.3088 cm^-1 ps
     */
-    double hbar = 5.3088;
-    double complex exponent = -I * ((w0) + (2. * (reorg/hbar))) * t 
+    double h = 1.439;
+    double complex exponent = -I * ((w0) + (2. * (reorg/h))) * t 
                             - (re - (I * im) - (0.5 * t * gamma));
     return cexp(exponent);
 }

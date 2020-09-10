@@ -82,8 +82,12 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
             os.system("cd lineshape && ./test ./in/prot ./in/{}.def".format(p[0:3]))
 
         if recalc_lineshapes:
-            print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
             os.system("cd lineshape && ./test ./in/protocol ./in/{}.def".format(p[0:3]))
+            # make sure we don't get caught in a loop
+            with open("./lineshape/in/protocol", 'w') as n:
+                n.write("T = {}\n".format(args.temperature))
+                n.write("ns = {}".format(args.tau))
+
 
         reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
         lineshape = "lineshape/in/{}.def".format(p[0:3])
@@ -110,13 +114,21 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
     g.close()
     h.close()
     j.close()
+    k.close()
+    l.close()
+    m.close()
+    if recalc_lineshapes:
+        recalc_lineshapes = False
+
     return (input_file, output_path)
 
 with open("./lineshape/in/protocol") as f:
     lineshape_dict = dict([tuple(line.rstrip().split(" = ")) for line in f.readlines()])
 
 recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau)
-print(recalc_lineshapes)
+if recalc_lineshapes:
+    print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
+
 input_dir  = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 pigment_dirs = get_pigments(input_dir)
@@ -124,7 +136,6 @@ pigment_dirs = get_pigments(input_dir)
 # this is so ugly lol needs tidying up in future
 def run_frame(i, do_plots):
     protein = args.input_dir.split('/')[-1]
-    print(protein)
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
