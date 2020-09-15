@@ -32,7 +32,9 @@ args = parser.parse_args()
 def get_pigments(input_dir):
     pigment_dirs = []
     numbers = []
-    pigment_names = ['CLA', 'CHL', 'KC' , 'NEX', 'LUT', 'XAT', 'A86']
+    # uncomment to do carotenoids/chl c for FCP as well
+    # pigment_names = ['CLA', 'CHL', 'KC' , 'NEX', 'LUT', 'XAT', 'A86']
+    pigment_names = ['CLA', 'CHL']
     # programatically get pigment name/numbers
     for item in os.scandir(input_dir):
         if item.is_dir():

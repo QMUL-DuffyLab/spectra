@@ -30,7 +30,7 @@ rate_calc(unsigned int N, double **eig,
   double elem = 0.0;
   double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
   unsigned short print_kij = 0;
-  unsigned short print_details = 1;
+  unsigned short print_details = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       if (i == j) {

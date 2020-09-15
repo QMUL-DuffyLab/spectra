@@ -11,11 +11,17 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
-root_dir = "out/LHCII"
-initial_data = np.loadtxt("{}/1/aw.dat".format(root_dir))
+parser = argparse.ArgumentParser(description="Generate control and osc. strength files")
+parser.add_argument("-i", "--input_dir", default='out/LHCII',
+        help="Relative path to input directory.")
+parser.add_argument("-p", "--protein", default='LHCII',
+        help="the protein we're looking at ")
+args = parser.parse_args()
+
+initial_data = np.loadtxt("{}/1/aw.dat".format(args.input_dir))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
-jij = np.zeros_like(np.loadtxt("{}/1/J_ij.out".format(root_dir)))
+jij = np.zeros_like(np.loadtxt("{}/1/J_ij.out".format(args.input_dir)))
 
 resum = 1
 if resum is not 0:
@@ -24,7 +30,7 @@ if resum is not 0:
         if (i % 100) is 0:
             print(".", end='', flush=True)
 
-        direc = "{}/{}".format(root_dir, i + 1)
+        direc = "{}/{}".format(args.input_dir, i + 1)
         aws = aws + np.loadtxt("{}/aw.dat".format(direc))
         fws = fws + np.loadtxt("{}/fw.dat".format(direc))
         jij = jij + np.loadtxt("{}/J_ij.out".format(direc))
@@ -34,13 +40,13 @@ if resum is not 0:
     fws = fws / 1000.
     jij = jij / 1000.
 else:
-    aws = np.loadtxt("{}/aw_average.dat".format(root_dir))
-    fws = np.loadtxt("{}/fw_average.dat".format(root_dir))
-    jij = np.loadtxt("{}/jij_average.dat".format(root_dir))
+    aws = np.loadtxt("{}/aw_average.dat".format(args.input_dir))
+    fws = np.loadtxt("{}/fw_average.dat".format(args.input_dir))
+    jij = np.loadtxt("{}/jij_average.dat".format(args.input_dir))
 
-np.savetxt("{}/aw_average.dat".format(root_dir), aws)
-np.savetxt("{}/fw_average.dat".format(root_dir), fws)
-np.savetxt("{}/jij_average.dat".format(root_dir), jij)
+np.savetxt("{}/aw_average.dat".format(args.input_dir), aws)
+np.savetxt("{}/fw_average.dat".format(args.input_dir), fws)
+np.savetxt("{}/jij_average.dat".format(args.input_dir), jij)
 
 # delete 0 wavenumber rows to prevent divide-by-zero warning
 aws = np.delete(aws, 0, 0)
@@ -49,9 +55,9 @@ fws = np.delete(fws, 0, 0)
 aws[:, 0] = 10000000/aws[:, 0]
 fws[:, 0] = 10000000/fws[:, 0]
 
-# plot
-aw_exp = np.loadtxt("{}/aw_exp.dat".format(root_dir), skiprows=1)
-fw_exp = np.loadtxt("{}/fw_exp.dat".format(root_dir), skiprows=1)
+# experimental data: this filename construction's ugly
+aw_exp = np.loadtxt("out/{}/aw_exp.dat".format(args.protein), skiprows=1)
+fw_exp = np.loadtxt("out/{}/fw_exp.dat".format(args.protein), skiprows=1)
 
 fig, ax = plt.subplots()
 ax.set_xlim([580, 700])
@@ -64,7 +70,7 @@ plt.plot(aw_exp[:, 0], aw_exp[:, 1]/np.max(aw_exp[:, 1]),
 plt.grid()
 plt.legend()
 plt.tight_layout()
-plt.savefig("{}/aw_average.pdf".format(root_dir))
+plt.savefig("{}/aw_average.pdf".format(args.input_dir))
 
 fig, ax = plt.subplots()
 ax.set_xlim([640, 780])
@@ -77,7 +83,7 @@ plt.plot(fw_exp[:, 0], fw_exp[:, 1]/np.max(fw_exp[:, 1]),
 plt.grid()
 plt.legend()
 plt.tight_layout()
-plt.savefig("{}/fw_average.pdf".format(root_dir))
+plt.savefig("{}/fw_average.pdf".format(args.input_dir))
 
 fig, ax = plt.subplots()
 ax.set_xlim([580, 780])
@@ -88,4 +94,4 @@ plt.plot(fws[:, 0], fws[:, 1], label=r'$ F(\omega) $')
 plt.grid()
 plt.legend()
 plt.tight_layout()
-plt.savefig("{}/aw_fw_average.pdf".format(root_dir))
+plt.savefig("{}/aw_fw_average.pdf".format(args.input_dir))
