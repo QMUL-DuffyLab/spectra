@@ -177,7 +177,8 @@ program coupling_calc
       ! we also want to calculate transition dipole moments
       if (i.eq.j) then
         Jij(i, j) = ei(i)
-        mu(i, :) = mu_calc(coords_i, coord_lengths(i), dipoles(i))
+        call mu_calc(coords_i, coord_lengths(i), \
+                 dipoles(i), mu(i, :), d_raw)
         write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
         "mu^2 = ", sum(mu(i, :)**2), "e_i = ", Jij(i,j)
       else
@@ -312,11 +313,6 @@ program coupling_calc
   close(15)
   close(16)
 
-
-  ! here would be the place to use iso_c_binding and call the GSL
-  ! integration routines; might as well just do it now instead of
-  ! writing something separate to read everything back in again
-
   deallocate(coord_files)
   deallocate(gnt_files)
   deallocate(coord_lengths)
@@ -397,15 +393,16 @@ program coupling_calc
     
   end function J_calc
 
-  function mu_calc(p, len, D) result(res)
+  subroutine mu_calc(p, len, osc, mu, d_raw)
     implicit none
     integer, parameter :: sp = real64
     integer, intent(in) :: len
-    real(sp), intent(in) :: D
+    real(sp), intent(in) :: osc
+    real(sp), dimension(4, len), intent(in) :: p
+    real(sp), dimension(3), intent(out) :: mu
+    real(sp), intent(out) :: d_raw
     integer :: i, j
-    real(sp), dimension(4, len) :: p
-    real(sp), dimension(3) :: mu, res
-    real(sp) :: mu_sq
+    real(sp), dimension(3) :: mu
 
     mu = 0.0
     do i = 1, len
@@ -414,13 +411,12 @@ program coupling_calc
       end do
     end do
 
-    mu_sq = 0.0
+    d_raw = 0.0
     do i = 1, 3
-      mu_sq = mu_sq + mu(i)**2
+      d_raw = d_raw + mu(i)**2
     end do
-    mu = mu * D / sqrt(mu_sq)
-    res = mu
+    mu = mu * osc / sqrt(d_raw)
     
-  end function mu_calc
+  end subroutine mu_calc
 
 end program coupling_calc

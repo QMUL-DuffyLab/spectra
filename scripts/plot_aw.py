@@ -22,6 +22,8 @@ if 'LHCII' in args.dir:
     aw_exp = np.loadtxt('out/LHCII/aw_exp.dat', skiprows=1)
     fw_exp = np.loadtxt('out/LHCII/fw_exp.dat', skiprows=1)
 else:
+    aw_exp = np.zeros_like(aw_data)
+    fw_exp = np.zeros_like(aw_data)
     plot_exp = 0
 
 

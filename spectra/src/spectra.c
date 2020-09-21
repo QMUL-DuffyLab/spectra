@@ -28,7 +28,7 @@ main(int argc, char** argv)
   }
 
   /* specifies form of incident light for source term in P_i eqns */
-  pulse pump_properties = { .type=0, .centre=15000., .width=300. };
+  pulse pump_properties = { .type=DELTA, .centre=15000., .width=300. };
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = CONST;
 

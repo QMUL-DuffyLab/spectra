@@ -42,8 +42,8 @@ main(int argc, char** argv)
 
     if (p.ligand == 1) {
 	/* cw = &cw_chl; */
-	/* cw = &cw_odo; */
-	cw = &cw_big;
+	cw = &cw_odo;
+	/* cw = &cw_big; */
     } else if (p.ligand == 2) {
 	cw = &cw_odo;
     } else if (p.ligand == 0) {
@@ -65,7 +65,8 @@ main(int argc, char** argv)
     for (unsigned int i = 0; i < 48; i++) {
       /* only for big ansatz lol need to write code 
        * to check which ansatz and calculate properly */
-      p.offset += p.gsw[1][i] * p.gsw[2][i];
+      /* p.offset += p.gsw[1][i] * p.gsw[2][i]; */
+      p.offset = 0.;
     }
     fprintf(stdout, "Anomalous phase shift = %12.8e\n", p.offset);
     FILE *fp = fopen(p.offset_file, "w");

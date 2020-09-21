@@ -3,7 +3,7 @@
 # note : usage is pigment_data[ligand_code][state][variable]
 pigment_data = {
         'CLA': { # note that chlorophyll Qy := S1, Qx := S2
-            'D' : 4.5,
+            'D' : 4.0,
             'S1': {
                 'energy': 14900.0,
                 'lifetime': 4.0,
@@ -18,7 +18,7 @@ pigment_data = {
                 }
             },
         'CHL': { # chlorophyll b
-            'D' : 3.6,
+            'D' : 3.4,
             'S1': {
                 'energy': 15300.0,
                 'lifetime': 4.0,
