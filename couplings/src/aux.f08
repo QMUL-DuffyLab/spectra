@@ -2,10 +2,14 @@ module aux
   use iso_fortran_env
   implicit none
   integer, parameter :: dp = REAL64
+  character(3), dimension(6) :: pigment_list = (/"CLA", "CHL", "LUT",&
+                                                 "NEX", "XAT", "A86"/)
 
   type pigment
     character(len = 3) :: code
-    real(dp) :: D
+    real(dp) :: D, energy, reorg, lifetime
+    real(dp), dimension(3) :: mu
+    real(dp), dimension(:,:), allocatable :: coords
   end type pigment
 
   contains
@@ -66,10 +70,11 @@ module aux
       
     end function J_calc
 
-    subroutine mu_calc(p, len, osc, mu, d_raw)
+    ! subroutine because we want the dipole and the raw oscillator
+    ! strength; we need to average those over each unique pigment
+    subroutine mu_calc(p, len, mu, d_raw)
       implicit none
       integer, intent(in) :: len
-      real(dp), intent(in) :: osc
       real(dp), dimension(4, len), intent(in) :: p
       real(dp), dimension(3), intent(out) :: mu
       real(dp), intent(out) :: d_raw
@@ -86,7 +91,6 @@ module aux
       do i = 1, 3
         d_raw = d_raw + mu(i)**2
       end do
-      mu = mu * osc / sqrt(d_raw)
       
     end subroutine mu_calc
 
@@ -94,14 +98,27 @@ module aux
       implicit none
       character(100), dimension(:), intent(in) :: gnt_files
       integer, intent(in) :: i
-      integer :: j
+      integer :: j, k
       character(3) :: code
+      code = achar(0)
 
-      ! assumes the pigment code is at the start of the filename,
-      ! straight after the directory separator, otherwise we'd have to
-      ! come up with a list of possible codes and compare to that
-      j = index(gnt_files(i), "/")
-      code = gnt_files(i)(j + 1 : j + 3)
+      ! check the list of pigments we're interested in
+      do j = 1, size(pigment_list)
+        k = index(gnt_files(i), pigment_list(j))
+        if (k.eq.0) then
+          cycle
+        else
+          code = pigment_list(j)
+        end if
+      end do
+
+      if (index(code, achar(0)).ne.0) then
+        write(*,*) "pigment code not found. details:"
+        write(*,*) "code = ", code
+        write(*,*) "gnt_file = ", gnt_files(i)
+        write(*,*) "pigment_list = ", pigment_list
+        stop
+      end if
 
     end function get_pigment_code
 
@@ -110,40 +127,60 @@ module aux
       character(100), dimension(:), intent(in) :: gnt_files
       integer :: i, j, num_uniq, gnt_length
       logical :: uniq
-      character(3), dimension(:), allocatable :: codes, codes_uniq
+      character(3) :: code
+      character(3), dimension(:), allocatable :: codes, uniq_temp, codes_uniq
 
       gnt_length = size(gnt_files)
-      write(*,*) gnt_length
       allocate(codes(gnt_length))
+      allocate(uniq_temp(gnt_length))
       num_uniq = 0
 
       do i = 1, gnt_length
-        codes(i) = get_pigment_code(gnt_files, i)
+        code = get_pigment_code(gnt_files, i)
+        codes(i) = code
         uniq = .true.
 
-        do j = 1, i
-          ! not the most efficient but should be fine.
-          ! note that we can't assume the list is sorted
-          if (codes(i).eq.codes(j)) then
-            uniq = .false.
-            exit
-          end if
-        end do
-
-        if (uniq) then
-          codes_uniq(num_uniq) = codes(i)
-          num_uniq = num_uniq + 1
+        if (i.gt.1) then
+          do j = 1, i
+            ! not the most efficient but should be fine.
+            ! note that we can't assume the list is sorted
+            if (uniq_temp(j).eq.code) then
+              uniq = .false.
+              exit
+            end if
+          end do
         end if
 
-        write(*, '(a)') codes(i)
+        if (uniq) then
+          num_uniq = num_uniq + 1
+          uniq_temp(num_uniq) = code
+        end if
+
       end do
 
-      write(*, *) num_uniq
+      allocate(codes_uniq(num_uniq))
       do i = 1, num_uniq
-        write(*, '(a)') codes_uniq(i)
+        codes_uniq(i) = uniq_temp(i)
       end do
 
     end function get_unique_pigments
+
+    function count_pigments(gnt_files, unique_pigments) result(counts)
+      implicit none
+      character(100), dimension(:), intent(in) :: gnt_files
+      character(3), dimension(:), intent(in) :: unique_pigments
+      integer, dimension(:), allocatable :: counts
+      integer :: i, n
+
+      allocate(counts(size(unique_pigments)))
+      counts = 0
+
+      do i = 1, size(gnt_files)
+        n = which_pigment(gnt_files, unique_pigments, i)
+        counts(n) = counts(n) + 1
+      end do
+
+    end function count_pigments
 
     function which_pigment(gnt_files, unique_pigments, i) result(n)
       ! returns the relevant index in unique_pigments
@@ -160,6 +197,8 @@ module aux
       do j = 1, size(unique_pigments)
         if (index(unique_pigments(j), code).ne.0) then
           n = j
+        else
+          cycle
         end if
       end do
 
@@ -170,5 +209,29 @@ module aux
       end if
 
     end function which_pigment
+
+    ! the raw partial charges won't give correct oscillator strengths,
+    ! so we keep a running total of the raw numbers for each pigment
+    ! type. here we normalise that total so we can then fix the average
+    ! oscillator strength for each pigment to match the expected values
+    function normalise_dipoles(raw_strengths, counts) result(norms)
+      implicit none
+      integer, dimension(:), intent(in) :: counts
+      real(dp), dimension(:), intent(in) :: raw_strengths
+      real(dp), dimension(:), allocatable :: norms
+      integer :: i
+
+      if (size(raw_strengths).ne.size(counts)) then
+        write(*,*) "raw strengths array not the same length as counts"&
+          " array. No idea how this happened?"
+        stop
+      end if
+
+      allocate(norms(size(counts)))
+      do i = 1, size(counts)
+        norms(i) = raw_strengths(i) / float(counts(i))
+      end do
+
+    end function normalise_dipoles
 
 end module aux

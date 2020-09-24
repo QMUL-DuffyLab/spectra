@@ -19,6 +19,8 @@ parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
 parser.add_argument("-f", "--frame", default=1,
         help="MD frame to calculate for - pass 0 to loop over all frames")
+parser.add_argument("-p", "--plot", default=1,
+        help="Plot spectra - default is yes, do -p 0 to disable")
 parser.add_argument("-T", "--temperature", type=float, default=300.0,
         help="The temperature you want to calculate the spectra for")
 parser.add_argument("-t", "--tau", type=int, default=2048,
@@ -153,5 +155,5 @@ if int(args.frame) == 0:
         run_frame(i + 1, 0) # range starts from 0
 
 else:
-    run_frame(args.frame, 1)
+    run_frame(args.frame, args.plot)
 

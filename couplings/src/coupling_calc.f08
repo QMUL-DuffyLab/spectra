@@ -1,5 +1,6 @@
 program coupling_calc
   use iso_fortran_env
+  use aux
   implicit none
   integer, parameter :: sp = REAL64
   logical :: verbose
@@ -9,16 +10,18 @@ program coupling_calc
   character(200) :: input_file, jij_file, pop_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
+  character(3), dimension(:), allocatable :: unique_pigments
   character(100), dimension(:), allocatable :: coord_files,&
-  gnt_files
-  integer :: i, j, k, coord_stat, control_len, tau
-  integer, dimension(:), allocatable :: coord_lengths
+    gnt_files
+  integer :: i, j, k, coord_stat, control_len, tau,&
+    num_unique_pigments, unique_index
+  integer, dimension(:), allocatable :: coord_lengths, pigment_counts
   real :: start_time, end_time
-  real(sp) :: r, e2kb, kc, temperature
-  real(sp), dimension(:), allocatable :: work,&
-  eigvals, ei, lambda, lifetimes, dipoles
+  real(sp) :: r, e2kb, kc, temperature, d_raw, ratio
+  real(sp), dimension(:), allocatable :: work, eigvals, ei, lambda,&
+    lifetimes, dipoles, raw_osc, norm_osc, osc_check
   real(sp), dimension(:,:), allocatable :: coords_i, coords_j,&
-  Jij, Jeig, mu, mu_ex
+    Jij, Jeig, mu, mu_ex
   complex(sp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
@@ -140,6 +143,19 @@ program coupling_calc
   close(14)
   close(15)
 
+  ! we want the list of unique pigments and how many of each there are
+  unique_pigments = get_unique_pigments(gnt_files)
+  pigment_counts = count_pigments(gnt_files, unique_pigments)
+  num_unique_pigments = size(pigment_counts)
+  if (verbose) then
+    write(*, '(a)') "Unique pigments: ", unique_pigments
+    write(*, *) "Pigment counts: ", pigment_counts
+    write(*, *) "Number of unique pigments: ", num_unique_pigments
+  end if
+
+  allocate(raw_osc(num_unique_pigments))
+  raw_osc = 0.0
+
   ! we multiply the whole Jij matrix later on to convert
   ! to wavenumbers; the read in excitation energies are already
   ! in wavenumbers so do that conversion backwards here
@@ -172,15 +188,20 @@ program coupling_calc
                                 coords_j(3, k), coords_j(4, k)
       end do
       close(10)
-
+      
       ! diagonal elements of Jij are the excitation energies
       ! we also want to calculate transition dipole moments
       if (i.eq.j) then
         Jij(i, j) = ei(i)
-        call mu_calc(coords_i, coord_lengths(i), \
-                 dipoles(i), mu(i, :), d_raw)
-        write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
-        "mu^2 = ", sum(mu(i, :)**2), "e_i = ", Jij(i,j)
+        unique_index = which_pigment(gnt_files, unique_pigments, i)
+        call mu_calc(coords_i, coord_lengths(i),  mu(i, :), d_raw)
+        ! keep running total of the raw oscillator strengths by pigment
+        raw_osc(unique_index) = raw_osc(unique_index) + d_raw
+        if (verbose) then
+          write(*,*) "Before mu normalisation:"
+          write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
+          "mu^2 = ", sum(mu(i, :)**2), "e_i = ", Jij(i,j)
+        end if
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
@@ -191,6 +212,42 @@ program coupling_calc
     end do j_loop
     deallocate(coords_i)
   end do i_loop
+
+  norm_osc = normalise_dipoles(raw_osc, pigment_counts)
+  allocate(osc_check(num_unique_pigments))
+  osc_check = 0.0
+  do i = 1, control_len
+    unique_index = which_pigment(gnt_files, unique_pigments, i)
+    ! this is maybe a bit ugly, but it works:
+    ! for each pigment, check which type it is and what the raw
+    ! average oscillator strength was for that pigment type.
+    ! then divide by the expected average oscillator strength to
+    ! get a ratio and divide by the sqrt of that ratio. this ensures
+    ! that the average oscillator strength for each pigment type will
+    ! match the expected value (i.e. for LHCII, the average |mu^2|
+    ! over all eight CLAs will equal whatever number I put in for the
+    ! oscillator strength of CLA - currently 4.0 Debye
+    ratio = norm_osc(unique_index) / dipoles(i)**2
+    mu(i, :) = mu(i, :) / sqrt(ratio)
+    osc_check(unique_index) = osc_check(unique_index) + sum(mu(i, :)**2)
+    if (verbose) then
+      write(*,*) "After mu normalisation:"
+      write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
+      "mu^2 = ", sum(mu(i, :)**2)
+    end if
+  end do
+
+  if (verbose) then
+    do i = 1, num_unique_pigments
+      write(*, *) "pigment type: ", unique_pigments(i)
+      write(*, *) "osc_check: ", osc_check(i)
+      write(*, *) "count: ", pigment_counts(i)
+      write(*, *) "average osc. strength: ",&
+        osc_check(i) / float(pigment_counts(i))
+      write(*, *) "average dipole: ",&
+        sqrt(osc_check(i) / float(pigment_counts(i)))
+    end do
+  end if
 
   Jij = Jij * e2kb * kc
   Jeig = Jij
@@ -333,90 +390,5 @@ program coupling_calc
   end if
 
   stop
-
-  contains
-
-  function get_file_length(buffer) result(res)
-    implicit none
-    logical :: file_check
-    character(len=*), intent(in) :: buffer
-    integer :: n, res, stat
-
-    inquire(file=trim(adjustl(buffer)),exist=file_check)
-    if (file_check) then
-      open(unit=99, file=trim(adjustl(buffer)))
-      ! write(*,*) "Opened file ", trim(adjustl(buffer))
-    else
-      write (*,*) "File ",trim(adjustl(buffer)), &
-        " doesn't exist. Check and try again."
-      stop
-    end if
-
-    n = 0
-    do
-      read(99, *, iostat=stat)
-      if (stat == iostat_end) then
-        exit
-      else
-        n = n + 1
-      end if
-    end do
-    close(99)
-    res = n
-
-  end function get_file_length
-
-  function J_calc(p1, p2, len1, len2) result(res)
-    implicit none
-    integer, parameter :: sp = real64
-    integer, intent(in) :: len1, len2
-    integer :: i, j
-    real(sp), dimension(4, len1) :: p1
-    real(sp), dimension(4, len2) :: p2
-    real(sp) :: s, rx, ry, rz, r, res
-
-    s = 0.0
-    do i = 1, len1
-      do j = 1, len2
-        rx = p1(1, i) - p2(1, j)
-        ry = p1(2, i) - p2(2, j)
-        rz = p1(3, i) - p2(3, j)
-        r = sqrt(rx**2 + ry**2 + rz**2)
-        ! hack - so i can set homodimer parameters easier
-        if (r.eq.0.0) then
-          r = 1.0
-        end if
-        s = s + (p1(4, i) * p2(4, j)) / r
-      end do
-    end do
-    res = s
-    
-  end function J_calc
-
-  subroutine mu_calc(p, len, osc, mu, d_raw)
-    implicit none
-    integer, parameter :: sp = real64
-    integer, intent(in) :: len
-    real(sp), intent(in) :: osc
-    real(sp), dimension(4, len), intent(in) :: p
-    real(sp), dimension(3), intent(out) :: mu
-    real(sp), intent(out) :: d_raw
-    integer :: i, j
-    real(sp), dimension(3) :: mu
-
-    mu = 0.0
-    do i = 1, len
-      do j = 1, 3
-        mu(j) = mu(j) + (p(j, i) * p(4, i))
-      end do
-    end do
-
-    d_raw = 0.0
-    do i = 1, 3
-      d_raw = d_raw + mu(i)**2
-    end do
-    mu = mu * osc / sqrt(d_raw)
-    
-  end subroutine mu_calc
 
 end program coupling_calc
