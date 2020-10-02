@@ -1,9 +1,9 @@
 # violaxanthin
-gt_file = out/XAT_gt.dat
-Aw_file = out/XAT_Aw.dat
-Fw_file = out/XAT_Fw.dat
-lambda_file = out/XAT_lambda.dat
-offset_file = out/XAT_offset.dat
+gt_file = lineshape/out/XAT_gt.dat
+Aw_file = lineshape/out/XAT_Aw.dat
+Fw_file = lineshape/out/XAT_Fw.dat
+lambda_file = lineshape/out/XAT_lambda.dat
+offset_file = lineshape/out/XAT_offset.dat
 l0 = 450.0
 l1 = 900.0
 l2 = 900.0

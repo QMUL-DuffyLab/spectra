@@ -21,6 +21,8 @@ parser.add_argument("-f", "--frame", default=1,
         help="MD frame to calculate for - pass 0 to loop over all frames")
 parser.add_argument("-p", "--plot", default=1,
         help="Plot spectra - default is yes, do -p 0 to disable")
+parser.add_argument("-pr", "--protocol", default="in/protocol",
+        help="Protocol file")
 parser.add_argument("-T", "--temperature", type=float, default=300.0,
         help="The temperature you want to calculate the spectra for")
 parser.add_argument("-t", "--tau", type=int, default=2048,
@@ -28,6 +30,10 @@ parser.add_argument("-t", "--tau", type=int, default=2048,
               picoseconds. Default is 2048 since it's a power of 2,
               which makes the FFTs slightly more optimised later.
               ''')
+parser.add_argument("-c", "--chl_ansatz", type=int, default=0,
+        help='''The ansatz to use for chlorophyll a and b: 0 = OBO,
+        1 = RENGER, 2 = BIG
+        ''')
 
 args = parser.parse_args()
 
@@ -83,12 +89,12 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
         gt = "lineshape/out/{}_gt.dat".format(p[0:3])
         if not os.path.isfile(gt):
             print("Lineshape data does not exist for ligand {}. Generating now.".format(p[0:3]))
-            os.system("cd lineshape && ./test ./in/prot ./in/{}.def".format(p[0:3]))
+            os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p[0:3]))
 
         if recalc_lineshapes:
-            os.system("cd lineshape && ./test ./in/protocol ./in/{}.def".format(p[0:3]))
+            os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p[0:3]))
             # make sure we don't get caught in a loop
-            with open("./lineshape/in/protocol", 'w') as n:
+            with open(args.protocol, 'w') as n:
                 n.write("T = {}\n".format(args.temperature))
                 n.write("ns = {}".format(args.tau))
 
@@ -126,10 +132,10 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
 
     return (input_file, output_path)
 
-with open("./lineshape/in/protocol") as f:
+with open(args.protocol) as f:
     lineshape_dict = dict([tuple(line.rstrip().split(" = ")) for line in f.readlines()])
 
-recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau)
+recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau) or (int(lineshape_dict["chl_ansatz"]) != args.chl_ansatz)
 if recalc_lineshapes:
     print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
 
@@ -143,9 +149,9 @@ def run_frame(i, do_plots):
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
-    print("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
+    print("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     os.system("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
-    os.system("./spectra/exec_spectra {} {}".format("in/input_spectra.dat", "{}/lineshapes.{}".format(output_path, i)))
+    os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     if do_plots is not 0:
         os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
         os.system("python ./scripts/plot_chiw.py -d {}".format(output_path))

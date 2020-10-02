@@ -21,9 +21,9 @@ main(int argc, char** argv)
 
   fprintf(stdout, "== Spectra calculation code ==\n");
 
-  if (argc != 3) {
-    fprintf(stdout, "Wrong number of arguments - should be 2: "
-        "Input file and list of lineshape defs\n");
+  if (argc != 4) {
+    fprintf(stdout, "Wrong number of arguments - should be 3: "
+        "Input file, protocol file and list of lineshape defs\n");
     exit(EXIT_FAILURE);
   }
 
@@ -33,6 +33,7 @@ main(int argc, char** argv)
   ss_init population_guess = CONST;
 
   Input *p = read_input_file(argv[1]);
+  Protocol protocol = get_protocol(argv[2]);
   fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
 
   /* malloc 1d stuff, read them in */
@@ -78,6 +79,10 @@ main(int argc, char** argv)
   gi_array = read_gi(p->gi_files, p->N, p->tau);
   eig = read_eigvecs(p->eigvecs_file, p->N);
   mu = read_mu(p->mu_file, p->N);
+  for (i = 0; i < p->N; i++) {
+    fprintf(stdout, "mu(%d) = %12.8e %12.8e %12.8e\n", i,
+        mu[i][0], mu[i][1], mu[i][2]);
+  }
   ww = incident(pump_properties, p->tau);
 
   /**
@@ -89,25 +94,16 @@ main(int argc, char** argv)
    * assign the function pointer to the right ansatz based on the 
    * ligand struct member - this is the bit that needs fixing somehow
    */
-  fp = fopen(argv[2], "r"); /* read in list of lineshape files here */
+  fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = malloc(200 * sizeof(char));
   for (i = 0; i < p->N; i++) {
     /* now load in the parameters for each ligand */
     fgets(line, 200, fp);
     line[strcspn(line, "\n")] = 0;
     strcpy(lineshape_files[i], line);
-    line_params[i] = get_parameters(lineshape_files[i]);
-    if (line_params[i].ligand == 0) {
-      line_params[i].cw = &cw_car;
-    } else if (line_params[i].ligand == 1) {
-      line_params[i].cw = choose_ansatz(pr.chl_ansatz);
-    } else if (line_params[i].ligand == 2) {
-      line_params[i].cw = &cw_obo;
-    } else {
-      fprintf(stdout, "Ligand number of params %d is %d."
-          "No idea what's happened here.\n",
-          i, line_params[i].ligand);
-    }
+    line_params[i] = get_parameters(lineshape_files[i],
+                     protocol.chl_ansatz);
+    line_params[i].cw = choose_ansatz(line_params[i].ans);
     line_params[i].cn = &c_n;
     /* this is also kinda ugly - the temperature's a global parameter
      * really, not a lineshape one - but it avoids setting the

@@ -17,7 +17,6 @@ main(int argc, char** argv)
     double complex *Atv, *Ftv;
     fftw_complex *out, *in;
     fftw_plan plan;
-    double (* cw)(double, void *);
     double (* re)(double, void *);
     double reorg_res, reorg_err, re_res, re_err, im_res, im_err;
     gsl_function gsl_reorg, gsl_re, gsl_im;
@@ -99,6 +98,9 @@ main(int argc, char** argv)
 	im_res = p.nu * (im_res + (p.offset * p.ti));
 
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
+		(float) i, re_res, im_res);
+
+	fprintf(stdout, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
 	Atv[i] = At(0.0, re_res, im_res, cmtime, 0.0);

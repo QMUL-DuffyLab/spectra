@@ -1,8 +1,8 @@
 # parameters for fucoxanthin
-gt_file = out/A86_gt.dat
-Aw_file = out/A86_Aw.dat
-Fw_file = out/A86_Fw.dat
-lambda_file = out/A86_lambda.dat
+gt_file = lineshape/out/A86_gt.dat
+Aw_file = lineshape/out/A86_Aw.dat
+Fw_file = lineshape/out/A86_Fw.dat
+lambda_file = lineshape/out/A86_lambda.dat
 l0 = 450.0
 l1 = 900.0
 l2 = 900.0

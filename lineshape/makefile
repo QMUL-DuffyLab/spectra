@@ -14,9 +14,9 @@ else
 endif
 
 # Debug?
-DEBUG = 1
+DEBUG = 0
 ifeq ($(DEBUG), 1)
-	DEBUGFLAG = -g
+	DEBUGFLAG = -g -pg
 else
 	DEBUGFLAG = -O2
 endif

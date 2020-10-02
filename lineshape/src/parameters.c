@@ -22,7 +22,8 @@ get_protocol(char *filename)
 	    p.T = atof(val);
 	} else if (strcmp(key, "ns") == 0) {
 	    p.ns = atoi(val);
-	} else if (strcmp(key, "ansatz") == 0) {
+	    fprintf(stdout, "tau = %lu\n", p.ns);
+	} else if (strcmp(key, "chl_ansatz") == 0) {
 	    p.chl_ansatz = atoi(val);
 	}
     }

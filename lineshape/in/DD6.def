@@ -1,8 +1,8 @@
 # parameters for diadinoxanthin
-gt_file = out/DD6_gt.dat
-Aw_file = out/DD6_Aw.dat
-Fw_file = out/DD6_Fw.dat
-lambda_file = out/DD6_lambda.dat
+gt_file = lineshape/out/DD6_gt.dat
+Aw_file = lineshape/out/DD6_Aw.dat
+Fw_file = lineshape/out/DD6_Fw.dat
+lambda_file = lineshape/out/DD6_lambda.dat
 l0 = 500.0
 l1 = 900.0
 l2 = 900.0

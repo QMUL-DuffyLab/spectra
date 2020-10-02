@@ -10,7 +10,7 @@
  *
  * lmao. hope you like parsing function pointer definitions!
  * this defines a function choose_ansatz, which takes a parameter
- * of type chl_ansatz - this is an enum defined in functions.h.
+ * of type ansatz - this is an enum defined in functions.h.
  * it returns a pointer to the correct spectral density function,
  * which is a function that takes a double argument (the frequency)
  * and a void pointer (the parameters for the spectral density), and
@@ -33,7 +33,6 @@ double (*choose_ansatz(ansatz ans))(double, void *)
     fprintf(stdout, "ansatz is wrong: %d\n", ans);
     exit(EXIT_FAILURE);
   }
-  fprintf(stdout, "ansatz_pointer address: %p\n", (void *)&ansatz_pointer);
   return ansatz_pointer;
 }
 

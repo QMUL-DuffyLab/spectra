@@ -1,8 +1,8 @@
 # parameter file for chl c2 lineshape
-gt_file = out/KC2_gt.dat
-Aw_file = out/KC2_Aw.dat
-Fw_file = out/KC2_Fw.dat
-lambda_file = out/KC2_lambda.dat
+gt_file = lineshape/out/KC2_gt.dat
+Aw_file = lineshape/out/KC2_Aw.dat
+Fw_file = lineshape/out/KC2_Fw.dat
+lambda_file = lineshape/out/KC2_lambda.dat
 l0 = 115.0
 l1 = 0.0
 l2 = 0.0
