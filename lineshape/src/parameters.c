@@ -22,6 +22,8 @@ get_protocol(char *filename)
 	    p.T = atof(val);
 	} else if (strcmp(key, "ns") == 0) {
 	    p.ns = atoi(val);
+	} else if (strcmp(key, "ansatz") == 0) {
+	    p.chl_ansatz = atoi(val);
 	}
     }
 
@@ -35,7 +37,7 @@ get_protocol(char *filename)
 }
 
 Parameters
-get_parameters(char *filename)
+get_parameters(char *filename, ansatz chl_ansatz)
 {
     FILE *fp;
     Parameters p;
@@ -54,16 +56,18 @@ get_parameters(char *filename)
      * assign to p.ligand here because functions.h isn't included*/
     if (strstr(filename, "CLA") != NULL
      || strstr(filename, "CHL") != NULL) {
-    	/* fprintf(stdout, "Ligand name read as %s; using Renger " */
-    	/* 	"spectral density\n", filename); */
-    	fprintf(stdout, "Ligand name read as %s; using OBO "
-    		"spectral density\n", filename);
-    	p.ligand = 1;
+    	fprintf(stdout, "Ligand name read as %s; assuming chlorophyll\n",
+    	        filename);
+    	p.ans = chl_ansatz;
     } else if (strstr(filename, "KC1") != NULL
     	    || strstr(filename, "KC2") != NULL) {
+      /* NB: this is leftover from old FCP bits where I was using the
+       * Renger form for chlorophyll a and b, but OBOs for chlorophyll
+       * c1 and c2; right now we don't have to worry about it, but it
+       * might be relevant later */
     	fprintf(stdout, "Ligand name read as %s; using OBO "
     		"spectral density\n", filename);
-    	p.ligand = 2;
+    	p.ans = OBO;
     } else if (strstr(filename, "A86") != NULL
     	    || strstr(filename, "LUT") != NULL
     	    || strstr(filename, "NEX") != NULL
@@ -71,7 +75,7 @@ get_parameters(char *filename)
     	    || strstr(filename, "DD6") != NULL) {
     	fprintf(stdout, "Ligand name read as %s; using carotenoid "
     		"spectral density\n", filename);
-	p.ligand = 0;
+	p.ans = CAR;
     } else {
     	fprintf(stdout, "Not sure what kind of spectral density"
     		" function to use. File name read in was %s. Try again.\n",

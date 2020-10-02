@@ -55,19 +55,19 @@ double (*choose_ansatz(ansatz ans))(double, void *)
  * result for a given pigment.
  */
 double
-get_offset(ansatz ans, Parameters params)
+get_offset(Parameters params)
 {
   double offset = 0.;
-  if (ans == OBO) {
+  if (params.ans == OBO) {
     /* do nothing - the anomalous offset in this case is 0 */
-  } else if (ans == RENGER) {
+  } else if (params.ans  == RENGER) {
     /* NB: haven't used this ansatz in ages - can't remember what
      * the offset is. check! */
-  } else if (ans == BIG) {
+  } else if (params.ans == BIG) {
     for (unsigned int i = 0; i < 48; i++) {
       offset += params.gsw[1][i] * params.gsw[2][i];
     }
-  } else if (ans == CAR) {
+  } else if (params.ans == CAR) {
     offset = params.l1 + params.l2;
   }
   return offset;
@@ -80,8 +80,6 @@ cw_renger(double w, void* params)
     /* Pass a void pointer and cast it here for compatibility
      * with gsl_function when we do the quadrature */
     Parameters *p = (Parameters *) params;
-    /* double pf = 2 * M_PI * CMS * 100 * 1E-15; */
-    fprintf(stdout, "YOU HAVE ARRIVED AT: RENGER ANSATZ\n");
 
     /* 7! is 5040; this is the Renger form for chlorophyll */
     double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
@@ -96,7 +94,6 @@ double
 cw_car(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
-    fprintf(stdout, "YOU HAVE ARRIVED AT: CAR ANSATZ\n");
     /* ansatz from Kieran's paper on carotenoids */
     double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
     	      (pow((pow(w, 2.) - pow(p->w1, 2.)), 2.)
@@ -113,7 +110,6 @@ double
 cw_obo(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
-    fprintf(stdout, "YOU HAVE ARRIVED AT: OBO ANSATZ\n");
     /* l0 is the reorganisation energy expressed in cm^{-1},
      * gamma0 is the correlation time of fluctuations in cm^{-1} */
     return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
@@ -125,7 +121,6 @@ double
 cw_big(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
-    fprintf(stdout, "YOU HAVE ARRIVED AT: BIG ANSATZ\n");
     double c; 
     double sum = 0.;
     double c0 = 2 * p->l0 * (w * p->g0)

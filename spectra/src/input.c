@@ -45,6 +45,8 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     p->T = atof(line);
     fgets(line, 199, fp);
+    p->chl_ansatz = atoi(line);
+    fgets(line, 199, fp);
     /* below is from stackoverflow - sets the newline to a null char */
     line[strcspn(line, "\n")] = 0;
     strcpy(p->eigvecs_file, line);

@@ -30,49 +30,18 @@ main(int argc, char** argv)
     /* TESTING */
     gsl_set_error_handler_off();
 
-    p = get_parameters(argv[2]);
     Protocol pr = get_protocol(argv[1]);
-    /* this is ugly but need T in parameters
-     * might just get rid of protocol file */
+    p = get_parameters(argv[2], pr.chl_ansatz);
+    /* this is ugly but need T in parameters */
     p.T = pr.T;
 
     times = malloc(pr.ns * sizeof(double));
     Atv   = malloc(pr.ns * sizeof(double complex));
     Ftv   = malloc(pr.ns * sizeof(double complex));
 
-    if (p.ligand == 1) {
-	/* cw = &cw_chl; */
-	cw = &cw_obo;
-	/* cw = &cw_big; */
-    } else if (p.ligand == 2) {
-	cw = &cw_obo;
-    } else if (p.ligand == 0) {
-	cw = &cw_car;
-    } else {
-    	fprintf(stdout, "Ligand selection not working\n");
-    	exit(EXIT_FAILURE);
-    }
-    fprintf(stdout, "cw memory address: %p\n", (void *)&cw);
-
-    p.cw = cw;
+    /* choose spectral density based on the ansatz */
+    p.cw = choose_ansatz(p.ans);
     p.cn = &c_n;
-
-    double test_choose_ansatz = 1.;
-    if (test_choose_ansatz) {
-      cw = choose_ansatz(OBO);
-      fprintf(stdout, "cw memory address (OBO): %p\n", (void *)&cw);
-      test_choose_ansatz = cw(0.0, (void *)&p);
-      cw = choose_ansatz(RENGER);
-      fprintf(stdout, "cw memory address (RENGER): %p\n", (void *)&cw);
-      test_choose_ansatz = cw(0.0, (void *)&p);
-      cw = choose_ansatz(BIG);
-      fprintf(stdout, "cw memory address (BIG): %p\n", (void *)&cw);
-      test_choose_ansatz = cw(0.0, (void *)&p);
-      cw = choose_ansatz(CAR);
-      fprintf(stdout, "cw memory address (CAR): %p\n", (void *)&cw);
-      test_choose_ansatz = cw(0.0, (void *)&p);
-      exit(0);
-    }
 
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
 
@@ -80,12 +49,7 @@ main(int argc, char** argv)
     /* w0 is the offset to put the 0-0 line at 0;
      * it's set to zero in get_parameters so 
      * we're fine to just add to it in the loop */
-    for (unsigned int i = 0; i < 48; i++) {
-      /* only for big ansatz lol need to write code 
-       * to check which ansatz and calculate properly */
-      /* p.offset += p.gsw[1][i] * p.gsw[2][i]; */
-      p.offset = 0.;
-    }
+    p.offset = get_offset(p);
     fprintf(stdout, "Anomalous phase shift = %12.8e\n", p.offset);
     FILE *fp = fopen(p.offset_file, "w");
     fprintf(fp, "%18.10f", p.offset);

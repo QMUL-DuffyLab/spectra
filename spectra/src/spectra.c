@@ -100,8 +100,7 @@ main(int argc, char** argv)
     if (line_params[i].ligand == 0) {
       line_params[i].cw = &cw_car;
     } else if (line_params[i].ligand == 1) {
-      /* line_params[i].cw = &cw_chl; */
-      line_params[i].cw = &cw_obo;
+      line_params[i].cw = choose_ansatz(pr.chl_ansatz);
     } else if (line_params[i].ligand == 2) {
       line_params[i].cw = &cw_obo;
     } else {
