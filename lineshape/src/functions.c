@@ -19,18 +19,20 @@
  */
 double (*choose_ansatz(chl_ansatz ansatz))(double, void *)
 {
-  double (* cw)(double, void *);
+  double (* ansatz_pointer)(double, void *);
+  fprintf(stdout, "chl_ansatz: %d\n", ansatz);
   if (ansatz == OBO) {
-    cw = &cw_obo;
+    ansatz_pointer = &cw_obo;
   } else if (ansatz == RENGER) {
-    cw = &cw_renger;
+    ansatz_pointer = &cw_renger;
   } else if (ansatz == BIG) {
-    cw = &cw_big;
+    ansatz_pointer = &cw_big;
   } else {
     fprintf(stdout, "chl_ansatz is wrong: %d\n", ansatz);
     exit(EXIT_FAILURE);
   }
-  return cw;
+  fprintf(stdout, "ansatz_pointer address: %p\n", (void *)&ansatz_pointer);
+  return ansatz_pointer;
 }
 
 /* Chl spectral density */
@@ -41,6 +43,7 @@ cw_renger(double w, void* params)
      * with gsl_function when we do the quadrature */
     Parameters *p = (Parameters *) params;
     /* double pf = 2 * M_PI * CMS * 100 * 1E-15; */
+    fprintf(stdout, "YOU HAVE ARRIVED AT: RENGER ANSATZ\n");
 
     /* 7! is 5040; this is the Renger form for chlorophyll */
     double c1 = (p->s1 / (5040 * 2 * pow(p->w1, 4.)))
@@ -71,6 +74,7 @@ double
 cw_obo(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
+    fprintf(stdout, "YOU HAVE ARRIVED AT: OBO ANSATZ\n");
     /* l0 is the reorganisation energy expressed in cm^{-1},
      * gamma0 is the correlation time of fluctuations in cm^{-1} */
     return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
@@ -82,6 +86,7 @@ double
 cw_big(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
+    fprintf(stdout, "YOU HAVE ARRIVED AT: BIG ANSATZ\n");
     double c; 
     double sum = 0.;
     double c0 = 2 * p->l0 * (w * p->g0)

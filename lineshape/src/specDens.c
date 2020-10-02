@@ -52,9 +52,24 @@ main(int argc, char** argv)
     	fprintf(stdout, "Ligand selection not working\n");
     	exit(EXIT_FAILURE);
     }
+    fprintf(stdout, "cw memory address: %p\n", (void *)&cw);
 
     p.cw = cw;
     p.cn = &c_n;
+
+    double test_choose_ansatz = 1.;
+    if (test_choose_ansatz) {
+      cw = choose_ansatz(OBO);
+      fprintf(stdout, "cw memory address (OBO): %p\n", (void *)&cw);
+      test_choose_ansatz = cw(0.0, (void *)&p);
+      cw = choose_ansatz(RENGER);
+      fprintf(stdout, "cw memory address (RENGER): %p\n", (void *)&cw);
+      test_choose_ansatz = cw(0.0, (void *)&p);
+      cw = choose_ansatz(BIG);
+      fprintf(stdout, "cw memory address (BIG): %p\n", (void *)&cw);
+      test_choose_ansatz = cw(0.0, (void *)&p);
+      exit(0);
+    }
 
     gsl_integration_workspace * work = gsl_integration_workspace_alloc(1000);
 
