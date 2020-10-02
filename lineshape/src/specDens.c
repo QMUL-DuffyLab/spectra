@@ -42,10 +42,10 @@ main(int argc, char** argv)
 
     if (p.ligand == 1) {
 	/* cw = &cw_chl; */
-	cw = &cw_odo;
+	cw = &cw_obo;
 	/* cw = &cw_big; */
     } else if (p.ligand == 2) {
-	cw = &cw_odo;
+	cw = &cw_obo;
     } else if (p.ligand == 0) {
 	cw = &cw_car;
     } else {

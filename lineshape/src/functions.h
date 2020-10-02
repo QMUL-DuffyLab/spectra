@@ -5,9 +5,18 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-double cw_chl(double w, void *params);
+typedef double (*spec_dens_type)(double, void*);
+
+typedef enum chl_ansatz {
+  OBO = 0,
+  RENGER = 1,
+  BIG = 2,
+} chl_ansatz;
+
+double (*choose_ansatz(chl_ansatz ansatz))(double, void *);
+double cw_renger(double w, void *params);
 double cw_car(double w, void *params);
-double cw_odo(double w, void *params);
+double cw_obo(double w, void *params);
 double cw_big(double w, void *params);
 double c_n(double w, void *params);
 double trig_re(double w, void *params);

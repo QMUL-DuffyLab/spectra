@@ -6,9 +6,32 @@
 	#define M_PI 3.1415926535897932384626433832795L
 #endif
 
+/** Returns a function pointer to the correct ansatz.
+ *
+ * lmao. hope you like parsing function pointer definitions!
+ * this defines a function choose_ansatz, which takes a parameter
+ * of type chl_ansatz - this is an enum with options OBO
+ *
+ */
+double (*choose_ansatz(chl_ansatz ansatz))(double, void *)
+{
+  double (* cw)(double, void *);
+  if (ansatz == OBO) {
+    cw = &cw_obo;
+  } else if (ansatz == RENGER) {
+    cw = &cw_renger;
+  } else if (ansatz == BIG) {
+    cw = &cw_big;
+  } else {
+    fprintf(stdout, "chl_ansatz is wrong: %d\n", ansatz);
+    exit(EXIT_FAILURE);
+  }
+  return cw;
+}
+
 /* Chl spectral density */
 double
-cw_chl(double w, void* params)
+cw_renger(double w, void* params)
 {
     /* Pass a void pointer and cast it here for compatibility
      * with gsl_function when we do the quadrature */
@@ -41,7 +64,7 @@ cw_car(double w, void* params)
 
 /* overdamped brownian oscillator */
 double
-cw_odo(double w, void* params)
+cw_obo(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
     /* l0 is the reorganisation energy expressed in cm^{-1},
@@ -49,7 +72,7 @@ cw_odo(double w, void* params)
     return (2. * p->l0 * p->g0 * w)/(pow(w, 2.) + pow(p->g0, 2.));
 }
 
-/* from novoderezhkin/mancal - one ODO +
+/* from novoderezhkin/mancal - one OBO +
  * 48 high frequency vibrational modes */
 double
 cw_big(double w, void* params)

@@ -44,10 +44,14 @@ main(int argc, char** argv)
   line_params = malloc(p->N * sizeof(Parameters));
   chiw_ints = calloc(p->N, sizeof(double));
   ww = calloc(p->tau, sizeof(double));
+
+  /* read function reads a set of doubles: here we read in
+   * the rates (gamma), reorganisation energies (lambda) 
+   * and exciton energies (eigvals - they're the eigenvalues
+   * of the diagonalised Hamiltonian */
   gamma = read(p->gamma_file, p->N);
   lambda = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
-  line = malloc(200 * sizeof(char));
 
   /* malloc 2d stuff */
   lineshape_files = malloc(p->N * sizeof(char*));
@@ -76,7 +80,17 @@ main(int argc, char** argv)
   mu = read_mu(p->mu_file, p->N);
   ww = incident(pump_properties, p->tau);
 
+  /**
+   * TO DO: make this into a function so we can switch ansatz more
+   * easily. the next section duplicates code from the lineshape 
+   * calculation bit and it's ugly as hell too. basically we read
+   * in all the other parameters for a given ligand, because we need
+   * them to calculate Redfield rates later on. But then we have to 
+   * assign the function pointer to the right ansatz based on the 
+   * ligand struct member - this is the bit that needs fixing somehow
+   */
   fp = fopen(argv[2], "r"); /* read in list of lineshape files here */
+  line = malloc(200 * sizeof(char));
   for (i = 0; i < p->N; i++) {
     /* now load in the parameters for each ligand */
     fgets(line, 200, fp);
@@ -87,18 +101,23 @@ main(int argc, char** argv)
       line_params[i].cw = &cw_car;
     } else if (line_params[i].ligand == 1) {
       /* line_params[i].cw = &cw_chl; */
-      line_params[i].cw = &cw_odo;
+      line_params[i].cw = &cw_obo;
     } else if (line_params[i].ligand == 2) {
-      line_params[i].cw = &cw_odo;
+      line_params[i].cw = &cw_obo;
     } else {
       fprintf(stdout, "Ligand number of params %d is %d."
           "No idea what's happened here.\n",
           i, line_params[i].ligand);
     }
     line_params[i].cn = &c_n;
+    /* this is also kinda ugly - the temperature's a global parameter
+     * really, not a lineshape one - but it avoids setting the
+     * temperature in every lineshape file, at least */
     line_params[i].T = p->T;
 
     for (j = 0; j < p->N; j++) {
+      /* wij is \omega_{ij} - the gap between the 0-0 lines of two
+       * excitons. It's used in calculating the Redfield rates later */
       wij[i][j] = ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
     }
   }
