@@ -7,6 +7,13 @@
 
 typedef double (*spec_dens_type)(double, void*);
 
+/** Defines which spectral density ansatz to use for chlorophylls.
+ *
+ * OBO    -> simple overdamped Brownian oscillator,
+ * Renger -> ansatz from M\"{u}h and Renger derived from FLN data
+ * BIG    -> from Novoderzhkin via Mancal - OBO with 48 
+ *           high-frequency underdamped modes added on
+ */
 typedef enum chl_ansatz {
   OBO = 0,
   RENGER = 1,

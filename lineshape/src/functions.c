@@ -10,7 +10,11 @@
  *
  * lmao. hope you like parsing function pointer definitions!
  * this defines a function choose_ansatz, which takes a parameter
- * of type chl_ansatz - this is an enum with options OBO
+ * of type chl_ansatz - this is an enum defined in functions.h.
+ * it returns a pointer to the correct spectral density function,
+ * which is a function that takes a double argument (the frequency)
+ * and a void pointer (the parameters for the spectral density), and
+ * returns a double. Cool stuff eh
  *
  */
 double (*choose_ansatz(chl_ansatz ansatz))(double, void *)
