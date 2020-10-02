@@ -17,22 +17,60 @@
  * returns a double. Cool stuff eh
  *
  */
-double (*choose_ansatz(chl_ansatz ansatz))(double, void *)
+double (*choose_ansatz(ansatz ans))(double, void *)
 {
   double (* ansatz_pointer)(double, void *);
-  fprintf(stdout, "chl_ansatz: %d\n", ansatz);
-  if (ansatz == OBO) {
+  fprintf(stdout, "chl_ans: %d\n", ans);
+  if (ans == OBO) {
     ansatz_pointer = &cw_obo;
-  } else if (ansatz == RENGER) {
+  } else if (ans == RENGER) {
     ansatz_pointer = &cw_renger;
-  } else if (ansatz == BIG) {
+  } else if (ans == BIG) {
     ansatz_pointer = &cw_big;
+  } else if (ans == CAR) {
+    ansatz_pointer = &cw_car;
   } else {
-    fprintf(stdout, "chl_ansatz is wrong: %d\n", ansatz);
+    fprintf(stdout, "ansatz is wrong: %d\n", ans);
     exit(EXIT_FAILURE);
   }
   fprintf(stdout, "ansatz_pointer address: %p\n", (void *)&ansatz_pointer);
   return ansatz_pointer;
+}
+
+/** Return the anomalous offset for this pigment with these parameters.
+ *
+ * We calculate the reorganisation energy on the fly in this code (see
+ * the function reorg_int further down), but the mathematical definition
+ * \f[
+      \lambda = \frac{1}{\pi} \int_{0}^{\infty} \frac{C''(\omega)}{\omega}
+ * \f]
+ * doesn't give the correct result (NB: what is the exact reason for this?
+ * is it something to do with integrating the spectral density instead of
+ * a time-domain correlation function?) because there are extra terms in
+ * the ansatzes we use.
+ *
+ * The problem is that these extra terms, which I call the anomalous offset,
+ * are not the same for each ansatz; different things contribute depending
+ * on what pigment we're looking at. This function gives the correct
+ * result for a given pigment.
+ */
+double
+get_offset(ansatz ans, Parameters params)
+{
+  double offset = 0.;
+  if (ans == OBO) {
+    /* do nothing - the anomalous offset in this case is 0 */
+  } else if (ans == RENGER) {
+    /* NB: haven't used this ansatz in ages - can't remember what
+     * the offset is. check! */
+  } else if (ans == BIG) {
+    for (unsigned int i = 0; i < 48; i++) {
+      offset += params.gsw[1][i] * params.gsw[2][i];
+    }
+  } else if (ans == CAR) {
+    offset = params.l1 + params.l2;
+  }
+  return offset;
 }
 
 /* Chl spectral density */
@@ -58,6 +96,7 @@ double
 cw_car(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
+    fprintf(stdout, "YOU HAVE ARRIVED AT: CAR ANSATZ\n");
     /* ansatz from Kieran's paper on carotenoids */
     double c1 = 2. * p->l1 * (w * p->g1 * pow(p->w1, 2.)) /
     	      (pow((pow(w, 2.) - pow(p->w1, 2.)), 2.)

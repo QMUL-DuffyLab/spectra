@@ -68,6 +68,9 @@ main(int argc, char** argv)
       cw = choose_ansatz(BIG);
       fprintf(stdout, "cw memory address (BIG): %p\n", (void *)&cw);
       test_choose_ansatz = cw(0.0, (void *)&p);
+      cw = choose_ansatz(CAR);
+      fprintf(stdout, "cw memory address (CAR): %p\n", (void *)&cw);
+      test_choose_ansatz = cw(0.0, (void *)&p);
       exit(0);
     }
 
