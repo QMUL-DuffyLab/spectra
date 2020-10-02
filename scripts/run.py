@@ -19,7 +19,7 @@ parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
 parser.add_argument("-f", "--frame", default=1,
         help="MD frame to calculate for - pass 0 to loop over all frames")
-parser.add_argument("-p", "--plot", default=1,
+parser.add_argument("-p", "--plot", type=int, default=0,
         help="Plot spectra - default is yes, do -p 0 to disable")
 parser.add_argument("-pr", "--protocol", default="in/protocol",
         help="Protocol file")
@@ -142,6 +142,7 @@ if recalc_lineshapes:
 input_dir  = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)
 pigment_dirs = get_pigments(input_dir)
+print(args.plot)
 
 # this is so ugly lol needs tidying up in future
 def run_frame(i, do_plots):
@@ -152,7 +153,7 @@ def run_frame(i, do_plots):
     print("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     os.system("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
-    if do_plots is not 0:
+    if do_plots != 0:
         os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
         os.system("python ./scripts/plot_chiw.py -d {}".format(output_path))
 

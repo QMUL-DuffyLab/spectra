@@ -79,10 +79,6 @@ main(int argc, char** argv)
   gi_array = read_gi(p->gi_files, p->N, p->tau);
   eig = read_eigvecs(p->eigvecs_file, p->N);
   mu = read_mu(p->mu_file, p->N);
-  for (i = 0; i < p->N; i++) {
-    fprintf(stdout, "mu(%d) = %12.8e %12.8e %12.8e\n", i,
-        mu[i][0], mu[i][1], mu[i][2]);
-  }
   ww = incident(pump_properties, p->tau);
 
   /**

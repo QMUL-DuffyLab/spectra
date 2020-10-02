@@ -45,8 +45,6 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     p->T = atof(line);
     fgets(line, 199, fp);
-    p->chl_ansatz = atoi(line);
-    fgets(line, 199, fp);
     /* below is from stackoverflow - sets the newline to a null char */
     line[strcspn(line, "\n")] = 0;
     strcpy(p->eigvecs_file, line);
@@ -122,15 +120,15 @@ read_mu(char *input_file, unsigned int N)
   double **mu;
   FILE *fp;
   char *token;
-  unsigned int i;
+  unsigned int i, token_size;
+  token_size = 20;
   mu = calloc(N, sizeof(double));
-  token = malloc(22 * sizeof(char));
+  token = malloc(token_size * sizeof(char));
 
   for (i = 0; i < N; i++) {
     mu[i] = calloc(3, sizeof(double));
   }
 
-  i = 0;
   fp = fopen(input_file, "r");
   if (fp == NULL) {
     fprintf(stdout, "Unable to open input file in read_mu."
@@ -138,11 +136,11 @@ read_mu(char *input_file, unsigned int N)
     exit(EXIT_FAILURE);
   } else {
     for (i = 0; i < N; i++) {
-      fgets(token, 19, fp);
+      fgets(token, token_size, fp);
       mu[i][0] = atof(token); 
-      fgets(token, 20, fp);
+      fgets(token, token_size, fp);
       mu[i][1] = atof(token); 
-      fgets(token, 22, fp); /* make sure we get to the newline! */
+      fgets(token, token_size, fp); /* make sure we get to the newline! */
       mu[i][2] = atof(token); 
     }
   }

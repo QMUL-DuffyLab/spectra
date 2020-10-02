@@ -317,16 +317,12 @@ program coupling_calc
   if (verbose) then
     write(*,'(a)') "site"
     do i = 1, control_len
-      do j = 1, 3
-        write(*, '(2I2, F18.10, 1X)') i, j, mu(i, j)
-      end do
+      write(*, '(I2, 3F18.10, 1X)') i, mu(i, :)
     end do
     write(*,*)
     write(*,'(a)') "exciton"
     do i = 1, control_len
-      do j = 1, 3
-        write(*, '(2I2, F18.10, 1X)') i, j, mu_ex(i, j)
-      end do
+      write(*, '(I2, 3F18.10, 1X)') i, mu_ex(i, :)
     end do
   end if
 
