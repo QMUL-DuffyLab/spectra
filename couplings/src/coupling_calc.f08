@@ -2,7 +2,7 @@ program coupling_calc
   use iso_fortran_env
   use aux
   implicit none
-  integer, parameter :: sp = REAL64
+  integer, parameter :: cdp = REAL128
   logical :: verbose
   character(100) :: coord_fmt, ei_file, dipoles_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
@@ -17,12 +17,12 @@ program coupling_calc
     num_unique_pigments, unique_index
   integer, dimension(:), allocatable :: coord_lengths, pigment_counts
   real :: start_time, end_time
-  real(sp) :: r, e2kb, kc, temperature, d_raw, ratio
-  real(sp), dimension(:), allocatable :: work, eigvals, ei, lambda,&
+  real(dp) :: r, e2kb, kc, temperature, d_raw, ratio
+  real(dp), dimension(:), allocatable :: work, eigvals, ei, lambda,&
     lifetimes, dipoles, raw_osc, norm_osc, osc_check
-  real(sp), dimension(:,:), allocatable :: coords_i, coords_j,&
+  real(dp), dimension(:,:), allocatable :: coords_i, coords_j,&
     Jij, Jeig, mu, mu_ex
-  complex(sp), dimension(:,:), allocatable :: gnt
+  complex(cdp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
   call cpu_time(start_time)
@@ -63,8 +63,8 @@ program coupling_calc
   ! came from Chris. should probably sit down and figure it out lol
   ! second is Coulomb constant 1 / 4_pi_e0
   ! the 0.5 is because e_r = 2 for proteins
-  e2kb = 1.2955E-5
-  kc = 8.988E9 * 0.5
+  e2kb = 1.2955E-5_dp
+  kc = 8.988E9_dp * 0.5_dp
 
   ! these are the ones we read in from
   ei_file         = trim(adjustl(input_dir)) // "/ei.txt"
@@ -99,16 +99,16 @@ program coupling_calc
   allocate(gnt(control_len, tau))
 
   coord_lengths = 0
-  Jij = 0.0
-  Jeig = 0.0
-  mu = 0.0
-  mu_ex = 0.0
-  eigvals = 0.0
-  lambda = 0.0
-  lifetimes = 0.0
-  dipoles = 0.0
-  ei = 0.0
-  gnt = (0.0, 0.0)
+  Jij       = 0.0_dp
+  Jeig      = 0.0_dp
+  mu        = 0.0_dp
+  mu_ex     = 0.0_dp
+  eigvals   = 0.0_dp
+  lambda    = 0.0_dp
+  lifetimes = 0.0_dp
+  dipoles   = 0.0_dp
+  ei        = 0.0_dp
+  gnt       = (0.0_dp, 0.0_dp)
 
   ! in principle we could probably do the reading in as
   ! part of the main loop below, but the time taken to
@@ -154,7 +154,7 @@ program coupling_calc
   end if
 
   allocate(raw_osc(num_unique_pigments))
-  raw_osc = 0.0
+  raw_osc = 0.0_dp
 
   ! we multiply the whole Jij matrix later on to convert
   ! to wavenumbers; the read in excitation energies are already
@@ -215,7 +215,7 @@ program coupling_calc
 
   norm_osc = normalise_dipoles(raw_osc, pigment_counts)
   allocate(osc_check(num_unique_pigments))
-  osc_check = 0.0
+  osc_check = 0.0_dp
   do i = 1, control_len
     unique_index = which_pigment(gnt_files, unique_pigments, i)
     ! this is maybe a bit ugly, but it works:
@@ -277,7 +277,7 @@ program coupling_calc
     write(*,*) Jeig
   end if
 
-  lifetimes = 1.0 / lifetimes ! mix rates not lifetimes!!
+  lifetimes = 1.0_dp / lifetimes ! mix rates not lifetimes!!
 
   ! transpose Jeig because we want to multiply the columns of
   ! Jeig with our quantitites (columns are eigenvectors)
@@ -290,7 +290,7 @@ program coupling_calc
   ! correctly (it goes down the columns as you'd expect)
   Jeig = transpose(Jeig)
 
-  lifetimes = 1.0 / lifetimes ! get back lifetimes
+  lifetimes = 1.0_dp / lifetimes ! get back lifetimes
 
   open(unit=20, file=spectra_input_file)
   ! stuff to read into spectra.c

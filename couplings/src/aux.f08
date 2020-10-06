@@ -52,7 +52,7 @@ module aux
       real(dp), dimension(4, len2) :: p2
       real(dp) :: s, rx, ry, rz, r, res
 
-      s = 0.0
+      s = 0.0_dp
       do i = 1, len1
         do j = 1, len2
           rx = p1(1, i) - p2(1, j)
@@ -61,7 +61,7 @@ module aux
           r = sqrt(rx**2 + ry**2 + rz**2)
           ! hack - so i can set homodimer parameters easier
           if (r.eq.0.0) then
-            r = 1.0
+            r = 1.0_dp
           end if
           s = s + (p1(4, i) * p2(4, j)) / r
         end do
@@ -80,14 +80,14 @@ module aux
       real(dp), intent(out) :: d_raw
       integer :: i, j
 
-      mu = 0.0
+      mu = 0.0_dp
       do i = 1, len
         do j = 1, 3
           mu(j) = mu(j) + (p(j, i) * p(4, i))
         end do
       end do
 
-      d_raw = 0.0
+      d_raw = 0.0_dp
       do i = 1, 3
         d_raw = d_raw + mu(i)**2
       end do

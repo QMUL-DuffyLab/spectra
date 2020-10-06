@@ -81,15 +81,6 @@ main(int argc, char** argv)
   mu = read_mu(p->mu_file, p->N);
   ww = incident(pump_properties, p->tau);
 
-  /**
-   * TO DO: make this into a function so we can switch ansatz more
-   * easily. the next section duplicates code from the lineshape 
-   * calculation bit and it's ugly as hell too. basically we read
-   * in all the other parameters for a given ligand, because we need
-   * them to calculate Redfield rates later on. But then we have to 
-   * assign the function pointer to the right ansatz based on the 
-   * ligand struct member - this is the bit that needs fixing somehow
-   */
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = malloc(200 * sizeof(char));
   for (i = 0; i < p->N; i++) {
@@ -114,8 +105,8 @@ main(int argc, char** argv)
   }
   int cl = fclose(fp);
   if (cl != 0) {
-      fprintf(stdout, "Failed to close list of lineshape files %d.\n", cl);
-      exit(EXIT_FAILURE);
+    fprintf(stdout, "Failed to close list of lineshape files %d.\n", cl);
+    exit(EXIT_FAILURE);
   }
 
   kij = rate_calc(p->N, eig, wij, line_params);
@@ -159,8 +150,8 @@ main(int argc, char** argv)
   }
   cl = fclose(fp);
   if (cl != 0) {
-      fprintf(stdout, "Failed to close A(w) output file %d.\n", cl);
-      exit(EXIT_FAILURE);
+    fprintf(stdout, "Failed to close A(w) output file %d.\n", cl);
+    exit(EXIT_FAILURE);
   }
 
   fprintf(stdout, "\nWriting χ_i(w) files\n");
@@ -190,9 +181,9 @@ main(int argc, char** argv)
     }
     cl = fclose(fp);
     if (cl != 0) {
-        fprintf(stdout, "Failed to close χ_i(w) "
-            "output file no. %d, error no. %d.\n", i, cl);
-        exit(EXIT_FAILURE);
+      fprintf(stdout, "Failed to close χ_i(w) "
+          "output file no. %d, error no. %d.\n", i, cl);
+      exit(EXIT_FAILURE);
     }
   }
 
