@@ -47,7 +47,7 @@ interchange_2d_contiguous(char direction, unsigned n,
   } else {
     fprintf(stdout, "interchange_2d_contiguous function"
         " is broken. direction variable should be B or F but"
-        " it's %s. ???\n", direction);
+        " it's %c. ???\n", direction);
     exit(EXIT_FAILURE);
   }
 }

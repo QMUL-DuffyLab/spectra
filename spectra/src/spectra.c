@@ -460,143 +460,67 @@ main(int argc, char** argv)
   fclose(fp);
   gsl_odeiv2_driver_free(d);
 
-  double **inv_test, **mul_test, sum;
-  unsigned k;
-  inv_test = calloc(p->N, sizeof(double*));
-  mul_test = calloc(p->N, sizeof(double*));
-  for(i = 0; i < p->N; i++) {
-    inv_test[i] = calloc(p->N, sizeof(double));
-    mul_test[i] = calloc(p->N, sizeof(double));
-  }
-  print_matrix("T_{ij}", p->N, odep.Tij);
-  status = invert_matrix_oop(p->N, odep.Tij, inv_test);
-  print_matrix("T_{ij}^{-1}", p->N, inv_test);
-  for(i = 0; i < p->N; i++) {
-    for(j = 0; j < p->N; j++) {
-
-      sum = 0.;
-      for(k = 0; k < p->N; k++) {
-        sum += odep.Tij[i][k] * inv_test[k][j];
-      }
-      mul_test[i][j] = sum;
-
-    }
-  }
-  print_matrix("T_{ij} * T_{ij}^{-1}", p->N, mul_test);
-
-  double *Tij_eigvals = calloc(p->N, sizeof(double));
-  status = eig_oop(p->N, odep.Tij, inv_test, Tij_eigvals);
-  print_matrix("T_{ij} eigenvectors", p->N, inv_test);
-
-  fprintf(stdout, "T_{ij} eigenvalues:\n");
-  for (i = 0; i < p->N; i++) {
-    fprintf(stdout, "%12.8e\n", Tij_eigvals[i]);
-  }
-
   fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
       "-------------------\n\n");
-  gsl_complex one;
-  double item;
-  GSL_SET_COMPLEX(&one, 1., 0.);
-  /* first assign the transfer matrix to a GSL matrix,
-   * then call the relevant eigensystem function; we can
-   * use the eigendecomposed bits to calculate <\tau> */
-  gsl_eigen_nonsymmv_workspace *w = gsl_eigen_nonsymmv_alloc(p->N);
-  gsl_matrix *Tij_gsl = array_to_gsl_matrix(p->N, p->N, odep.Tij);
-  /* these are real actually */
-  gsl_vector_complex *eval = gsl_vector_complex_alloc(p->N);
-  gsl_matrix_complex *evec = gsl_matrix_complex_alloc(p->N, p->N);
 
-  status = gsl_eigen_nonsymmv(Tij_gsl, eval, evec, w);
-  /* eigensystems in GSL are absolutely horrible:
-   * the eig function for a non-symmetric matrix requires a complex
-   * argument for the output so even though we know the eigenvectors 
-   * and eigenvalues will be real, we have to allocate complex ones,
-   * then manually copy the real part into a real gsl_matrix, then 
-   * free the complex one. extremely useful. */
-  gsl_matrix *evec_re = gsl_matrix_alloc(p->N, p->N);
-  fprintf(stdout, "T_{ij} eigenvalues from GSL:\n");
-  for (i = 0; i < p->N; i++) {
-    fprintf(stdout, "(%+10.6e %+10.6e i)\n",
-        GSL_REAL(gsl_vector_complex_get(eval, i)),
-        GSL_IMAG(gsl_vector_complex_get(eval, i)));
-    for (j = 0; j < p->N; j++) {
-      gsl_matrix_set(evec_re, i, j, 
-          GSL_REAL(gsl_matrix_complex_get(evec, i, j)));
-      /* fprintf(stdout, "(%+10.6e %+10.6e) ", */
-      /*     GSL_REAL(gsl_matrix_complex_get(evec, i, j)), */
-      /*     GSL_IMAG(gsl_matrix_complex_get(evec, i, j))); */
-    }
-    /* fprintf(stdout, "\n"); */
+  double **Tij_vr, **Tij_vr_inv, **Tij_wr_mat, **work, **work2, excite;
+  Tij_vr = calloc(p->N, sizeof(double*));
+  Tij_vr_inv = calloc(p->N, sizeof(double*));
+  Tij_wr_mat = calloc(p->N, sizeof(double*));
+  work = calloc(p->N, sizeof(double*));
+  work2 = calloc(p->N, sizeof(double*));
+  for(i = 0; i < p->N; i++) {
+    Tij_vr[i] = calloc(p->N, sizeof(double));
+    Tij_vr_inv[i] = calloc(p->N, sizeof(double));
+    Tij_wr_mat[i] = calloc(p->N, sizeof(double));
+    work[i] = calloc(p->N, sizeof(double));
+    work2[i] = calloc(p->N, sizeof(double));
   }
+  double *Tij_wr = calloc(p->N, sizeof(double));
 
-  fprintf(stdout, "T_{ij} eigenvectors from GSL:\n");
+  status = eig_oop(p->N, odep.Tij, Tij_vr, Tij_wr);
+  /* print_matrix("T_{ij} eigenvectors", p->N, inv_test); */
   for (i = 0; i < p->N; i++) {
-    for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "(%+10.6e %+10.6e) ",
-          GSL_REAL(gsl_matrix_complex_get(evec, i, j)),
-          GSL_IMAG(gsl_matrix_complex_get(evec, i, j)));
-    }
-    fprintf(stdout, "\n");
+    Tij_wr_mat[i][i] = 1./(Tij_wr[i]);
   }
-  fprintf(stdout, "T_{ij} eigenvector equivalence:\n");
-  for (i = 0; i < p->N; i++) {
-    for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "%+8.3e ", fabs(inv_test[i][j]) -
-          fabs(GSL_REAL(gsl_matrix_complex_get(evec, i, j))));
-    }
-    fprintf(stdout, "\n");
-  }
-  gsl_matrix_complex_free(evec);
 
   /* now we need to invert the eigenvector matrix as well */
-  /* there must be a more efficient way of doing this! */
+  status = invert_matrix_oop(p->N, Tij_vr, Tij_vr_inv);
+  unsigned k; double sum;
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      sum = 0.;
+      for (k = 0; k < p->N; k++) {
+        sum += Tij_vr[i][k] * Tij_wr_mat[k][j];
+      }
+      work[i][j] = sum;
+    }
+  }
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      sum = 0.;
+      for (k = 0; k < p->N; k++) {
+        sum += work[i][k] * Tij_vr_inv[k][j];
+      }
+      work2[i][j] = sum;
+    }
+  }
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      sum = 0.;
+      for (k = 0; k < p->N; k++) {
+        sum += work2[i][k] * y[k];
+      }
+      excite -= sum;
+    }
+  }
+  
   /* the matrix C^-1, the inverse of the eigenvector matrix,
    * is complex; so are the corresponding eigenvalues */
-  gsl_vector_complex *eval_temp = gsl_vector_complex_alloc(p->N);
-  gsl_matrix_complex *evec_inv  = gsl_matrix_complex_alloc(p->N, p->N);
-  gsl_matrix *intermed          = gsl_matrix_alloc(p->N, p->N);
-  gsl_vector *p_vector          = gsl_vector_alloc(p->N);
-  gsl_vector_complex *final_vec = gsl_vector_complex_alloc(p->N);
-
-  status = gsl_eigen_nonsymmv(evec_re, eval_temp, evec_inv, w);
-
-  gsl_matrix *eval_m1           = gsl_matrix_calloc(p->N, p->N);
-  for (i = 0; i < p->N; i++) {
-    item = 1. / GSL_REAL(gsl_vector_complex_get(eval, i));
-    /* set diagonals to 1/eigenvalues */
-    gsl_matrix_set(eval_m1, i, i, item);
-    item = p_i_equib[i];
-    gsl_vector_set(p_vector, i, item);
-    for (j = 0; j < p->N; j++) {
-      /* fprintf(stdout, "(%+10.6e %+10.6e) ", */
-      /*     GSL_REAL(gsl_matrix_complex_get(evec_inv, i, j)), */
-      /*     GSL_IMAG(gsl_matrix_complex_get(evec_inv, i, j))); */
-    }
-    fprintf(stdout, "\n");
-  }
-
   /* now we do evec * eval^-1 * evec^-1 * P(0) */
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.,
-      evec_re, eval_m1, 1., intermed);
-  gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, one,
-      intermed, evec_inv, one, evec);
-  gsl_blas_zgemv(CblasNoTrans, one,
-      evec, p_vector, one, final_vec);
-  double excite = 0.;
-  for (i = 0; i < p->N; i++) {
-    excite -= GSL_REAL(gsl_vector_complex_get(final_vec, i));
-  }
-  fprintf(stdout, "<τ> = %12.8e\n", excite);
+  free(Tij_vr); free(Tij_vr_inv); free(Tij_wr_mat); free(work); free(work2);
 
-  gsl_matrix_free(Tij_gsl);
-  gsl_vector_complex_free(eval);
-  gsl_vector_complex_free(eval_temp);
-  gsl_vector_free(p_vector);
-  gsl_vector_complex_free(final_vec);
-  gsl_matrix_complex_free(evec_inv);
-  gsl_matrix_complex_free(intermed);
-  gsl_matrix_free(eval_m1);
+  fprintf(stdout, "<τ> = %12.8e\n", excite);
 
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;
