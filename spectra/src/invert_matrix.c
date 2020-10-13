@@ -7,7 +7,7 @@ print_matrix(char* name, unsigned n, double **matrix)
   fprintf(stdout, "Printing matrix %s:\n", name);
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
-      fprintf(stdout, "%10.6f ", matrix[i][j]);
+      fprintf(stdout, "%8.4e ", matrix[i][j]);
     }
     fprintf(stdout, "\n");
   }
@@ -121,5 +121,74 @@ invert_matrix_ip(unsigned n, double** inout)
   }
   info = LAPACKE_dgetri(LAPACK_ROW_MAJOR, n, contiguous, lda, ipiv);
   interchange_2d_contiguous('B', n, inout, contiguous);
+  return info;
+}
+
+/** wrapper for dgeev - right eigenvectors and eigenvalues.
+ *
+ * Note that vl shouldn't be necessary but it didn't seem to
+ * work unless I allocated it and set it as a parameter, so I
+ * just made it identical to vr for my own convenience. This
+ * is pretty inefficient though and can probably be fixed.
+ */
+int
+eig_oop(unsigned n, double** in, double** out, double* eigvals)
+{
+  lapack_int info, lda, ldvl, ldvr;
+  unsigned i;
+  double *wr, *wi, *vl;
+  double *contiguous = calloc(n * n, sizeof(double));
+  double *vr = calloc(n * n, sizeof(double));
+  wr = calloc(n, sizeof(double));
+  wi = calloc(n, sizeof(double));
+  vl = calloc(n * n, sizeof(double));
+  lda = n;
+  ldvl = n; ldvr = n;
+  interchange_2d_contiguous('F', n, in, contiguous);
+  info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', n,
+                       contiguous, lda, wr, wi, vl,
+                       ldvl, vr, ldvr);
+
+  for (i = 0; i < n; i++) {
+    if(wi[i] > 1e-6) {
+      fprintf(stdout, "eigenvalue %d is complex: = %12.8e + %+12.8e i\n",
+          i, wr[i], wi[i]);
+    }
+    eigvals[i] = wr[i];
+  }
+
+  interchange_2d_contiguous('B', n, out, vr);
+  free(wr); free(wi); free(vl); free(vr); free(contiguous);
+  return info;
+}
+
+int
+eig_ip(unsigned n, double** inout, double* eigvals)
+{
+  lapack_int info, lda, ldvl, ldvr;
+  unsigned i;
+  double *wr, *wi, *vl;
+  double *contiguous = calloc(n * n, sizeof(double));
+  double *vr = calloc(n * n, sizeof(double));
+  wr = calloc(n, sizeof(double));
+  wi = calloc(n, sizeof(double));
+  vl = calloc(n * n, sizeof(double));
+  lda = n;
+  ldvl = n; ldvr = n;
+  interchange_2d_contiguous('F', n, inout, contiguous);
+  info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', n,
+                       contiguous, lda, wr, wi, vl,
+                       ldvl, vr, ldvr);
+
+  for (i = 0; i < n; i++) {
+    if(wi[i] > 1e-6) {
+      fprintf(stdout, "eigenvalue %d is complex: = %12.8e + %+12.8e i\n",
+          i, wr[i], wi[i]);
+    }
+    eigvals[i] = wr[i];
+  }
+
+  interchange_2d_contiguous('B', n, inout, vr);
+  free(wr); free(wi); free(vl); free(vr); free(contiguous);
   return info;
 }

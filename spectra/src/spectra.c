@@ -484,7 +484,14 @@ main(int argc, char** argv)
   }
   print_matrix("T_{ij} * T_{ij}^{-1}", p->N, mul_test);
 
-  return 0;
+  double *Tij_eigvals = calloc(p->N, sizeof(double));
+  status = eig_oop(p->N, odep.Tij, inv_test, Tij_eigvals);
+  print_matrix("T_{ij} eigenvectors", p->N, inv_test);
+
+  fprintf(stdout, "T_{ij} eigenvalues:\n");
+  for (i = 0; i < p->N; i++) {
+    fprintf(stdout, "%12.8e\n", Tij_eigvals[i]);
+  }
 
   fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
       "-------------------\n\n");
@@ -508,7 +515,11 @@ main(int argc, char** argv)
    * then manually copy the real part into a real gsl_matrix, then 
    * free the complex one. extremely useful. */
   gsl_matrix *evec_re = gsl_matrix_alloc(p->N, p->N);
+  fprintf(stdout, "T_{ij} eigenvalues from GSL:\n");
   for (i = 0; i < p->N; i++) {
+    fprintf(stdout, "(%+10.6e %+10.6e i)\n",
+        GSL_REAL(gsl_vector_complex_get(eval, i)),
+        GSL_IMAG(gsl_vector_complex_get(eval, i)));
     for (j = 0; j < p->N; j++) {
       gsl_matrix_set(evec_re, i, j, 
           GSL_REAL(gsl_matrix_complex_get(evec, i, j)));
@@ -517,6 +528,24 @@ main(int argc, char** argv)
       /*     GSL_IMAG(gsl_matrix_complex_get(evec, i, j))); */
     }
     /* fprintf(stdout, "\n"); */
+  }
+
+  fprintf(stdout, "T_{ij} eigenvectors from GSL:\n");
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      fprintf(stdout, "(%+10.6e %+10.6e) ",
+          GSL_REAL(gsl_matrix_complex_get(evec, i, j)),
+          GSL_IMAG(gsl_matrix_complex_get(evec, i, j)));
+    }
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "T_{ij} eigenvector equivalence:\n");
+  for (i = 0; i < p->N; i++) {
+    for (j = 0; j < p->N; j++) {
+      fprintf(stdout, "%+8.3e ", fabs(inv_test[i][j]) -
+          fabs(GSL_REAL(gsl_matrix_complex_get(evec, i, j))));
+    }
+    fprintf(stdout, "\n");
   }
   gsl_matrix_complex_free(evec);
 
@@ -540,9 +569,9 @@ main(int argc, char** argv)
     item = p_i_equib[i];
     gsl_vector_set(p_vector, i, item);
     for (j = 0; j < p->N; j++) {
-      fprintf(stdout, "(%+10.6e %+10.6e) ",
-          GSL_REAL(gsl_matrix_complex_get(evec_inv, i, j)),
-          GSL_IMAG(gsl_matrix_complex_get(evec_inv, i, j)));
+      /* fprintf(stdout, "(%+10.6e %+10.6e) ", */
+      /*     GSL_REAL(gsl_matrix_complex_get(evec_inv, i, j)), */
+      /*     GSL_IMAG(gsl_matrix_complex_get(evec_inv, i, j))); */
     }
     fprintf(stdout, "\n");
   }

@@ -5,7 +5,7 @@
 #define __INVERT_MATRIX_H__
 
 void
-print_matrix(char* name, unsigned n, double **matrix);
+print_matrix(char* name, unsigned n, double** matrix);
 
 void
 interchange_2d_contiguous(char direction, unsigned n,
@@ -16,5 +16,11 @@ invert_matrix_oop(unsigned n, double** in, double** out);
 
 int
 invert_matrix_ip(unsigned n, double** inout);
+
+int
+eig_oop(unsigned n, double** in, double** vr, double* eigvals);
+
+int
+eig_ip(unsigned n, double** inout, double* eigvals);
 
 #endif
