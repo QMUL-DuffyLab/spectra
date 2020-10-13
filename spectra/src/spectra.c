@@ -460,6 +460,32 @@ main(int argc, char** argv)
   fclose(fp);
   gsl_odeiv2_driver_free(d);
 
+  double **inv_test, **mul_test, sum;
+  unsigned k;
+  inv_test = calloc(p->N, sizeof(double*));
+  mul_test = calloc(p->N, sizeof(double*));
+  for(i = 0; i < p->N; i++) {
+    inv_test[i] = calloc(p->N, sizeof(double));
+    mul_test[i] = calloc(p->N, sizeof(double));
+  }
+  print_matrix("T_{ij}", p->N, odep.Tij);
+  status = invert_matrix_oop(p->N, odep.Tij, inv_test);
+  print_matrix("T_{ij}^{-1}", p->N, inv_test);
+  for(i = 0; i < p->N; i++) {
+    for(j = 0; j < p->N; j++) {
+
+      sum = 0.;
+      for(k = 0; k < p->N; k++) {
+        sum += odep.Tij[i][k] * inv_test[k][j];
+      }
+      mul_test[i][j] = sum;
+
+    }
+  }
+  print_matrix("T_{ij} * T_{ij}^{-1}", p->N, mul_test);
+
+  return 0;
+
   fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
       "-------------------\n\n");
   gsl_complex one;
