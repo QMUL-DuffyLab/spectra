@@ -29,7 +29,7 @@ ifeq ($(UNAME), Darwin)
 	CC = gcc
 endif
 ifeq ($(UNAME), Linux)
-	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -lmpi -L/usr/lib
+	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -llapacke -lmpi -L/usr/lib
 	INCLUDES = -I/usr/include
 	CFLAGS = -Wall -Wextra -std=gnu99 $(DEBUGFLAG) $(INCLUDES)
 	LFLAGS = -Wall -Wextra -std=gnu99 $(DEBUGFLAG) $(LIBRARIES)
@@ -37,6 +37,7 @@ ifeq ($(UNAME), Linux)
 endif
 
 SOURCES = ./src/input.c \
+	  ./src/invert_matrix.c \
 	  ./src/fluorescence.c \
 	  ./src/steady_state.c \
 	  ./src/spectra.c \

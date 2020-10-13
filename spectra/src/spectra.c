@@ -1,5 +1,6 @@
 #include "input.h"
 #include "steady_state.h"
+#include "invert_matrix.h"
 #include <fftw3.h>
 #include <stdio.h>
 #include <gsl/gsl_eigen.h>
