@@ -3,6 +3,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv2.h>
 #include "input.h"
+#include "invert_matrix.h"
 #include "../../lineshape/src/parameters.h"
 
 #ifndef __FLUORESCENCE_H__
@@ -18,6 +19,8 @@ typedef struct {
 
 gsl_matrix* array_to_gsl_matrix(unsigned int n1,
             unsigned int n2, double** mat);
+void check_detailed_balance(unsigned n, double t, double thresh,
+                            double **kij, double **wij);
 double** rate_calc (unsigned int N, double **eig,
                     double** wij, Parameters *p);
 double* relaxation_rates (unsigned int N, double* gamma);
@@ -29,5 +32,6 @@ int jacobian (double t, const double y[], double *dfdy,
 double* bcs (unsigned const int N, const double* eigvals,
              const double T);
 double trapezoid(double *f, unsigned int n);
+double mean_excitation_lifetime(unsigned n, double **tij, double *pop);
 
 #endif

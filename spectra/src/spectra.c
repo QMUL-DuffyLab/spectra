@@ -1,6 +1,5 @@
 #include "input.h"
 #include "steady_state.h"
-#include "invert_matrix.h"
 #include <fftw3.h>
 #include <stdio.h>
 #include <gsl/gsl_eigen.h>
@@ -111,6 +110,7 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->N, eig, wij, line_params);
+  check_detailed_balance(p->N, protocol.T, 1.0e-10, kij, wij);
   rates = relaxation_rates(p->N, gamma);
 
   integral = calloc(p->tau, sizeof(double));
@@ -235,7 +235,8 @@ main(int argc, char** argv)
   double xtest = 0.0;
   void *params = &odep;
 
-  fprintf(stdout, "\n-------------------------\nSTEADY STATE FLUORESCENCE\n"
+  fprintf(stdout, "\n-------------------------\n"
+                  "STEADY STATE FLUORESCENCE\n"
                   "-------------------------\n\n");
 
   const gsl_multiroot_fdfsolver_type *T;
@@ -462,65 +463,19 @@ main(int argc, char** argv)
 
   fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
       "-------------------\n\n");
-
-  double **Tij_vr, **Tij_vr_inv, **Tij_wr_mat, **work, **work2, excite;
-  Tij_vr = calloc(p->N, sizeof(double*));
-  Tij_vr_inv = calloc(p->N, sizeof(double*));
-  Tij_wr_mat = calloc(p->N, sizeof(double*));
-  work = calloc(p->N, sizeof(double*));
-  work2 = calloc(p->N, sizeof(double*));
-  for(i = 0; i < p->N; i++) {
-    Tij_vr[i] = calloc(p->N, sizeof(double));
-    Tij_vr_inv[i] = calloc(p->N, sizeof(double));
-    Tij_wr_mat[i] = calloc(p->N, sizeof(double));
-    work[i] = calloc(p->N, sizeof(double));
-    work2[i] = calloc(p->N, sizeof(double));
-  }
-  double *Tij_wr = calloc(p->N, sizeof(double));
-
-  status = eig_oop(p->N, odep.Tij, Tij_vr, Tij_wr);
-  /* print_matrix("T_{ij} eigenvectors", p->N, inv_test); */
+  /* get P(0) back - initial population guess */
+  /* tidy this up lol - can probably do away with the gsl vector bit */
+  x = guess(FLAT, boltz, musq, max, p->N);
+  double sum = 0.;
+  double *p0 = calloc(p->N, sizeof(double));
   for (i = 0; i < p->N; i++) {
-    Tij_wr_mat[i][i] = 1./(Tij_wr[i]);
+    p0[i] = gsl_vector_get(x, i);
+    sum += p0[i];
   }
-
-  /* now we need to invert the eigenvector matrix as well */
-  status = invert_matrix_oop(p->N, Tij_vr, Tij_vr_inv);
-  unsigned k; double sum;
-  for (i = 0; i < p->N; i++) {
-    for (j = 0; j < p->N; j++) {
-      sum = 0.;
-      for (k = 0; k < p->N; k++) {
-        sum += Tij_vr[i][k] * Tij_wr_mat[k][j];
-      }
-      work[i][j] = sum;
-    }
-  }
-  for (i = 0; i < p->N; i++) {
-    for (j = 0; j < p->N; j++) {
-      sum = 0.;
-      for (k = 0; k < p->N; k++) {
-        sum += work[i][k] * Tij_vr_inv[k][j];
-      }
-      work2[i][j] = sum;
-    }
-  }
-  for (i = 0; i < p->N; i++) {
-    for (j = 0; j < p->N; j++) {
-      sum = 0.;
-      for (k = 0; k < p->N; k++) {
-        sum += work2[i][k] * y[k];
-      }
-      excite -= sum;
-    }
-  }
-  
-  /* the matrix C^-1, the inverse of the eigenvector matrix,
-   * is complex; so are the corresponding eigenvalues */
-  /* now we do evec * eval^-1 * evec^-1 * P(0) */
-  free(Tij_vr); free(Tij_vr_inv); free(Tij_wr_mat); free(work); free(work2);
-
-  fprintf(stdout, "<τ> = %12.8e\n", excite);
+  double excite = mean_excitation_lifetime(p->N, odep.Tij, p0);
+  free(p0);
+  fprintf(stdout, "sum = %8.3e, <τ> = %12.8e, <τ>/(sum * N) = %10.3f\n",
+          sum, excite, excite / (sum * p->N));
 
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;

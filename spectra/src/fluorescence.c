@@ -13,6 +13,28 @@ array_to_gsl_matrix(unsigned int n1, unsigned int n2, double** mat)
   return res;
 }
 
+void
+check_detailed_balance(unsigned n, double t, double thresh,
+                       double **kij, double **wij)
+{
+  unsigned i, j;
+  double beta = 1.439 / t;
+  double elem;
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      elem = fabs(kij[i][j] - (kij[j][i] *
+             exp(beta * wij[i][j])));
+      if (elem > thresh) {
+        fprintf(stdout, "detailed balance violated for element"
+            " %2d, %2d: difference %8.3e\n", i, j, elem);
+        exit(EXIT_FAILURE);
+      }
+      fprintf(stdout, "%8.3e ", elem);
+    }
+    fprintf(stdout, "\n");
+  }
+}
+
 double**
 rate_calc(unsigned int N, double **eig, 
           double** wij, Parameters *p)
@@ -84,7 +106,7 @@ transfer_matrix
    * this can be optimised a lot later */
   unsigned int i, j, k;
   double **Tij;
-  unsigned short print_Tij = 1;
+  unsigned short print_Tij = 0;
   Tij = calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
     Tij[i] = calloc(N, sizeof(double));
@@ -192,3 +214,70 @@ trapezoid(double *f, unsigned int n)
     }
     return sum;
 }
+
+double
+mean_excitation_lifetime(unsigned n, double **Tij, double *pop)
+{
+  double **Tij_vr, **Tij_vr_inv, **Tij_wr_mat, 
+         **work, **work2, excite, sum;
+  unsigned i, j, k;
+  int status;
+  Tij_vr = calloc(n, sizeof(double*));
+  Tij_vr_inv = calloc(n, sizeof(double*));
+  Tij_wr_mat = calloc(n, sizeof(double*));
+  work = calloc(n, sizeof(double*));
+  work2 = calloc(n, sizeof(double*));
+  for(i = 0; i < n; i++) {
+    Tij_vr[i] = calloc(n, sizeof(double));
+    Tij_vr_inv[i] = calloc(n, sizeof(double));
+    Tij_wr_mat[i] = calloc(n, sizeof(double));
+    work[i] = calloc(n, sizeof(double));
+    work2[i] = calloc(n, sizeof(double));
+  }
+  double *Tij_wr = calloc(n, sizeof(double));
+
+  status = eig_oop(n, Tij, Tij_vr, Tij_wr);
+  /* print_matrix("T_{ij} eigenvectors", n, inv_test); */
+  for (i = 0; i < n; i++) {
+    Tij_wr_mat[i][i] = 1./(Tij_wr[i]);
+  }
+
+  /* now we need to invert the eigenvector matrix as well */
+  /* then do evec * eval^-1 * evec^-1 * P(0) */
+  /* these matrix multiplications could be added to invert_matrix
+   * as well I guess */
+  status = invert_matrix_oop(n, Tij_vr, Tij_vr_inv);
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      sum = 0.;
+      for (k = 0; k < n; k++) {
+        sum += Tij_vr[i][k] * Tij_wr_mat[k][j];
+      }
+      work[i][j] = sum;
+    }
+  }
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      sum = 0.;
+      for (k = 0; k < n; k++) {
+        sum += work[i][k] * Tij_vr_inv[k][j];
+      }
+      work2[i][j] = sum;
+    }
+  }
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      sum = 0.;
+      for (k = 0; k < n; k++) {
+        sum += work2[i][k] * pop[k];
+      }
+      excite -= sum;
+    }
+  }
+  
+  free(Tij_vr); free(Tij_vr_inv); free(Tij_wr_mat);
+  free(work); free(work2);
+
+  return excite;
+}
+

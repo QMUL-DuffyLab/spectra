@@ -22,24 +22,37 @@ gsl_vector*
 guess(const ss_init p, const double* boltz, const double* musq,
       unsigned const int max, unsigned const int N)
 {
+  short print_guess = 0;
+  double boltz_musq_sum = 0.;
   gsl_vector *x = gsl_vector_alloc(N);
-  fprintf(stdout, "Initial population guess:\n");
+  if (print_guess) {
+    fprintf(stdout, "Initial population guess:\n");
+  }
   for (unsigned i = 0; i < N; i++){
     if (p == BOLTZ) {
       gsl_vector_set(x, i, boltz[i]);
-      fprintf(stdout, "%d %12.8e ", i, boltz[i]);
+      if (print_guess) {
+        fprintf(stdout, "%d %12.8e ", i, boltz[i]);
+      }
     } else if (p == BOLTZ_MUSQ) {
+      /* sum this because it won't be normalised otherwise */
+      boltz_musq_sum += boltz[i] * musq[i];
       gsl_vector_set(x, i, boltz[i] * musq[i]);
-      fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
+      if (print_guess) {
+        fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
+      }
     } else if (p == CONST) {
       gsl_vector_set(x, i, 1. / N);
-      fprintf(stdout, "%d %8.6f ", i, 1. / N);
+      if (print_guess) {
+        fprintf(stdout, "%d %8.6f ", i, 1. / N);
+      }
     } else if (p == MAX) {
       if (i == max) {
         gsl_vector_set(x, i, 1.);
-        fprintf(stdout, "%d %12.8e ", i, gsl_vector_get(x, i));
       } else {
         gsl_vector_set(x, i, 0.);
+      }
+      if (print_guess) {
         fprintf(stdout, "%d %12.8e ", i, gsl_vector_get(x, i));
       }
     } else {
@@ -47,7 +60,14 @@ guess(const ss_init p, const double* boltz, const double* musq,
       exit(EXIT_FAILURE);
     }
   }
-  fprintf(stdout, "\n");
+  if (p == BOLTZ_MUSQ) {
+    for (unsigned i = 0; i < N; i++){
+      gsl_vector_set(x, i, (gsl_vector_get(x, i) / boltz_musq_sum));
+    }
+  }
+  if (print_guess) {
+    fprintf(stdout, "\n");
+  }
   return x;
 }
 
@@ -112,6 +132,7 @@ pop_steady_f
   ode_params *p = (ode_params *)params;
   gsl_matrix *Tij_gsl = gsl_matrix_alloc(p->N, p->N);
   for (i = 0; i < p->N; i++) {
+    gsl_vector_set(f, i, 0.); /* test */
     for (j = 0; j < p->N; j++) {
       gsl_matrix_set(Tij_gsl, i, j, p->Tij[i][j]);
     }
@@ -122,6 +143,9 @@ pop_steady_f
     gsl_vector_set(chiw_gsl, i, p->chiw[i]);
   }
   gsl_vector_add(f, chiw_gsl);
+  /* NB: steady state populations actually blow up before
+   * reaching a root - something to do with the normalisation
+   * of the chiw vector?? or should there be a zeroing of f? */
 
   gsl_vector_free(chiw_gsl);
   gsl_matrix_free(Tij_gsl);

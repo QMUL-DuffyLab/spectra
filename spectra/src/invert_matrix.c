@@ -1,5 +1,27 @@
 #include "invert_matrix.h"
 
+double**
+matmul(unsigned n, double **a, double **b, double **ab)
+{
+  unsigned i, j, k;
+  double sum;
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+
+      sum = 0.;
+
+      for (k = 0; k < n; k++) {
+        sum += a[i][k] * b[k][j];
+      }
+
+      ab[i][j] = sum;
+
+    }
+  }
+
+  return ab;
+}
+
 void
 print_matrix(char* name, unsigned n, double **matrix)
 {
