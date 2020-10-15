@@ -1,27 +1,5 @@
 #include "invert_matrix.h"
 
-double**
-matmul(unsigned n, double **a, double **b, double **ab)
-{
-  unsigned i, j, k;
-  double sum;
-  for (i = 0; i < n; i++) {
-    for (j = 0; j < n; j++) {
-
-      sum = 0.;
-
-      for (k = 0; k < n; k++) {
-        sum += a[i][k] * b[k][j];
-      }
-
-      ab[i][j] = sum;
-
-    }
-  }
-
-  return ab;
-}
-
 void
 print_matrix(char* name, unsigned n, double **matrix)
 {
@@ -213,4 +191,42 @@ eig_ip(unsigned n, double** inout, double* eigvals)
   interchange_2d_contiguous('B', n, inout, vr);
   free(wr); free(wi); free(vl); free(vr); free(contiguous);
   return info;
+}
+
+void
+matvec(unsigned n, double **mat, double *vec, double *res)
+{
+  unsigned i, j;
+  double sum;
+  for (i = 0; i < n; i++) {
+
+    sum = 0.;
+
+    for (j = 0; j < n; j++) {
+      sum += mat[i][j] * vec[j];
+    }
+    res[i] = sum;
+
+  }
+
+}
+
+void
+matmul(unsigned n, double **a, double **b, double **ab)
+{
+  unsigned i, j, k;
+  double sum;
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+
+      sum = 0.;
+
+      for (k = 0; k < n; k++) {
+        sum += a[i][k] * b[k][j];
+      }
+
+      ab[i][j] = sum;
+
+    }
+  }
 }

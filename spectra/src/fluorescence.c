@@ -222,8 +222,9 @@ mean_excitation_lifetime(unsigned n, double **Tij, double *pop)
          *work, *work2, excite, sum;
   unsigned i, j, k;
   int status;
-  Tij_vr = calloc(n, sizeof(double*));
-  Tij_vr_inv = calloc(n, sizeof(double*));
+  Tij_vr = calloc(n, sizeof(double*)); /* right eigenvectors of T_ij */
+  Tij_vr_inv = calloc(n, sizeof(double*)); /* inverse of above */
+  /* inverse eigenvectors of T_ij (matrix form) */
   Tij_wr_mat = calloc(n, sizeof(double*));
   work = calloc(n, sizeof(double));
   work2 = calloc(n, sizeof(double));
@@ -240,26 +241,11 @@ mean_excitation_lifetime(unsigned n, double **Tij, double *pop)
     Tij_wr_mat[i][i] = 1./(Tij_wr[i]);
   }
 
-  /* now we need to invert the eigenvector matrix as well */
-  /* then do evec * eval^-1 * evec^-1 * P(0) */
-  /* these matrix multiplications could be added to invert_matrix
-   * as well I guess */
+  /* now we need to invert the eigenvector matrix and so
+   * C * λ^{-1} * C^{-1} * P(0). Multiply from the right! */
   status = invert_matrix_oop(n, Tij_vr, Tij_vr_inv);
-  for (i = 0; i < n; i++) {
-    sum = 0.;
-    for (k = 0; k < n; k++) {
-      sum += Tij_vr_inv[i][k] * pop[k];
-    }
-    work[i] = sum;
-  }
-
-  for (i = 0; i < n; i++) {
-    sum = 0.;
-    for (k = 0; k < n; k++) {
-      sum += Tij_wr_mat[i][k] * work[k];
-    }
-    work2[i] = sum;
-  }
+  matvec(n, Tij_vr_inv, pop, work);
+  matvec(n, Tij_wr_mat, work, work2);
 
   for (i = 0; i < n; i++) {
     sum = 0.;

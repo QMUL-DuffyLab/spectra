@@ -23,4 +23,7 @@ eig_oop(unsigned n, double** in, double** vr, double* eigvals);
 int
 eig_ip(unsigned n, double** inout, double* eigvals);
 
+void matmul(unsigned n, double **a, double **b, double **ab);
+void matvec(unsigned n, double **mat, double *vec, double *res);
+
 #endif
