@@ -3,7 +3,7 @@ program coupling_calc
   use aux
   implicit none
   integer, parameter :: cdp = REAL128
-  logical :: verbose
+  logical :: verbose, print_jij, print_jij_diag
   character(100) :: coord_fmt, ei_file, dipoles_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: input_dir, temp_string, tau_string
@@ -25,6 +25,8 @@ program coupling_calc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
+  print_jij = .false.
+  print_jij_diag = .false.
   call cpu_time(start_time)
   coord_fmt = '(E016.8 1X E016.8 1X E016.8 1X E016.8)'
 
@@ -197,11 +199,6 @@ program coupling_calc
         call mu_calc(coords_i, coord_lengths(i),  mu(i, :), d_raw)
         ! keep running total of the raw oscillator strengths by pigment
         raw_osc(unique_index) = raw_osc(unique_index) + d_raw
-        if (verbose) then
-          write(*,*) "Before mu normalisation:"
-          write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
-          "mu^2 = ", sum(mu(i, :)**2), "e_i = ", Jij(i,j)
-        end if
       else
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
@@ -230,17 +227,11 @@ program coupling_calc
     ratio = norm_osc(unique_index) / dipoles(i)**2
     mu(i, :) = mu(i, :) / sqrt(ratio)
     osc_check(unique_index) = osc_check(unique_index) + sum(mu(i, :)**2)
-    if (verbose) then
-      write(*,*) "After mu normalisation:"
-      write(*,*) "i = ", i, "mu(i) = ", mu(i, :),&
-      "mu^2 = ", sum(mu(i, :)**2)
-    end if
   end do
 
   if (verbose) then
     do i = 1, num_unique_pigments
       write(*, *) "pigment type: ", unique_pigments(i)
-      write(*, *) "osc_check: ", osc_check(i)
       write(*, *) "count: ", pigment_counts(i)
       write(*, *) "average osc. strength: ",&
         osc_check(i) / float(pigment_counts(i))
@@ -252,7 +243,7 @@ program coupling_calc
   Jij = Jij * e2kb * kc
   Jeig = Jij
 
-  if (verbose) then
+  if (print_jij) then
     write(*,*) Jij
   end if
 
@@ -271,7 +262,7 @@ program coupling_calc
     write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
   end if
 
-  if (verbose) then
+  if (print_jij_diag) then
     ! write(*,*) mu
     write(*,*)
     write(*,*) Jeig
@@ -313,18 +304,6 @@ program coupling_calc
   open(unit=14, file=mu_i_file)
   open(unit=15, file=lambda_i_file)
   open(unit=16, file=gamma_i_file)
-
-  if (verbose) then
-    write(*,'(a)') "site"
-    do i = 1, control_len
-      write(*, '(I2, 3F18.10, 1X)') i, mu(i, :)
-    end do
-    write(*,*)
-    write(*,'(a)') "exciton"
-    do i = 1, control_len
-      write(*, '(I2, 3F18.10, 1X)') i, mu_ex(i, :)
-    end do
-  end if
 
   do i = 1, control_len
     do j = 1, control_len

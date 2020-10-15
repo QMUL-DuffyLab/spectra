@@ -91,14 +91,6 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
             print("Lineshape data does not exist for ligand {}. Generating now.".format(p[0:3]))
             os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p[0:3]))
 
-        if recalc_lineshapes:
-            os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p[0:3]))
-            # make sure we don't get caught in a loop
-            with open(args.protocol, 'w') as n:
-                n.write("T = {}\n".format(args.temperature))
-                n.write("ns = {}".format(args.tau))
-
-
         reorg = np.loadtxt("lineshape/out/{}_lambda.dat".format(p[0:3]))[0]
         lineshape = "lineshape/in/{}.def".format(p[0:3])
         print("{}/{}/frame{}.csv".format(input_dir, p, snapshot_number), file=f)
@@ -132,19 +124,6 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
 
     return (input_file, output_path)
 
-with open(args.protocol) as f:
-    lineshape_dict = dict([tuple(line.rstrip().split(" = ")) for line in f.readlines()])
-
-recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau) or (int(lineshape_dict["chl_ansatz"]) != args.chl_ansatz)
-if recalc_lineshapes:
-    print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
-
-input_dir  = os.path.join(os.getcwd(), args.input_dir)
-output_dir = os.path.join(os.getcwd(), args.output_dir)
-pigment_dirs = get_pigments(input_dir)
-print(args.plot)
-
-# this is so ugly lol needs tidying up in future
 def run_frame(i, do_plots):
     protein = args.input_dir.split('/')[-1]
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
@@ -156,6 +135,29 @@ def run_frame(i, do_plots):
     if do_plots != 0:
         os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
         os.system("python ./scripts/plot_chiw.py -d {}".format(output_path))
+
+input_dir  = os.path.join(os.getcwd(), args.input_dir)
+output_dir = os.path.join(os.getcwd(), args.output_dir)
+pigment_dirs = get_pigments(input_dir)
+
+with open(args.protocol) as f:
+    lineshape_dict = dict([tuple(line.rstrip().split(" = ")) for line in f.readlines()])
+
+recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) or (int(lineshape_dict["ns"]) != args.tau) or (int(lineshape_dict["chl_ansatz"]) != args.chl_ansatz)
+if recalc_lineshapes:
+    print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
+    pigments = np.unique([p[0:3] for p in pigment_dirs])
+    for p in pigments:
+        print("Recalculating lineshape for pigment {}\n".format(p))
+        os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p))
+
+    # make sure we don't get caught in a loop
+    with open(args.protocol, 'w') as n:
+        n.write("T = {}\n".format(args.temperature))
+        n.write("ns = {}\n".format(args.tau))
+        n.write("chl_ansatz = {}".format(args.chl_ansatz))
+        recalc_lineshapes = False
+
 
 if int(args.frame) == 0:
     for i in range(1000):

@@ -95,7 +95,7 @@ main(int argc, char** argv)
     /* this is also kinda ugly - the temperature's a global parameter
      * really, not a lineshape one - but it avoids setting the
      * temperature in every lineshape file, at least */
-    line_params[i].T = p->T;
+    line_params[i].T = protocol.T;
 
     for (j = 0; j < p->N; j++) {
       /* wij is \omega_{ij} - the gap between the 0-0 lines of two
@@ -110,7 +110,7 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->N, eig, wij, line_params);
-  check_detailed_balance(p->N, protocol.T, 1.0e-10, kij, wij);
+  check_detailed_balance(p->N, protocol.T, 1e-10, kij, wij);
   rates = relaxation_rates(p->N, gamma);
 
   integral = calloc(p->tau, sizeof(double));
@@ -192,6 +192,7 @@ main(int argc, char** argv)
   unsigned int max = 0;
   double musq_max = musq[0];
   double musq_sum = 0.;
+  double chiw_sum = 0.;
   fprintf(stdout, "\n----------------------------------\n"
       "OSC. STRENGTHS AND CHI(W) INTEGRAL\n"
       "----------------------------------\n\n");
@@ -202,6 +203,7 @@ main(int argc, char** argv)
       max = i;
       musq_max = musq[i];
       musq_sum += musq[i];
+      chiw_sum += chiw_ints[i];
     }
   }
 
@@ -217,7 +219,7 @@ main(int argc, char** argv)
   double *yprev = calloc(p->N, sizeof(double));
   double *boltz = calloc(p->N, sizeof(double));
 
-  boltz = bcs(p->N, eigvals, 300.0); /* still hardcoded! need to fix */
+  boltz = bcs(p->N, eigvals, protocol.T);
   fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
                   "-----------------\n\n");
   fprintf(stdout, "Pigment    p_i   |μ^2|*p_i\n");
@@ -390,6 +392,19 @@ main(int argc, char** argv)
   gsl_multiroot_fdfsolver_free(s);
   gsl_vector_free(x);
 
+  fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
+      "-------------------\n\n");
+  /* get P(0) back - initial population guess */
+  /* tidy this up lol - can probably do away with the gsl vector bit */
+  x = guess(FLAT, boltz, musq, max, p->N);
+  double *p0 = calloc(p->N, sizeof(double));
+  for (i = 0; i < p->N; i++) {
+    p0[i] = gsl_vector_get(x, i);
+  }
+  double excite = mean_excitation_lifetime(p->N, odep.Tij, p0);
+  free(p0);
+  fprintf(stdout, "<τ> (ps) = %12.8e\n", excite);
+
   /* do ODE solving
    * this doesn't work yet */
   int ode_success = odefunc(xtest, y, f, params);
@@ -461,31 +476,18 @@ main(int argc, char** argv)
   fclose(fp);
   gsl_odeiv2_driver_free(d);
 
-  fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
-      "-------------------\n\n");
-  /* get P(0) back - initial population guess */
-  /* tidy this up lol - can probably do away with the gsl vector bit */
-  x = guess(FLAT, boltz, musq, max, p->N);
-  double sum = 0.;
-  double *p0 = calloc(p->N, sizeof(double));
-  for (i = 0; i < p->N; i++) {
-    p0[i] = gsl_vector_get(x, i);
-  }
-  double excite = mean_excitation_lifetime(p->N, odep.Tij, p0);
-  free(p0);
-  fprintf(stdout, "<τ>(ps) = %12.8e\n", excite);
-
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;
-  fprintf(stdout, "\n----------------------\nNORMALISED POPULATIONS\n"
-      "----------------------\n\n");
-    fprintf(stdout, "P_i\t\tboltz_i\n");
+  fprintf(stdout, "\n-----------------\n"
+      "FINAL POPULATIONS\n"
+      "-----------------\n\n");
+    fprintf(stdout, "P_i\t\tP_i^norm\tboltz_i\n");
   for (i = 0; i < p->N; i++) {
     ysum += y[i];
   }
   for (i = 0; i < p->N; i++) {
     ynorm[i] = y[i] / ysum;
-    fprintf(stdout, "%8.6f\t%8.6f\n", ynorm[i], boltz[i]);
+    fprintf(stdout, "%8.6f\t%8.6f\t%8.6f\n", y[i], ynorm[i], boltz[i]);
   }
   fprintf(stdout, "\n----------------------\n");
 

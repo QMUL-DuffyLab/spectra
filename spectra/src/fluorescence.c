@@ -19,11 +19,16 @@ check_detailed_balance(unsigned n, double t, double thresh,
 {
   unsigned i, j;
   double beta = 1.439 / t;
-  double elem;
+  double elem, sum;
+  fprintf(stdout, "\n----------------------\n"
+                    "DETAILED BALANCE CHECK\n"
+                    "----------------------\n");
+  sum = 0.;
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
       elem = fabs(kij[i][j] - (kij[j][i] *
              exp(beta * wij[i][j])));
+      sum += elem;
       if (elem > thresh) {
         fprintf(stdout, "detailed balance violated for element"
             " %2d, %2d: difference %8.3e\n", i, j, elem);
@@ -33,6 +38,7 @@ check_detailed_balance(unsigned n, double t, double thresh,
     }
     fprintf(stdout, "\n");
   }
+  fprintf(stdout, "sum = %8.3e\t avg. = %8.3e\n", sum, sum / (n * n));
 }
 
 double**
@@ -192,8 +198,11 @@ bcs (unsigned const int N, const double* eigvals, const double T)
   double beta = 1.439 / T;
   double sum = 0.0;
   double *populations = calloc(N, sizeof(double));
+  short print_weights = 0;
   for (unsigned int i = 0; i < N; i++) {
-    fprintf(stdout, "%d %16.12e\n", i, exp(-1. * beta * eigvals[i]));
+    if (print_weights) {
+      fprintf(stdout, "%d %16.12e\n", i, exp(-1. * beta * eigvals[i]));
+    }
     sum += exp(-1. * beta * eigvals[i]);
   }
   for (unsigned int i = 0; i < N; i++) {

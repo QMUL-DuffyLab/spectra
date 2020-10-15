@@ -100,8 +100,8 @@ main(int argc, char** argv)
 	fprintf(fp, "%18.10f %18.10f %18.10f\n",
 		(float) i, re_res, im_res);
 
-	fprintf(stdout, "%18.10f %18.10f %18.10f\n",
-		(float) i, re_res, im_res);
+	/* fprintf(stdout, "%18.10f %18.10f %18.10f\n", */
+	/* 	(float) i, re_res, im_res); */
 
 	Atv[i] = At(0.0, re_res, im_res, cmtime, 0.0);
 	Ftv[i] = Ft(0.0, re_res, im_res, reorg_res,
