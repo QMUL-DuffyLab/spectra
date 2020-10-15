@@ -470,12 +470,10 @@ main(int argc, char** argv)
   double *p0 = calloc(p->N, sizeof(double));
   for (i = 0; i < p->N; i++) {
     p0[i] = gsl_vector_get(x, i);
-    sum += p0[i];
   }
   double excite = mean_excitation_lifetime(p->N, odep.Tij, p0);
   free(p0);
-  fprintf(stdout, "sum = %8.3e, <τ> = %12.8e, <τ>/(sum * N) = %10.3f\n",
-          sum, excite, excite / (sum * p->N));
+  fprintf(stdout, "<τ>(ps) = %12.8e\n", excite);
 
   double *ynorm = calloc(p->N, sizeof(double));
   double ysum = 0.0;

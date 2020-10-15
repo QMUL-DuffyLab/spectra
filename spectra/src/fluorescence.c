@@ -219,20 +219,18 @@ double
 mean_excitation_lifetime(unsigned n, double **Tij, double *pop)
 {
   double **Tij_vr, **Tij_vr_inv, **Tij_wr_mat, 
-         **work, **work2, excite, sum;
+         *work, *work2, excite, sum;
   unsigned i, j, k;
   int status;
   Tij_vr = calloc(n, sizeof(double*));
   Tij_vr_inv = calloc(n, sizeof(double*));
   Tij_wr_mat = calloc(n, sizeof(double*));
-  work = calloc(n, sizeof(double*));
-  work2 = calloc(n, sizeof(double*));
+  work = calloc(n, sizeof(double));
+  work2 = calloc(n, sizeof(double));
   for(i = 0; i < n; i++) {
     Tij_vr[i] = calloc(n, sizeof(double));
     Tij_vr_inv[i] = calloc(n, sizeof(double));
     Tij_wr_mat[i] = calloc(n, sizeof(double));
-    work[i] = calloc(n, sizeof(double));
-    work2[i] = calloc(n, sizeof(double));
   }
   double *Tij_wr = calloc(n, sizeof(double));
 
@@ -248,31 +246,27 @@ mean_excitation_lifetime(unsigned n, double **Tij, double *pop)
    * as well I guess */
   status = invert_matrix_oop(n, Tij_vr, Tij_vr_inv);
   for (i = 0; i < n; i++) {
-    for (j = 0; j < n; j++) {
-      sum = 0.;
-      for (k = 0; k < n; k++) {
-        sum += Tij_vr[i][k] * Tij_wr_mat[k][j];
-      }
-      work[i][j] = sum;
+    sum = 0.;
+    for (k = 0; k < n; k++) {
+      sum += Tij_vr_inv[i][k] * pop[k];
     }
+    work[i] = sum;
   }
+
   for (i = 0; i < n; i++) {
-    for (j = 0; j < n; j++) {
-      sum = 0.;
-      for (k = 0; k < n; k++) {
-        sum += work[i][k] * Tij_vr_inv[k][j];
-      }
-      work2[i][j] = sum;
+    sum = 0.;
+    for (k = 0; k < n; k++) {
+      sum += Tij_wr_mat[i][k] * work[k];
     }
+    work2[i] = sum;
   }
+
   for (i = 0; i < n; i++) {
-    for (j = 0; j < n; j++) {
-      sum = 0.;
-      for (k = 0; k < n; k++) {
-        sum += work2[i][k] * pop[k];
-      }
-      excite -= sum;
+    sum = 0.;
+    for (k = 0; k < n; k++) {
+      sum += Tij_vr[i][k] * work2[k];
     }
+    excite -= sum;
   }
   
   free(Tij_vr); free(Tij_vr_inv); free(Tij_wr_mat);
