@@ -27,8 +27,11 @@ cla_tresp = np.genfromtxt("in/cla_tresp.dat", comments='#',
                           encoding='utf-8', dtype=None)
 chl_tresp = np.genfromtxt("in/chl_tresp.dat", comments='#',
                           encoding='utf-8', dtype=None)
+lut_tresp = np.genfromtxt("in/lut_tresp.dat", comments='#',
+                          encoding='utf-8', dtype=None)
 cla_tresp = [list(line) for line in zip(*cla_tresp)]
 chl_tresp = [list(line) for line in zip(*chl_tresp)]
+lut_tresp = [list(line) for line in zip(*chl_tresp)]
 
 if (args.protein) == 'LHCII':
     pigments = {
@@ -65,6 +68,7 @@ else:
 '''
 cla_dict = dict(zip(cla_tresp[0], cla_tresp[1]))
 chl_dict = dict(zip(chl_tresp[0], chl_tresp[1]))
+lut_dict = dict(zip(lut_tresp[0], lut_tresp[1]))
 
 for item in filelist:
     # same deal - load in the PDB file
@@ -84,6 +88,8 @@ for item in filelist:
         tresp_dict = cla_dict
     elif ligand_code == "CHL":
         tresp_dict = chl_dict
+    elif ligand_code == "LUT":
+        tresp_dict = lut_dict
     else:
         continue
         # raise ValueError("Invalid ligand code: {}".format(ligand_code))

@@ -392,8 +392,9 @@ main(int argc, char** argv)
   gsl_multiroot_fdfsolver_free(s);
   gsl_vector_free(x);
 
-  fprintf(stdout, "\n-------------------\nEXCITATION LIFETIME\n"
-      "-------------------\n\n");
+  fprintf(stdout, "\n-------------------\n"
+                    "EXCITATION LIFETIME\n"
+                    "-------------------\n\n");
   /* get P(0) back - initial population guess */
   /* tidy this up lol - can probably do away with the gsl vector bit */
   x = guess(FLAT, boltz, musq, max, p->N);
@@ -422,7 +423,6 @@ main(int argc, char** argv)
   gsl_odeiv2_driver *d = gsl_odeiv2_driver_alloc_y_new(
       &sys, 
       gsl_odeiv2_step_bsimp,
-      /* gsl_odeiv2_step_rkf45, */
       thresh,
       thresh,
       0.0);
@@ -441,7 +441,6 @@ main(int argc, char** argv)
       yprev[j] = y[j];
     }
 
-    /* fprintf(stdout, "iteration %d: ", i); */
     status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
 
     fprintf(fp, "%6.3f ", ti);

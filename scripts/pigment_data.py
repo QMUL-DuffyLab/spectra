@@ -82,10 +82,37 @@ pigment_data = {
                 }
             },
         'LUT': {
+            'D' : 0.2, # kieran carotenoid pathway table 1
             'S1': {
                 'energy': 14900.0,
                 'lifetime': 0.01,
+                'reorg': 900.0,
+                },
+            'S2': {
+                'energy': 20000.0,
+                'lifetime': 0.00006,
                 'reorg': 0.0,
+                }
+            }
+        'NEX': {
+            'D' : 0.15,
+            'S1': { # no real data for this or XAT
+                'energy': 15200.0,
+                'lifetime': 0.01,
+                'reorg': 900.0,
+                },
+            'S2': {
+                'energy': 20000.0,
+                'lifetime': 0.00006,
+                'reorg': 0.0,
+                }
+            }
+        'XAT': {
+            'D' : 0.18,
+            'S1': { # no real data for this or XAT
+                'energy': 15200.0,
+                'lifetime': 0.01,
+                'reorg': 900.0,
                 },
             'S2': {
                 'energy': 20000.0,
