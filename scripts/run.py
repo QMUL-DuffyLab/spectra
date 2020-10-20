@@ -42,7 +42,7 @@ def get_pigments(input_dir):
     numbers = []
     # uncomment to do carotenoids/chl c for FCP as well
     # pigment_names = ['CLA', 'CHL', 'KC' , 'NEX', 'LUT', 'XAT', 'A86']
-    pigment_names = ['CLA', 'CHL']
+    pigment_names = ['CLA', 'CHL', 'LUT']
     # programatically get pigment name/numbers
     for item in os.scandir(input_dir):
         if item.is_dir():

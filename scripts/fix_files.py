@@ -20,7 +20,7 @@ args = parser.parse_args()
 # residue number from the MD trajectory and .frame is the frame number.
 # this is how I output the files from cpptraj so should be a safe assumption
 filelist = glob.glob(args.input_dir + '/[0-9]*')
-print(filelist)
+print("{} files found.\n".format(len(filelist)))
 
 # want to keep the atom strings so don't loadtxt!
 cla_tresp = np.genfromtxt("in/cla_tresp.dat", comments='#',
@@ -31,7 +31,7 @@ lut_tresp = np.genfromtxt("in/lut_tresp.dat", comments='#',
                           encoding='utf-8', dtype=None)
 cla_tresp = [list(line) for line in zip(*cla_tresp)]
 chl_tresp = [list(line) for line in zip(*chl_tresp)]
-lut_tresp = [list(line) for line in zip(*chl_tresp)]
+lut_tresp = [list(line) for line in zip(*lut_tresp)]
 
 if (args.protein) == 'LHCII':
     pigments = {
@@ -81,7 +81,7 @@ for item in filelist:
     os.makedirs(output_dir, exist_ok=True)
     frame = str(item)[int((str(item)).find(".")) + 1:]
     output_file = output_dir + '/frame{}.csv'.format(frame)
-    print(output_file)
+    print("Creating file {}\n".format(output_file))
 
     ligand_code = str(arr[0][3])
     if ligand_code == "CLA":
