@@ -134,7 +134,7 @@ def run_frame(i, do_plots):
     os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     if do_plots != 0:
         os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
-        os.system("python ./scripts/plot_chiw.py -d {}".format(output_path))
+        os.system("python ./scripts/plot_chiw.py -d {} -n {}".format(output_path, len(pigment_dirs)))
 
 input_dir  = os.path.join(os.getcwd(), args.input_dir)
 output_dir = os.path.join(os.getcwd(), args.output_dir)

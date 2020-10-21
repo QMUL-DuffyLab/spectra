@@ -19,16 +19,19 @@ check_detailed_balance(unsigned n, double t, double thresh,
 {
   unsigned i, j;
   double beta = 1.439 / t;
-  double elem, sum;
+  double elem, sum, max;
   fprintf(stdout, "\n----------------------\n"
                     "DETAILED BALANCE CHECK\n"
                     "----------------------\n");
-  sum = 0.;
+  sum = 0.; max = 0.;
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
       elem = fabs(kij[i][j] - (kij[j][i] *
              exp(beta * wij[i][j])));
       sum += elem;
+      if (elem > max) {
+        max = elem;
+      }
       if (elem > thresh) {
         fprintf(stdout, "detailed balance violated for element"
             " %2d, %2d: difference %8.3e\n", i, j, elem);
@@ -38,7 +41,8 @@ check_detailed_balance(unsigned n, double t, double thresh,
     }
     fprintf(stdout, "\n");
   }
-  fprintf(stdout, "sum = %8.3e\t avg. = %8.3e\n", sum, sum / (n * n));
+  fprintf(stdout, "sum = %8.3e\t avg. = %8.3e\tmax = %8.3e\n",
+          sum, sum / (n * n), max);
 }
 
 double**
@@ -112,7 +116,7 @@ transfer_matrix
    * this can be optimised a lot later */
   unsigned int i, j, k;
   double **Tij;
-  unsigned short print_Tij = 0;
+  unsigned short print_Tij = 1;
   Tij = calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
     Tij[i] = calloc(N, sizeof(double));

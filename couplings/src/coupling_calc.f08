@@ -233,10 +233,9 @@ program coupling_calc
     do i = 1, num_unique_pigments
       write(*, *) "pigment type: ", unique_pigments(i)
       write(*, *) "count: ", pigment_counts(i)
-      write(*, *) "average osc. strength: ",&
+      write(*, *) "<D>, <|D^2|> ",&
+        sqrt(osc_check(i) / float(pigment_counts(i))),&
         osc_check(i) / float(pigment_counts(i))
-      write(*, *) "average dipole: ",&
-        sqrt(osc_check(i) / float(pigment_counts(i)))
     end do
   end if
 

@@ -82,7 +82,7 @@ pigment_data = {
                 }
             },
         'LUT': {
-            'D' : 0.2, # kieran carotenoid pathway table 1
+            'D' : 0.1, # kieran carotenoid pathway table 1
             'S1': {
                 'energy': 15400.0,
                 'lifetime': 0.01,
@@ -140,8 +140,10 @@ site_energies = {
         'CLA612' : 14940,
         'CLA613' : 14840,
         'CLA614' : 14940,
-        'LUT620' : 19538, # 620/621 from kieran carotenoid paper
-        'LUT621' : 19748,
+        'LUT620' : 14500, # 620/621 from kieran carotenoid paper
+        'LUT621' : 14500,
+        # 'LUT620' : 19538, # 620/621 from kieran carotenoid paper
+        # 'LUT621' : 19748,
         }
 
 novod_energies = {

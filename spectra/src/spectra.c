@@ -110,7 +110,7 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->N, eig, wij, line_params);
-  check_detailed_balance(p->N, protocol.T, 1e-3, kij, wij);
+  check_detailed_balance(p->N, protocol.T, 1e-5, kij, wij);
   rates = relaxation_rates(p->N, gamma);
 
   integral = calloc(p->tau, sizeof(double));
