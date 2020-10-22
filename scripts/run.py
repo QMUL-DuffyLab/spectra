@@ -147,10 +147,6 @@ recalc_lineshapes = (abs(float(lineshape_dict["T"]) - args.temperature) > 1E-9) 
 if recalc_lineshapes:
     print("Temperature/tau parameters given to script don't match those in lineshape folder. Recalculating lineshapes.")
     pigments = np.unique([p[0:3] for p in pigment_dirs])
-    for p in pigments:
-        print("Recalculating lineshape for pigment {}\n".format(p))
-        os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p))
-
     # make sure we don't get caught in a loop
     with open(args.protocol, 'w') as n:
         n.write("T = {}\n".format(args.temperature))
@@ -158,6 +154,9 @@ if recalc_lineshapes:
         n.write("chl_ansatz = {}".format(args.chl_ansatz))
         recalc_lineshapes = False
 
+    for p in pigments:
+        print("Recalculating lineshape for pigment {}\n".format(p))
+        os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p))
 
 if int(args.frame) == 0:
     for i in range(1000):

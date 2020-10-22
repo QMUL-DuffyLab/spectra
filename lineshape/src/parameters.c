@@ -135,7 +135,7 @@ get_parameters(char *filename, ansatz chl_ansatz)
 	 * for the spectral density we have 3 * 48 = 144 extra
 	 * parameters; generate the strings for these on the fly */
         for (unsigned int j = 0; j < 3; j++) {
-          snprintf(s, 2, "%1s", pref + j);
+          snprintf(s, 3, "%1s", pref + j);
           for (unsigned int i = 0; i < 48; i++) {
             snprintf(s + 1, 3, "%02d", i + 1);
             if (strcmp(key, s) == 0) {

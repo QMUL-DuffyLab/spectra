@@ -234,7 +234,6 @@ main(int argc, char** argv)
     }
   }
   fprintf(stdout, "\n");
-  double xtest = 0.0;
   void *params = &odep;
 
   fprintf(stdout, "\n-------------------------\n"
@@ -395,6 +394,17 @@ main(int argc, char** argv)
   fprintf(stdout, "\n-------------------\n"
                     "EXCITATION LIFETIME\n"
                     "-------------------\n\n");
+
+  double **Tij_vr, **Tij_vr_inv, **Tij_wr;
+  Tij_vr = calloc(p->N, sizeof(double*));
+  Tij_vr_inv = calloc(p->N, sizeof(double*));
+  Tij_wr = calloc(p->N, sizeof(double*));
+  for (i = 0; i < p->N; i++) {
+    Tij_vr[i] = calloc(p->N, sizeof(double));
+    Tij_vr_inv[i] = calloc(p->N, sizeof(double));
+    Tij_wr[i] = calloc(p->N, sizeof(double));
+  }
+  decompose_transfer_matrix(p->N, odep.Tij, Tij_vr, Tij_vr_inv, Tij_wr);
   /* get P(0) back - initial population guess */
   /* tidy this up lol - can probably do away with the gsl vector bit */
   x = guess(FLAT, boltz, musq, max, p->N);
@@ -402,68 +412,52 @@ main(int argc, char** argv)
   for (i = 0; i < p->N; i++) {
     p0[i] = gsl_vector_get(x, i);
   }
-  double excite = mean_excitation_lifetime(p->N, odep.Tij, p0);
-  free(p0);
+  double excite = mean_excitation_lifetime(p->N, Tij_vr,
+                                           Tij_vr_inv,
+                                           Tij_wr, p0);
   fprintf(stdout, "<τ> (ps) = %12.8e\n", excite);
 
-  /* do ODE solving
-   * this doesn't work yet */
-  int ode_success = odefunc(xtest, y, f, params);
-  if (ode_success != GSL_SUCCESS) {
-    fprintf(stdout, "ode_success failed!\n");
-  }
+  fprintf(stdout, "\n-------------------\n"
+                    "POPULATION DYNAMICS\n"
+                    "-------------------\n\n");
 
-  fprintf(stdout, "\n----------------------------------\n"
-      "ODE SOLVER FOR EXCITON POPULATIONS\n"
-      "----------------------------------\n\n");
-
-  gsl_odeiv2_system sys = {odefunc, jacobian, p->N, params};
-
-  double thresh = 1e-6;
-  gsl_odeiv2_driver *d = gsl_odeiv2_driver_alloc_y_new(
-      &sys, 
-      gsl_odeiv2_step_bsimp,
-      thresh,
-      thresh,
-      0.0);
-
-  double t1 = 0.0; double ti = 0.0; double dt = 1.0;
-  unsigned int MAX_ITER = 20000;
-  unsigned int print_pop = 0;
+  double ti = 0.0; double dt = 1.0; double thresh = 1e-10;
+  double *pt = calloc(p->N, sizeof(double));
+  /* use previous step to check convergence */
+  double *pt_prev = calloc(p->N, sizeof(double));
+  unsigned int MAX_ITER = 20000; /* 20 ns */
+  unsigned int print_pop = 1;
   status = 0;
+  double sum = 0.;
 
   fprintf(stdout, "\nWriting populations\n");
   fp = fopen(p->pop_file, "w");
 
   for (i = 0; i < MAX_ITER; i++) {
-    ti = (i * dt);
-    for (j = 0; j < p->N; j++) {
-      yprev[j] = y[j];
-    }
+    sum = 0.;
+    pt_prev[j] = pt[j];
 
-    status = gsl_odeiv2_driver_apply(d, &t1, ti, y);
+    ti = (i * dt);
+    population(p->N, ti, pt, Tij_vr, Tij_vr_inv, Tij_wr, p0);
 
     fprintf(fp, "%6.3f ", ti);
     if (print_pop) {
       fprintf(stdout, "ti = %6.3f ", ti);
     }
     for (j = 0; j < p->N; j++) {
-      fprintf(fp, "%+12.8e ", y[j]);
+      sum += pt[j];
+      fprintf(fp, "%+12.8e ", pt[j]);
       if (print_pop) {
-        fprintf(stdout, "%+12.8e ", y[j]);
+        fprintf(stdout, "%+12.8e ", pt[j]);
       }
     }
     fprintf(fp, "\n");
     if(print_pop) {
-      fprintf(stdout, "\n");
+      fprintf(stdout, ". sum = %12.8e\n", sum);
     }
 
-    if (status != GSL_SUCCESS) {
-      fprintf(stdout, "error: return value = %d\n", status);
-      exit(EXIT_FAILURE);
-    }
     if (i > 0) {
-      unsigned short int converged = pop_converge(y, yprev, p->N, thresh);
+      unsigned short int converged = pop_converge(pt, pt_prev, p->N, thresh);
       if (converged) {
         fprintf(stdout, "all populations converged to within %f; "
             "ending integration at interation %d\n", thresh, i);
@@ -473,27 +467,12 @@ main(int argc, char** argv)
 
   }
   fclose(fp);
-  gsl_odeiv2_driver_free(d);
 
-  double *ynorm = calloc(p->N, sizeof(double));
-  double ysum = 0.0;
-  fprintf(stdout, "\n-----------------\n"
-      "FINAL POPULATIONS\n"
-      "-----------------\n\n");
-    fprintf(stdout, "P_i\t\tP_i^norm\tboltz_i\n");
-  for (i = 0; i < p->N; i++) {
-    ysum += y[i];
-  }
-  for (i = 0; i < p->N; i++) {
-    ynorm[i] = y[i] / ysum;
-    fprintf(stdout, "%8.6f\t%8.6f\t%8.6f\n", y[i], ynorm[i], boltz[i]);
-  }
-  fprintf(stdout, "\n----------------------\n");
-
+  free(p0); free(pt); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
   free(line); free(lineshape_files); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
   free(in); free(out); free(y); free(f); free(boltz); free(yprev);
-  free(ynorm); free(ww);
+  free(ww);
   exit(EXIT_SUCCESS);
 }

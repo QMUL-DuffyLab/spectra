@@ -86,7 +86,7 @@ pigment_data = {
             'S1': {
                 'energy': 15400.0,
                 'lifetime': 0.01,
-                'reorg': 900.0,
+                'reorg': 450.0,
                 },
             'S2': {
                 'energy': 20000.0,
@@ -99,7 +99,7 @@ pigment_data = {
             'S1': { # no real data for this or XAT
                 'energy': 15200.0,
                 'lifetime': 0.01,
-                'reorg': 900.0,
+                'reorg': 450.0,
                 },
             'S2': {
                 'energy': 20000.0,
@@ -112,7 +112,7 @@ pigment_data = {
             'S1': { # no real data for this or XAT
                 'energy': 15200.0,
                 'lifetime': 0.01,
-                'reorg': 900.0,
+                'reorg': 450.0,
                 },
             'S2': {
                 'energy': 20000.0,

@@ -5,7 +5,10 @@
 #define __INVERT_MATRIX_H__
 
 void
-print_matrix(char* name, unsigned n, double** matrix);
+print_matrix(FILE *stream, char* name, unsigned n, double** matrix);
+
+void
+print_vector(FILE *stream, char* name, unsigned n, double *vector);
 
 void
 interchange_2d_contiguous(char direction, unsigned n,

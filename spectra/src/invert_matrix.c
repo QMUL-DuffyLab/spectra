@@ -1,16 +1,27 @@
 #include "invert_matrix.h"
 
 void
-print_matrix(char* name, unsigned n, double **matrix)
+print_matrix(FILE *stream, char* name, unsigned n, double **matrix)
 {
   unsigned i, j;
-  fprintf(stdout, "Printing matrix %s:\n", name);
+  fprintf(stream, "Printing matrix %s:\n", name);
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
-      fprintf(stdout, "%8.4e ", matrix[i][j]);
+      fprintf(stream, "%8.4e ", matrix[i][j]);
     }
-    fprintf(stdout, "\n");
+    fprintf(stream, "\n");
   }
+}
+
+void
+print_vector(FILE *stream, char* name, unsigned n, double *vector)
+{
+  unsigned i;
+  fprintf(stream, "Printing vector %s:\n", name);
+  for (i = 0; i < n; i++) {
+    fprintf(stream, "%8.4e ", vector[i]);
+  }
+  fprintf(stream, "\n");
 }
 
 /** interchange between an aritrary 2d array and a contiguous one.
