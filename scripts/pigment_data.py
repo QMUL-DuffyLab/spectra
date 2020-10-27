@@ -123,13 +123,12 @@ pigment_data = {
         }
 
 # check where these are from!!!
-# muh and renger 
+# muh and renger
 site_energies = {
         'CHL601' : 15405,
         'CLA602' : 14940,
         'CLA603' : 14850,
         'CLA604' : 14820,
-        'CHL605' : 15465,
         'CHL605' : 15465,
         'CHL606' : 15385,
         'CHL607' : 15225,
@@ -140,8 +139,10 @@ site_energies = {
         'CLA612' : 14940,
         'CLA613' : 14840,
         'CLA614' : 14940,
-        'LUT620' : 14500, # 620/621 from kieran carotenoid paper
+        'LUT620' : 14500, # testing
         'LUT621' : 14500,
+        # 'LUT620' : 14500, # guess from chris - both luteins 14500
+        # 'LUT621' : 14500,
         # 'LUT620' : 19538, # 620/621 from kieran carotenoid paper
         # 'LUT621' : 19748,
         }

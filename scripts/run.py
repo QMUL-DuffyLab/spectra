@@ -7,6 +7,7 @@ Also, should generate the diagonal of the matrix using oscillator strengths for 
 """
 
 import os
+import time
 import numpy as np # this is extremely wasteful to read in one float but i want to make sure everything else works first
 import argparse
 import subprocess
@@ -131,7 +132,10 @@ def run_frame(i, do_plots):
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     print("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     os.system("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
+    ti = time.time_ns()
     os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
+    tf = time.time_ns()
+    print("Time taken (ms): {:6.3f}".format(float(tf - ti) / 1000000))
     if do_plots != 0:
         os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
         os.system("python ./scripts/plot_chiw.py -d {} -n {}".format(output_path, len(pigment_dirs)))
@@ -159,9 +163,12 @@ if recalc_lineshapes:
         os.system("./lineshape/test {} lineshape/in/{}.def".format(args.protocol, p))
 
 if int(args.frame) == 0:
+    t0 = time.time_ns()
     for i in range(1000):
         run_frame(i + 1, 0) # range starts from 0
 
+    t1 = time.time_ns()
+    print("Total time taken (s): {:6.3f}".format(float(t1 - t0) / 1000000000))
 else:
     run_frame(args.frame, args.plot)
 

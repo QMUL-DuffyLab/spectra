@@ -426,7 +426,7 @@ main(int argc, char** argv)
   /* use previous step to check convergence */
   double *pt_prev = calloc(p->N, sizeof(double));
   unsigned int MAX_ITER = 20000; /* 20 ns */
-  unsigned int print_pop = 1;
+  unsigned int print_pop = 0;
   status = 0;
   double sum = 0.;
 

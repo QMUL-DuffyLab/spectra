@@ -62,7 +62,8 @@ main(int argc, char** argv)
     fprintf(stdout, "Reorganisation energy lambda = %12.8f\n",reorg_res);
     reorg_res -= p.offset;
     fp = fopen(p.lambda_file, "w");
-    fprintf(fp, "%18.10f %18.10f\n", reorg_res, reorg_err);
+    /* p.nu comes from mancal */
+    fprintf(fp, "%18.10f %18.10f\n", reorg_res * p.nu, reorg_err);
     fclose(fp);
 
     gsl_re.function = &trig_re;

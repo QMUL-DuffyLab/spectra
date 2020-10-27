@@ -16,6 +16,8 @@ parser.add_argument("-i", "--input_dir", default='out/LHCII',
         help="Relative path to input directory.")
 parser.add_argument("-p", "--protein", default='LHCII',
         help="the protein we're looking at ")
+parser.add_argument("-r", "--recalc", type=int, default=1,
+        help="Recalculate the average - 1 if yes, 0 if no")
 args = parser.parse_args()
 
 initial_data = np.loadtxt("{}/1/aw.dat".format(args.input_dir))
@@ -23,8 +25,7 @@ aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/1/J_ij.out".format(args.input_dir)))
 
-resum = 1
-if resum is not 0:
+if args.recalc is 1:
     print("Summing A(w) and F(w) per frame")
     for i in range(1000):
         if (i % 100) is 0:
@@ -60,7 +61,7 @@ aw_exp = np.loadtxt("out/{}/aw_exp.dat".format(args.protein), skiprows=1)
 fw_exp = np.loadtxt("out/{}/fw_exp.dat".format(args.protein), skiprows=1)
 
 fig, ax = plt.subplots()
-ax.set_xlim([580, 700])
+ax.set_xlim([600, 700])
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
 plt.plot(aws[:, 0], aws[:, 1]/np.max(aws[:, 1]),
@@ -73,7 +74,7 @@ plt.tight_layout()
 plt.savefig("{}/aw_average.pdf".format(args.input_dir))
 
 fig, ax = plt.subplots()
-ax.set_xlim([640, 780])
+ax.set_xlim([660, 780])
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
 plt.plot(fws[:, 0], fws[:, 1]/np.max(fws[:, 1]),
@@ -86,7 +87,7 @@ plt.tight_layout()
 plt.savefig("{}/fw_average.pdf".format(args.input_dir))
 
 fig, ax = plt.subplots()
-ax.set_xlim([580, 780])
+ax.set_xlim([600, 780])
 plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
 plt.plot(aws[:, 0], aws[:, 1], label=r'$ A(\omega) $')
