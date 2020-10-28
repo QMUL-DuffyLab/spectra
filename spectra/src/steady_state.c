@@ -23,7 +23,7 @@ guess(const ss_init p, const double* boltz, const double* musq,
       unsigned const int max, unsigned const int N)
 {
   short print_guess = 0;
-  double boltz_musq_sum = 0.;
+  double sum = 0.;
   gsl_vector *x = gsl_vector_alloc(N);
   if (print_guess) {
     fprintf(stdout, "Initial population guess:\n");
@@ -34,9 +34,16 @@ guess(const ss_init p, const double* boltz, const double* musq,
       if (print_guess) {
         fprintf(stdout, "%d %12.8e ", i, boltz[i]);
       }
-    } else if (p == BOLTZ_MUSQ) {
+    } else if (p == MUSQ) {
       /* sum this because it won't be normalised otherwise */
-      boltz_musq_sum += boltz[i] * musq[i];
+      sum += musq[i];
+      gsl_vector_set(x, i, musq[i]);
+      if (print_guess) {
+        fprintf(stdout, "%d %12.8e ", i, musq[i]);
+      }
+    } else if (p == BOLTZ_MUSQ) {
+      /* likewise this needs to be normalised here */
+      sum += boltz[i] * musq[i];
       gsl_vector_set(x, i, boltz[i] * musq[i]);
       if (print_guess) {
         fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
@@ -60,9 +67,9 @@ guess(const ss_init p, const double* boltz, const double* musq,
       exit(EXIT_FAILURE);
     }
   }
-  if (p == BOLTZ_MUSQ) {
+  if (p == MUSQ || p == BOLTZ_MUSQ) {
     for (unsigned i = 0; i < N; i++){
-      gsl_vector_set(x, i, (gsl_vector_get(x, i) / boltz_musq_sum));
+      gsl_vector_set(x, i, (gsl_vector_get(x, i) / sum));
     }
   }
   if (print_guess) {

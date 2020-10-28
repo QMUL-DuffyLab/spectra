@@ -61,11 +61,15 @@ rate_calc(unsigned int N, double **eig,
 
   double elem = 0.0;
   double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
-  unsigned short print_kij = 0;
+  unsigned short print_kij = 1;
   unsigned short print_details = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       if (i == j) {
+        if (print_kij) {
+          /* otherwise the diagonal doesn't get printed */
+          fprintf(stdout, "%8.3e ", kij[i][j]);
+        }
         continue;
       }
       for (k = 0; k < N; k++) {
@@ -76,16 +80,18 @@ rate_calc(unsigned int N, double **eig,
           p[k].nu * p[k].cn((wij[i][j]), vptr));
         if (print_details) {
           fprintf(stdout, "\ni j k = %2d %2d %2d:\n"
-              "c_k^i^2 = %8.6e\nc_k^j^2 = %8.6e\n"
-              "nu_k = %8.6e\nw_ij = %8.6e\nC_n(w_ij) = %8.6e\n"
+              "c_k^i = %8.6e\tc_k^j = %8.6e\t"
+              "c_k^i^2 = %8.6e\tc_k^j^2 = %8.6e\n"
+              "nu_k = %8.6e\nw_ij = %8.6e\tC_n(w_ij) = %8.6e\n"
               "product = %8.6e\n",
-              i, j, k, pow(eig[k][i], 2.), pow(eig[k][j], 2.),
+              i, j, k, eig[k][i], eig[k][j], 
+              pow(eig[k][i], 2.), pow(eig[k][j], 2.),
               p[k].nu, wij[i][j], p[k].cn(wij[i][j], vptr), elem);
         }
         kij[i][j] += elem;
       }
       if (print_kij) {
-        fprintf(stdout, "%8.6e ", kij[i][j]);
+        fprintf(stdout, "%8.3e ", kij[i][j]);
       }
     }
     if (print_kij) {

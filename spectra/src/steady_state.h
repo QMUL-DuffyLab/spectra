@@ -77,9 +77,10 @@ typedef enum ss_init {
   /* decides what the P_i(0) should look like as the initial input
    * for the steady-state solver (multidim. root finder in GSL) */
     BOLTZ = 0,      /* straight Boltzmann factors */
-    BOLTZ_MUSQ = 1, /* Boltzmann weighted by oscillator strength */
-    CONST = 2,      /* flat probability distribution */
-    MAX = 3,        /* excite only state with highest |μ^2| */
+    MUSQ = 1,       /* straight oscillator strength */
+    BOLTZ_MUSQ = 2, /* Boltzmann weighted by oscillator strength */
+    CONST = 3,      /* flat probability distribution */
+    MAX = 4,        /* excite only state with highest |μ^2| */
 } ss_init;
 
 unsigned short int pop_converge(double *y, double *yprev, 

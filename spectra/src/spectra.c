@@ -407,7 +407,7 @@ main(int argc, char** argv)
   decompose_transfer_matrix(p->N, odep.Tij, Tij_vr, Tij_vr_inv, Tij_wr);
   /* get P(0) back - initial population guess */
   /* tidy this up lol - can probably do away with the gsl vector bit */
-  x = guess(FLAT, boltz, musq, max, p->N);
+  x = guess(MUSQ, boltz, musq, max, p->N);
   double *p0 = calloc(p->N, sizeof(double));
   for (i = 0; i < p->N; i++) {
     p0[i] = gsl_vector_get(x, i);
