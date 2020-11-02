@@ -33,6 +33,8 @@ cla_tresp = [list(line) for line in zip(*cla_tresp)]
 chl_tresp = [list(line) for line in zip(*chl_tresp)]
 lut_tresp = [list(line) for line in zip(*lut_tresp)]
 
+# ugly but it's just translating the residue numbers from the MD
+# into the equivalent ones from the Liu structure
 if (args.protein) == 'LHCII':
     pigments = {
         '1433': 'CHL601',
@@ -54,6 +56,29 @@ if (args.protein) == 'LHCII':
         '1449': 'NEX623',
         '1450': 'XAT622',
         }
+elif (args.protein) == 'NLLZ':
+    pigments = {
+        '1433': 'CHL601',
+        '1434': 'CHL605',
+        '1435': 'CHL606',
+        '1436': 'CHL607',
+        '1437': 'CHL608',
+        '1438': 'CHL609',
+        '1439': 'CLA602',
+        '1440': 'CLA603',
+        '1441': 'CLA604',
+        '1442': 'CLA610',
+        '1443': 'CLA611',
+        '1444': 'CLA612',
+        '1445': 'CLA613',
+        '1446': 'CLA614',
+        '1447': 'LUT620',
+        '1448': 'LUT621',
+        '1449': 'NEX623',
+        '1450': 'ZEA622',
+        }
+elif (args.protein) == 'VANGELIS':
+    pigments = {}
 else:
     pigments = {}
 
@@ -81,7 +106,7 @@ for item in filelist:
     os.makedirs(output_dir, exist_ok=True)
     frame = str(item)[int((str(item)).find(".")) + 1:]
     output_file = output_dir + '/frame{}.csv'.format(frame)
-    print("Creating file {}\n".format(output_file))
+    print("Creating file {}".format(output_file))
 
     ligand_code = str(arr[0][3])
     if ligand_code == "CLA":

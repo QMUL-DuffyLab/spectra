@@ -3,6 +3,14 @@
 #include <fftw3.h>
 #include <stdio.h>
 #include <gsl/gsl_eigen.h>
+#define CVAC 299792458.0
+#define HBAR 1.0545718176E-34
+#define EV 1.602176634E-19
+#define PI 3.14159265358979
+/* 200 here because it's 2 \pi 100 (cm m^{-1}) */
+#define PS_TO_INV_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
+#define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR);sS
+
 
 int
 main(int argc, char** argv)
@@ -30,7 +38,7 @@ main(int argc, char** argv)
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = { .type=DELTA, .centre=15000., .width=300. };
   /* form of P_i(0) - check steady_state.h for details */
-  ss_init population_guess = CONST;
+  ss_init population_guess = BOLTZ_MUSQ;
 
   Input *p = read_input_file(argv[1]);
   Protocol protocol = get_protocol(argv[2]);
@@ -407,11 +415,12 @@ main(int argc, char** argv)
   decompose_transfer_matrix(p->N, odep.Tij, Tij_vr, Tij_vr_inv, Tij_wr);
   /* get P(0) back - initial population guess */
   /* tidy this up lol - can probably do away with the gsl vector bit */
-  x = guess(MUSQ, boltz, musq, max, p->N);
+  x = guess(BOLTZ_MUSQ, boltz, musq, max, p->N);
   double *p0 = calloc(p->N, sizeof(double));
   for (i = 0; i < p->N; i++) {
     p0[i] = gsl_vector_get(x, i);
   }
+  print_vector(stdout, "P(0)", p->N, p0);
   double excite = mean_excitation_lifetime(p->N, Tij_vr,
                                            Tij_vr_inv,
                                            Tij_wr, p0);
