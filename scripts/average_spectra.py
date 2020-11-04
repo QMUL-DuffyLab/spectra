@@ -57,8 +57,9 @@ aws[:, 0] = 10000000/aws[:, 0]
 fws[:, 0] = 10000000/fws[:, 0]
 
 # experimental data: this filename construction's ugly
-aw_exp = np.loadtxt("out/{}/aw_exp.dat".format(args.protein), skiprows=1)
-fw_exp = np.loadtxt("out/{}/fw_exp.dat".format(args.protein), skiprows=1)
+if (args.protein is 'LHCII'):
+    aw_exp = np.loadtxt("out/{}/aw_exp.dat".format(args.protein), skiprows=1)
+    fw_exp = np.loadtxt("out/{}/fw_exp.dat".format(args.protein), skiprows=1)
 
 fig, ax = plt.subplots()
 ax.set_xlim([600, 700])
@@ -66,8 +67,10 @@ plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
 plt.plot(aws[:, 0], aws[:, 1]/np.max(aws[:, 1]),
          label=r'$ A(\omega) $')
-plt.plot(aw_exp[:, 0], aw_exp[:, 1]/np.max(aw_exp[:, 1]),
-         label=r'Experiment')
+if (args.protein is 'LHCII'):
+    plt.plot(aw_exp[:, 0], aw_exp[:, 1]/np.max(aw_exp[:, 1]),
+             label=r'Experiment')
+
 plt.grid()
 plt.legend()
 plt.tight_layout()
@@ -79,8 +82,10 @@ plt.xlabel(r'Wavelength (nm)')
 plt.ylabel(r'Intensity (abu)')
 plt.plot(fws[:, 0], fws[:, 1]/np.max(fws[:, 1]),
          label=r'$ F(\omega) $')
-plt.plot(fw_exp[:, 0], fw_exp[:, 1]/np.max(fw_exp[:, 1]),
-         label=r'Experiment')
+if (args.protein is 'LHCII'):
+    plt.plot(fw_exp[:, 0], fw_exp[:, 1]/np.max(fw_exp[:, 1]),
+             label=r'Experiment')
+
 plt.grid()
 plt.legend()
 plt.tight_layout()

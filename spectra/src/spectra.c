@@ -9,7 +9,7 @@
 #define PI 3.14159265358979
 /* 200 here because it's 2 \pi 100 (cm m^{-1}) */
 #define PS_TO_INV_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
-#define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR);sS
+#define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR)
 
 
 int
@@ -35,59 +35,66 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
+  Input *p = read_input_file(argv[1]);
+  Protocol protocol = get_protocol(argv[2]);
+  fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
+
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = { .type=DELTA, .centre=15000., .width=300. };
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = BOLTZ_MUSQ;
 
-  Input *p = read_input_file(argv[1]);
-  Protocol protocol = get_protocol(argv[2]);
-  fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
-
   /* malloc 1d stuff, read them in */
-  eigvals = calloc(p->N, sizeof(double));
-  gamma = calloc(p->N, sizeof(double));
-  rates = calloc(p->N, sizeof(double));
-  musq = calloc(p->N, sizeof(double));
-  lambda = calloc(p->N, sizeof(double));
+  eigvals     = calloc(p->N, sizeof(double));
+  gamma       = calloc(p->N, sizeof(double));
+  rates       = calloc(p->N, sizeof(double));
+  musq        = calloc(p->N, sizeof(double));
+  lambda      = calloc(p->N, sizeof(double));
   line_params = malloc(p->N * sizeof(Parameters));
-  chiw_ints = calloc(p->N, sizeof(double));
-  ww = calloc(p->tau, sizeof(double));
+  chiw_ints   = calloc(p->N, sizeof(double));
+  ww          = calloc(p->tau, sizeof(double));
+  integral    = calloc(p->tau, sizeof(double));
+  in          = (fftw_complex*) fftw_malloc(
+                 sizeof(fftw_complex) * p->tau);
+  out         = (fftw_complex*) fftw_malloc(
+                 sizeof(fftw_complex) * p->tau);
+
+  /* malloc 2d stuff */
+  lineshape_files = malloc(p->N * sizeof(char*));
+  mu              = calloc(p->N, sizeof(double*));
+  gi_array        = calloc(p->N, sizeof(double complex*));
+  eig             = calloc(p->N, sizeof(double*));
+  wij             = calloc(p->N, sizeof(double*));
+  kij             = calloc(p->N, sizeof(double*));
+  Jij             = calloc(p->N, sizeof(double*));
+  chiw            = calloc(p->N, sizeof(double*));
+  pump            = calloc(p->N, sizeof(double*));
+
+  for (i = 0; i < p->N; i++) {
+    lineshape_files[i] = malloc(200 * sizeof(char));
+    gi_array[i]        = calloc(p->tau, sizeof(double complex));
+    mu[i]              = calloc(3, sizeof(double));
+    eig[i]             = calloc(p->N, sizeof(double));
+    wij[i]             = calloc(p->N, sizeof(double));
+    kij[i]             = calloc(p->N, sizeof(double));
+    Jij[i]             = calloc(p->N, sizeof(double));
+    chiw[i]            = calloc(p->tau, sizeof(double));
+    pump[i]            = calloc(p->tau, sizeof(double));
+  }
 
   /* read function reads a set of doubles: here we read in
    * the rates (gamma), reorganisation energies (lambda) 
    * and exciton energies (eigvals - they're the eigenvalues
    * of the diagonalised Hamiltonian */
-  gamma = read(p->gamma_file, p->N);
-  lambda = read(p->lambda_file, p->N);
+  gamma   = read(p->gamma_file, p->N);
+  lambda  = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
 
-  /* malloc 2d stuff */
-  lineshape_files = malloc(p->N * sizeof(char*));
-  mu = calloc(p->N, sizeof(double*));
-  gi_array = calloc(p->N, sizeof(double complex*));
-  eig = calloc(p->N, sizeof(double*));
-  wij = calloc(p->N, sizeof(double*));
-  kij = calloc(p->N, sizeof(double*));
-  Jij = calloc(p->N, sizeof(double*));
-  chiw = calloc(p->N, sizeof(double*));
-  pump = calloc(p->N, sizeof(double*));
-  for (i = 0; i < p->N; i++) {
-    lineshape_files[i] = malloc(200 * sizeof(char));
-    gi_array[i] = calloc(p->tau, sizeof(double complex));
-    mu[i] = calloc(3, sizeof(double));
-    eig[i] = calloc(p->N, sizeof(double));
-    wij[i] = calloc(p->N, sizeof(double));
-    kij[i] = calloc(p->N, sizeof(double));
-    Jij[i] = calloc(p->N, sizeof(double));
-    chiw[i] = calloc(p->tau, sizeof(double));
-    pump[i] = calloc(p->tau, sizeof(double));
-  }
-
+  /* read 2d stuff */
   gi_array = read_gi(p->gi_files, p->N, p->tau);
-  eig = read_eigvecs(p->eigvecs_file, p->N);
-  mu = read_mu(p->mu_file, p->N);
-  ww = incident(pump_properties, p->tau);
+  eig      = read_eigvecs(p->eigvecs_file, p->N);
+  mu       = read_mu(p->mu_file, p->N);
+  ww       = incident(pump_properties, p->tau);
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = malloc(200 * sizeof(char));
@@ -121,10 +128,6 @@ main(int argc, char** argv)
   check_detailed_balance(p->N, protocol.T, 1e-5, kij, wij);
   rates = relaxation_rates(p->N, gamma);
 
-  integral = calloc(p->tau, sizeof(double));
-
-  in =  (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * p->tau);
-  out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * p->tau);
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
@@ -134,7 +137,7 @@ main(int argc, char** argv)
     for (unsigned int j = 0; j < p->tau; j++) {
       in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
                  (double)j * TOFS,
-                 1. / (1000 * gamma[i]));
+                 1. / (1000000. * gamma[i]));
     }
 
     fftw_execute(plan); 
@@ -343,12 +346,12 @@ main(int argc, char** argv)
       in[j] = p_i_equib[i] * Ft(eigvals[i],
               creal(gi_array[i][j]), cimag(gi_array[i][j]),
               lambda[i], (double)j * TOFS,
-              1. / (1000 * gamma[i]));
+              1. / (1000000. * gamma[i]));
     }
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < p->tau; j++) {
-      chiw[i][j] = creal(out[j]) * musq[i];
+      chiw[i][j]   = creal(out[j]) * musq[i];
       integral[j] += creal(out[j]) * musq[i];
     }
 

@@ -184,3 +184,65 @@ pop_steady_fdf
 
   return GSL_SUCCESS;
 }
+
+/** Return normalised steady-state populations.
+ *
+ */
+double*
+steady_state_populations(gsl_vector *guess, void *params, unsigned n)
+{
+  double *populations = calloc(n, sizeof(double));
+  const gsl_multiroot_fdfsolver_type *T;
+  int status;
+  unsigned i, iter = 0;
+  gsl_multiroot_fdfsolver *s;
+  gsl_multiroot_function_fdf FDF;
+  FDF.f = &pop_steady_f;
+  FDF.df = &pop_steady_df;
+  FDF.fdf = &pop_steady_fdf;
+  FDF.n = n;
+  FDF.params = params;
+
+  T = gsl_multiroot_fdfsolver_hybridsj;
+  s = gsl_multiroot_fdfsolver_alloc(T, n);
+  gsl_multiroot_fdfsolver_set(s, &FDF, guess);
+
+  do
+    {
+      iter++;
+      status = gsl_multiroot_fdfsolver_iterate (s);
+
+      fprintf(stdout, "iter %d: ", iter);
+      for (i = 0; i < n; i++) {
+        fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i));
+      }
+      fprintf(stdout, "\n");
+
+      if (status)   /* check if solver is stuck */
+        break;
+
+      status =
+        gsl_multiroot_test_residual (s->f, 1e-8);
+    }
+  while (status == GSL_CONTINUE && iter < 1000);
+
+  printf ("status = %s\n", gsl_strerror (status));
+
+  double p_i_sum = 0.0;
+  /* amazingly there does not seem to be a GSL function for this */
+  for (i = 0; i < n; i++) {
+    p_i_sum += gsl_vector_get(s->x, i);
+  }
+  if (p_i_sum <= 1E-10) {
+    fprintf(stdout, "Sum of steady-state populations is zero!!!\n");
+    /* this stops it from e.g. normalising a vector (0, 1e-23)
+     * to (0, 1) and making it look normal */
+    p_i_sum = 1.;
+  } else {
+    for (i = 0; i < n; i++) {
+      populations[i] = gsl_vector_get(s->x, i) / p_i_sum;
+    }
+    fprintf(stdout, "Σ_i p_i = %8.6f\n", p_i_sum);
+  }
+  return populations;
+}
