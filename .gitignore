@@ -12,6 +12,7 @@ pigme*
 *.o
 test*
 in/*
+*__pycache__*
 !in/*_tresp*
 exec*
 docs/html/*
