@@ -17,6 +17,7 @@ main(int argc, char** argv)
 {
   FILE *fp;
   unsigned int i, j;
+  int status;
   char *line, **lineshape_files;
   double kd;
   double complex **gi_array;
@@ -173,17 +174,13 @@ main(int argc, char** argv)
   char fn[200]; char *pch;
   for (i = 0; i < p->N; i++) {
     strcpy(fn, p->gi_files[i]);
-    if((pch = strstr(fn, "g_")) == NULL) {
+    status = generate_filename(sizeof(fn), fn, "g_", "chi_bar_");
+    if(status != 0) {
       fprintf(stdout, "Cannot find string 'g_' in "
           "g_i filename no. %d, needed to print out chi_i. "
           "Something got renamed accidentally?\n", i);
       break;
     }
-    /* + 4 bc strlen("chi_") = 4; + 2 bc strlen("g_") = 2.
-     * strlen(pch + 2) is the length of the string left after "g_",
-     * so we move the end of the string (4 - 2) bytes along */
-    memmove(pch + 4, pch + 2, strlen(pch + 2) + 1);
-    memcpy(pch, "chi_", 4);
     fp = fopen(fn, "w");
     for (j = 0; j < p->tau; j++) {
       /* unpack the ordering used by FFTW */
@@ -245,96 +242,48 @@ main(int argc, char** argv)
     }
   }
   fprintf(stdout, "\n");
-  void *params = &odep;
 
   fprintf(stdout, "\n-------------------------\n"
                   "STEADY STATE FLUORESCENCE\n"
                   "-------------------------\n\n");
 
-  const gsl_multiroot_fdfsolver_type *T;
-  gsl_multiroot_fdfsolver *s;
+  void *params = &odep;
   gsl_vector *x = guess(population_guess, boltz, musq, max, p->N);
-  gsl_multiroot_function_fdf FDF;
-  FDF.f = &pop_steady_f;
-  FDF.df = &pop_steady_df;
-  FDF.fdf = &pop_steady_fdf;
-  FDF.n = p->N;
-  FDF.params = params;
 
-  T = gsl_multiroot_fdfsolver_hybridsj;
-  s = gsl_multiroot_fdfsolver_alloc(T, p->N);
-  gsl_multiroot_fdfsolver_set(s, &FDF, x);
-
-  int status;
-  unsigned int iter = 0;
-
-  do
-    {
-      iter++;
-      status = gsl_multiroot_fdfsolver_iterate (s);
-
-      fprintf(stdout, "iter %d: ", iter);
-      for (i = 0; i < p->N; i++) {
-        fprintf(stdout, "x(%2d) = %8.6f ", i, gsl_vector_get(s->x, i));
-      }
-      fprintf(stdout, "\n");
-
-      if (status)   /* check if solver is stuck */
-        break;
-
-      status =
-        gsl_multiroot_test_residual (s->f, 1e-8);
-    }
-  while (status == GSL_CONTINUE && iter < 1000);
-
-  printf ("status = %s\n", gsl_strerror (status));
-
-  double *p_i_equib = calloc(p->N, sizeof(double));
-  double p_i_sum = 0.0;
+  double *p_i_equib = steady_state_populations(x, params, p->N);
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
-    /* amazingly there does not seem to be a GSL function for this */
-    p_i_sum += gsl_vector_get(s->x, i);
     boltz_sum += boltz[i] * musq[i];
-  }
-  if (p_i_sum <= 1E-10) {
-    fprintf(stdout, "Sum of steady-state populations is zero!!!\n");
-    /* this stops it from e.g. normalising a vector (0, 1e-23)
-     * to (0, 1) and making it look normal */
-    p_i_sum = 1.;
-  } else {
-    fprintf(stdout, "Σ_i p_i = %8.6f\n", p_i_sum);
   }
 
   /* write out the normalised steady-state populations */
   strcpy(fn, p->pop_file);
-  pch = strstr(fn, "populations");
-  if((pch = strstr(fn, "populations")) == NULL) {
+  status = generate_filename(sizeof(fn), fn,
+           "populations", "ss_populations");
+  if(status != 0) {
     fprintf(stdout, "Cannot find string 'populations' in "
         "pop_file needed to print out steady-state populations. "
         "Something got renamed accidentally?\n");
     exit(EXIT_FAILURE);
-  }
-  memmove(pch + 14, pch + 11, strlen(pch + 11) + 1);
-  memcpy(pch, "ss_populations", 14);
-  fp = fopen(fn, "w");
+  } else {
+    fp = fopen(fn, "w");
 
-  fprintf(stdout, "i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
-  fprintf(fp, "# i\t p_i^eq(raw)\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
-  for (i = 0; i < p->N; i++) {
-    p_i_equib[i] = gsl_vector_get(s->x, i) / p_i_sum;
-    fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
-        gsl_vector_get(s->x, i), p_i_equib[i], boltz[i],
-        (boltz[i] * musq[i]) / boltz_sum);
-    fprintf(fp, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\t%+12.8e\n", i,
-        gsl_vector_get(s->x, i), p_i_equib[i], boltz[i],
-        (boltz[i] * musq[i]) / boltz_sum);
-  }
-  cl = fclose(fp);
-  if (cl != 0) {
-      fprintf(stdout, "Failed to close steady state"
-          " population file, error no. %d.\n", cl);
-      exit(EXIT_FAILURE);
+    fprintf(stdout, "i\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
+    fprintf(fp, "# i\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
+    for (i = 0; i < p->N; i++) {
+      fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n",
+          i, p_i_equib[i], boltz[i],
+          (boltz[i] * musq[i]) / boltz_sum);
+      fprintf(fp, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n",
+          i, p_i_equib[i], boltz[i],
+          (boltz[i] * musq[i]) / boltz_sum);
+    }
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close steady state"
+            " population file, error no. %d.\n", cl);
+        exit(EXIT_FAILURE);
+    }
   }
 
   /* fluorescence spectrum */
@@ -375,15 +324,13 @@ main(int argc, char** argv)
   /* replace with chi_bar_ this time */
   for (i = 0; i < p->N; i++) {
     strcpy(fn, p->gi_files[i]);
-    pch = strstr(fn, "g_");
-    if((pch = strstr(fn, "g_")) == NULL) {
+    status = generate_filename(sizeof(fn), fn, "g_", "chi_bar_");
+    if(status != 0) {
       fprintf(stdout, "Cannot find string 'g_' in "
           "g_i filename no. %d, needed to print out chi_i. "
           "Something got renamed accidentally?\n", i);
       break;
     }
-    memmove(pch + 8, pch + 2, strlen(pch + 2) + 1);
-    memcpy(pch, "chi_bar_", 8);
     fp = fopen(fn, "w");
     for (j = 0; j < p->tau; j++) {
       /* unpack the ordering used by FFTW */
@@ -399,8 +346,8 @@ main(int argc, char** argv)
     }
   }
 
-  gsl_multiroot_fdfsolver_free(s);
   gsl_vector_free(x);
+  free(p_i_equib);
 
   fprintf(stdout, "\n-------------------\n"
                     "EXCITATION LIFETIME\n"
@@ -434,7 +381,12 @@ main(int argc, char** argv)
   if (status == 0) {
     fp = fopen(fn, "w");
     fprintf(fp, "%12.8e", excite);
-    fclose(fp);
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close <τ> "
+            "output file %s, error no. %d.\n", fn, cl);
+        exit(EXIT_FAILURE);
+    }
   } else {
     fprintf(stdout, "Filename could not be generated - not writing\n");
   }

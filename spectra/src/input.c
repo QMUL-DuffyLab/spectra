@@ -255,8 +255,15 @@ generate_filename(unsigned size, char *src, char *find, char *replace)
     return 2;
   }
   
+  /* pch + strlen(find) points to the rest of the string after find.
+   * we want to move this to pch + strlen(replace).
+   * strlen(pch + strlen(find)) is the length of the string 
+   * left after find, so this moves the end of the string
+   * (strlen(replace) - strlen(find)) bytes along. The +1 is for
+   * the terminating null character, which strlen ignores. */
   memmove(pch + strlen(replace), pch + strlen(find),
           strlen(pch + strlen(find)) + 1);
+  /* then this slots replace in the gap */
   memcpy(pch, replace, strlen(replace));
   return 0;
 }
