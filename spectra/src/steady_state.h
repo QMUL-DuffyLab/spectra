@@ -86,14 +86,14 @@ typedef enum ss_init {
 unsigned short int pop_converge(double *y, double *yprev, 
                                 unsigned int N, double thresh);
 double* incident(pulse p, unsigned int tau);
-gsl_vector* guess(const ss_init p,
+double* guess(const ss_init p,
                   const double* boltz, const double* musq,
                   unsigned const int max, unsigned const int N);
 int pop_steady_f   (const gsl_vector *x, void *params, gsl_vector *f);
 int pop_steady_df  (const gsl_vector *x, void *params, gsl_matrix *J);
 int pop_steady_fdf (const gsl_vector *x, void *params,
                     gsl_vector *f, gsl_matrix *J);
-double* steady_state_populations(gsl_vector *guess,
+double* steady_state_populations(double *guess,
                                  void *params, unsigned n);
 
 #endif

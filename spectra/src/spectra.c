@@ -248,9 +248,9 @@ main(int argc, char** argv)
                   "-------------------------\n\n");
 
   void *params = &odep;
-  gsl_vector *x = guess(population_guess, boltz, musq, max, p->N);
+  double *p0 = guess(population_guess, boltz, musq, max, p->N);
 
-  double *p_i_equib = steady_state_populations(x, params, p->N);
+  double *p_i_equib = steady_state_populations(p0, params, p->N);
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
     boltz_sum += boltz[i] * musq[i];
@@ -346,7 +346,6 @@ main(int argc, char** argv)
     }
   }
 
-  gsl_vector_free(x);
   free(p_i_equib);
 
   fprintf(stdout, "\n-------------------\n"
@@ -363,18 +362,13 @@ main(int argc, char** argv)
     Tij_wr[i] = calloc(p->N, sizeof(double));
   }
   decompose_transfer_matrix(p->N, odep.Tij, Tij_vr, Tij_vr_inv, Tij_wr);
-  /* get P(0) back - initial population guess */
-  /* tidy this up lol - can probably do away with the gsl vector bit */
-  x = guess(BOLTZ_MUSQ, boltz, musq, max, p->N);
-  double *p0 = calloc(p->N, sizeof(double));
-  for (i = 0; i < p->N; i++) {
-    p0[i] = gsl_vector_get(x, i);
-  }
+
+  /* p0 is still our guess from earlier */
   print_vector(stdout, "P(0)", p->N, p0);
   double excite = mean_excitation_lifetime(p->N, Tij_vr,
                                            Tij_vr_inv,
                                            Tij_wr, p0);
-  fprintf(stdout, "<τ> (ps) = %12.8e\n", excite);
+  fprintf(stdout, "\n<τ> (ps) = %12.8e\n", excite);
 
   strcpy(fn, p->fw_file);
   status = generate_filename(sizeof(fn), fn, "fw", "tau");

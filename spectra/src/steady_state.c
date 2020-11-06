@@ -18,49 +18,49 @@ pop_converge(double *y, double *yprev, unsigned int N, double thresh)
   return result;
 }
 
-gsl_vector*
+double*
 guess(const ss_init p, const double* boltz, const double* musq,
       unsigned const int max, unsigned const int N)
 {
   short print_guess = 0;
   double sum = 0.;
-  gsl_vector *x = gsl_vector_alloc(N);
+  double *guess = calloc(N, sizeof(double));
   if (print_guess) {
     fprintf(stdout, "Initial population guess:\n");
   }
   for (unsigned i = 0; i < N; i++){
     if (p == BOLTZ) {
-      gsl_vector_set(x, i, boltz[i]);
+      guess[i] = boltz[i];
       if (print_guess) {
         fprintf(stdout, "%d %12.8e ", i, boltz[i]);
       }
     } else if (p == MUSQ) {
       /* sum this because it won't be normalised otherwise */
       sum += musq[i];
-      gsl_vector_set(x, i, musq[i]);
+      guess[i] = musq[i];
       if (print_guess) {
         fprintf(stdout, "%d %12.8e ", i, musq[i]);
       }
     } else if (p == BOLTZ_MUSQ) {
       /* likewise this needs to be normalised here */
       sum += boltz[i] * musq[i];
-      gsl_vector_set(x, i, boltz[i] * musq[i]);
+      guess[i] = boltz[i] * musq[i];
       if (print_guess) {
         fprintf(stdout, "%d %12.8e ", i, boltz[i] * musq[i]);
       }
     } else if (p == CONST) {
-      gsl_vector_set(x, i, 1. / N);
+      guess[i] = 1. / N;
       if (print_guess) {
         fprintf(stdout, "%d %8.6f ", i, 1. / N);
       }
     } else if (p == MAX) {
       if (i == max) {
-        gsl_vector_set(x, i, 1.);
+        guess[i] = 1.;
       } else {
-        gsl_vector_set(x, i, 0.);
+        guess[i] = 0.;
       }
       if (print_guess) {
-        fprintf(stdout, "%d %12.8e ", i, gsl_vector_get(x, i));
+        fprintf(stdout, "%d %12.8e ", i, guess[i]);
       }
     } else {
       fprintf(stdout, "ss_init given false value\n");
@@ -69,13 +69,13 @@ guess(const ss_init p, const double* boltz, const double* musq,
   }
   if (p == MUSQ || p == BOLTZ_MUSQ) {
     for (unsigned i = 0; i < N; i++){
-      gsl_vector_set(x, i, (gsl_vector_get(x, i) / sum));
+      guess[i] /= sum;
     }
   }
   if (print_guess) {
     fprintf(stdout, "\n");
   }
-  return x;
+  return guess;
 }
 
 double*
@@ -189,12 +189,13 @@ pop_steady_fdf
  *
  */
 double*
-steady_state_populations(gsl_vector *guess, void *params, unsigned n)
+steady_state_populations(double *guess, void *params, unsigned n)
 {
   double *populations = calloc(n, sizeof(double));
   const gsl_multiroot_fdfsolver_type *T;
   int status;
   unsigned i, iter = 0;
+  gsl_vector *g = gsl_vector_alloc(n);
   gsl_multiroot_fdfsolver *s;
   gsl_multiroot_function_fdf FDF;
   FDF.f = &pop_steady_f;
@@ -202,10 +203,13 @@ steady_state_populations(gsl_vector *guess, void *params, unsigned n)
   FDF.fdf = &pop_steady_fdf;
   FDF.n = n;
   FDF.params = params;
+  for (i = 0; i < n; i++) {
+    gsl_vector_set(g, i, guess[i]);
+  }
 
   T = gsl_multiroot_fdfsolver_hybridsj;
   s = gsl_multiroot_fdfsolver_alloc(T, n);
-  gsl_multiroot_fdfsolver_set(s, &FDF, guess);
+  gsl_multiroot_fdfsolver_set(s, &FDF, g);
 
   do
     {
@@ -244,5 +248,9 @@ steady_state_populations(gsl_vector *guess, void *params, unsigned n)
     }
     fprintf(stdout, "Σ_i p_i = %8.6f\n", p_i_sum);
   }
+
+  gsl_multiroot_fdfsolver_free(s);
+  gsl_vector_free(g);
+
   return populations;
 }
