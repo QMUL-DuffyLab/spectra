@@ -429,6 +429,16 @@ main(int argc, char** argv)
                                            Tij_wr, p0);
   fprintf(stdout, "<τ> (ps) = %12.8e\n", excite);
 
+  strcpy(fn, p->fw_file);
+  status = generate_filename(sizeof(fn), fn, "fw", "tau");
+  if (status == 0) {
+    fp = fopen(fn, "w");
+    fprintf(fp, "%12.8e", excite);
+    fclose(fp);
+  } else {
+    fprintf(stdout, "Filename could not be generated - not writing\n");
+  }
+
   fprintf(stdout, "\n-------------------\n"
                     "POPULATION DYNAMICS\n"
                     "-------------------\n\n");

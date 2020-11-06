@@ -241,3 +241,4 @@ matmul(unsigned n, double **a, double **b, double **ab)
     }
   }
 }
+

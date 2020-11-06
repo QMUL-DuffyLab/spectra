@@ -238,3 +238,26 @@ read_gi(char *input_files[],
   }
   return gi;
 }
+
+int
+generate_filename(unsigned size, char *src, char *find, char *replace)
+{
+  char *pch;
+  pch = strstr(src, find);
+  if(pch == NULL) {
+    fprintf(stdout, "Cannot find string %s in string %s."
+        " Source string will not be modified!\n", find, src);
+    return 1;
+  }
+  if (strlen(src) - strlen(find) + strlen(replace) > size) {
+    fprintf(stdout, "Length of modified string is greater than"
+        " its size. String %s will not be modified!\n", src);
+    return 2;
+  }
+  
+  memmove(pch + strlen(replace), pch + strlen(find),
+          strlen(pch + strlen(find)) + 1);
+  memcpy(pch, replace, strlen(replace));
+  return 0;
+}
+
