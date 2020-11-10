@@ -199,7 +199,7 @@ Ft(double w0, double re, double im, double reorg,
    double t, double gamma)
 {
     /* double cmtofs = (200.0 * M_PI * CMS * 1E-15); */
-    double complex exponent = -I * ((w0) + (2. * reorg)) * t 
+    double complex exponent = -I * ((w0) - (2. * reorg)) * t 
                             - (re - (I * im) - (0.5 * t * gamma));
     return cexp(exponent);
 }
