@@ -63,6 +63,7 @@ plt.close()
 
 fig, ax = plt.subplots(figsize=(10,6))
 ax.set_ylim([0, 0.25])
+ax.set_xlim([0, 100])
 pop_full = np.loadtxt("{}/populations.dat".format(args.dir))
 pop = pop_full
 dec = np.argmin(np.abs(np.sum(pop[:, 1:], axis=1) - (1./np.e)))

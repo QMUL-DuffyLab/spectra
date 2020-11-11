@@ -65,7 +65,7 @@ def plot_aw_fw(aw, fw, aw_exp, fw_exp, draw_maximums, path):
     plt.xlabel(r'Wavelength (nm)')
     plt.ylabel(r'$ F(\omega) $ (abu)')
     ax = plt.gca()
-    ax.set_xlim([600, 850])
+    ax.set_xlim([550, 850])
     plt.grid()
     plt.legend()
     plt.tight_layout()

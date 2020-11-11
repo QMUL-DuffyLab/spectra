@@ -59,8 +59,8 @@ np.savetxt("{}/fw_max.dat".format(args.input_dir), fw_max)
 np.savetxt("{}/aw_average.dat".format(args.input_dir), aws)
 np.savetxt("{}/fw_average.dat".format(args.input_dir), fws)
 np.savetxt("{}/jij_average.dat".format(args.input_dir), jij)
-print("Standard deviation of A(w) max = {} (cm^{-1})".format(np.std(aw_max)))
-print("Standard deviation of F(w) max = {} (cm^{-1})".format(np.std(fw_max)))
+print("Standard deviation of A(w) max = {} (cm^[-1])".format(np.std(aw_max)))
+print("Standard deviation of F(w) max = {} (cm^[-1])".format(np.std(fw_max)))
 
 # experimental data: this filename construction's ugly
 if (args.protein is 'LHCII'):
