@@ -1,7 +1,7 @@
 #!/bin/bash
 file=/home/callum/code/spectra/structures/LHCII_PDB/LHCII/LHCII_trimer/LHCII_trimer_pigments_no_conect.pdb
 # awk -v FIELDWIDTHS="7 5 5 4 2 8 8 8 8 5 5" '
-awk -v FIELDWIDTHS="7 5 5 5 10 8 8 8 8 5 5" '
+awk -v FIELDWIDTHS="7 5 5 5 10 8 7 9 5 6 5" '
 {
 if ($1 == "HETATM ") {
 # if ($1 == "ATOM   ") {
