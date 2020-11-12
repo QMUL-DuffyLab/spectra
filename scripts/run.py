@@ -20,8 +20,10 @@ parser.add_argument("-o", "--output_dir", default='out',
         help="Relative path to output directory.")
 parser.add_argument("-f", "--frame", default=1,
         help="MD frame to calculate for - pass 0 to loop over all frames")
-parser.add_argument("-p", "--plot", type=int, default=0,
+parser.add_argument("-ps", "--plot", type=int, default=0,
         help="Plot spectra - default is yes, do -p 0 to disable")
+parser.add_argument("-pc", "--plot_chiw", type=int, default=0,
+        help="Plot exciton spectra - default is yes, do -p 0 to disable")
 parser.add_argument("-pr", "--protocol", default="in/protocol",
         help="Protocol file")
 parser.add_argument("-T", "--temperature", type=float, default=300.0,
@@ -125,7 +127,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
 
     return (input_file, output_path)
 
-def run_frame(i, do_plots):
+def run_frame(i, plot_spectra, plot_excitons):
     protein = args.input_dir.split('/')[-1]
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
@@ -136,8 +138,10 @@ def run_frame(i, do_plots):
     os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     tf = time.time_ns()
     print("Time taken (ms): {:6.3f}".format(float(tf - ti) / 1000000))
-    if do_plots != 0:
+    if plot_spectra != 0:
         os.system("python ./scripts/plot_aw.py -d {} -f {}".format(output_path, i))
+
+    if plot_excitons != 0:
         os.system("python ./scripts/plot_chiw.py -d {} -n {}".format(output_path, len(pigment_dirs)))
 
 input_dir  = os.path.join(os.getcwd(), args.input_dir)
@@ -165,10 +169,10 @@ if recalc_lineshapes:
 if int(args.frame) == 0:
     t0 = time.time_ns()
     for i in range(1000):
-        run_frame(i + 1, 0) # range starts from 0
+        run_frame(i + 1, 0, 0) # range starts from 0
 
     t1 = time.time_ns()
     print("Total time taken (s): {:6.3f}".format(float(t1 - t0) / 1000000000))
 else:
-    run_frame(args.frame, args.plot)
+    run_frame(args.frame, args.plot, args.plot_chiw)
 

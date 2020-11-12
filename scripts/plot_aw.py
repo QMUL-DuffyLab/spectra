@@ -42,7 +42,7 @@ def plot_aw_fw(aw, fw, aw_exp, fw_exp, draw_maximums, path):
     plt.xlabel(r'Wavelength (nm)')
     plt.ylabel(r'$ A(\omega) $ (abu)')
     ax = plt.gca()
-    ax.set_xlim([550, 750])
+    ax.set_xlim([600, 700])
     plt.grid()
     plt.legend()
     plt.tight_layout()
@@ -65,7 +65,7 @@ def plot_aw_fw(aw, fw, aw_exp, fw_exp, draw_maximums, path):
     plt.xlabel(r'Wavelength (nm)')
     plt.ylabel(r'$ F(\omega) $ (abu)')
     ax = plt.gca()
-    ax.set_xlim([550, 850])
+    ax.set_xlim([650, 750])
     plt.grid()
     plt.legend()
     plt.tight_layout()
@@ -73,7 +73,7 @@ def plot_aw_fw(aw, fw, aw_exp, fw_exp, draw_maximums, path):
 
     # combined
     fig, ax = plt.subplots()
-    ax.set_xlim([550, 850])
+    ax.set_xlim([600, 750])
     plt.plot(aw[:, 0], aw[:, 1], label=r'$ A(\omega) $')
     plt.plot(fw[:, 0], fw[:, 1], label=r'$ F(\omega) $')
     if (draw_maximums[2] is True):

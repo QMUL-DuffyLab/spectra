@@ -4,7 +4,9 @@ void
 print_matrix(FILE *stream, char* name, unsigned n, double **matrix)
 {
   unsigned i, j;
-  fprintf(stream, "Printing matrix %s:\n", name);
+  if (name) {
+    fprintf(stream, "Printing matrix %s:\n", name);
+  }
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
       fprintf(stream, "%8.4e ", matrix[i][j]);
@@ -17,7 +19,9 @@ void
 print_vector(FILE *stream, char* name, unsigned n, double *vector)
 {
   unsigned i;
+  if (name) {
   fprintf(stream, "Printing vector %s:\n", name);
+  }
   for (i = 0; i < n; i++) {
     fprintf(stream, "%8.4e ", vector[i]);
   }

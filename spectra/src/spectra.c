@@ -128,6 +128,16 @@ main(int argc, char** argv)
   kij = rate_calc(p->N, eig, wij, line_params);
   check_detailed_balance(p->N, protocol.T, 1e-5, kij, wij);
   rates = relaxation_rates(p->N, gamma);
+  char fn[200];
+  strcpy(fn, p->fw_file);
+  status = generate_filename(sizeof(fn), fn, "fw", "rates");
+  fp = fopen(fn, "w");
+  print_matrix(fp, NULL, p->N, kij);
+  cl = fclose(fp);
+  if (cl != 0) {
+    fprintf(stdout, "Failed to close list of lineshape files %d.\n", cl);
+    exit(EXIT_FAILURE);
+  }
 
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -171,7 +181,6 @@ main(int argc, char** argv)
   /* replace g_ with chi_ in gi filenames so we can print out the 
    * individual parts of the spectra. strings in C are so annoying.
    * NB: assumes 200 is enough bytes for gi filename + a few chars! */
-  char fn[200]; char *pch;
   for (i = 0; i < p->N; i++) {
     strcpy(fn, p->gi_files[i]);
     status = generate_filename(sizeof(fn), fn, "g_", "chi_bar_");
