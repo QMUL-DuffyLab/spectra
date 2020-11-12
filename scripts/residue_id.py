@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 import glob
 import argparse
 import numpy as np
@@ -15,59 +16,45 @@ parser.add_argument("-t", "--target", default='LHCII',
                     help="The reference PDB file with correctly numbered residues")
 args = parser.parse_args()
 
-arr = np.genfromtxt(args.file, dtype=None, skip_header=5, skip_footer=2)
-target = np.genfromtxt(args.target, dtype=None, skip_header=4, skip_footer=2)
-initial_residues = []
-target_residues = []
-for line in arr:
-    initial_residues.append(str("{}{}".format(line[3], str(line[4]))))
+arr = np.genfromtxt(args.file, encoding='utf-8', dtype=None, skip_footer=1)
+target = np.genfromtxt(args.target, encoding='utf-8', dtype=None, skip_footer=2)
+residues = [np.unique([str("{}{}").format(line[3], str(line[4])) for line in file]) for file in [arr, target]]
+assert len(residues[0]) == len(residues[1]), "Number of residues not equal!"
+print("Residues to renumber: ", residues[0])
+print("Target residues: ", residues[1])
 
-for line in target:
-    target_residues.append(str("{}{}".format(line[3], str(line[4]))))
+squared_distances = np.zeros((len(residues[0]), len(residues[1])))
+atom_counts = np.zeros((2, len(residues[0])))
 
-initial_residues = np.unique(np.array(initial_residues))
-target_residues = np.unique(np.array(target_residues))
-# initial_residues = np.unique(np.array(["".join(str(line[3]) + str(line[4]) for line in arr)]))
-print(initial_residues)
-print(target_residues)
+t0 = time.time_ns()
+for arr_line in arr:
+    arr_residue = str("{}{}").format(arr_line[3], str(arr_line[4]))
+    arr_pigment = str("{}").format(arr_line[3])
+    arr_atom_code = str("{}").format(arr_line[2])
+    arr_index = np.where(residues[0] == arr_residue)
+    atom_counts[0, arr_index] += 1
+    for target_line in target:
+        target_pigment = str("{}").format(target_line[3])
+        target_residue = str("{}{}").format(target_line[3], str(target_line[4]))
+        target_atom_code = str("{}").format(arr_line[2])
+        target_index = np.where(residues[1] == target_residue)
+        atom_counts[1, target_index] += 1
+        if (arr_pigment == target_pigment):
+            if (arr_atom_code == target_atom_code):
+                sqdist = ((float(arr_line[5]) - float(target_line[5]))**2 + (float(arr_line[6]) - float(target_line[6]))**2 + (float(arr_line[7]) - float(target_line[7]))**2)
+                squared_distances[arr_index, target_index] += sqdist
 
-# for item in filelist:
-#     # same deal - load in the PDB file
-#     arr = np.genfromtxt(item, encoding='utf-8', dtype=None, skip_footer=2)
-#     # we'll append each row of x, y, z, partial charge as we go
-#     temp_list = []
-#     # PDB file contains ligand code - use
-#     # that to check which tresp data to use
-#     output_dir = args.input_dir + '/' + pigments[str(arr[0][4])]
-#     os.makedirs(output_dir, exist_ok=True)
-#     frame = str(item)[int((str(item)).find(".")) + 1:]
-#     output_file = output_dir + '/frame{}.csv'.format(frame)
-#     print("Creating file {}".format(output_file))
 
-#     ligand_code = str(arr[0][3])
-#     if ligand_code == "CLA":
-#         tresp_dict = cla_dict
-#     elif ligand_code == "CHL":
-#         tresp_dict = chl_dict
-#     elif ligand_code == "LUT":
-#         tresp_dict = lut_dict
-#     else:
-#         continue
-#         # raise ValueError("Invalid ligand code: {}".format(ligand_code))
+t1 = time.time_ns()
+print("Total time taken (s): {:6.3f}".format(float(t1 - t0) / 1000000000))
 
-#     for pdb_line in arr:
-#         atom_code = pdb_line[2]
-#         # could create a lookup table for this
-#         # but i doubt it's worth the effort
-#         if atom_code in tresp_dict.keys():
-#             # the 0.001 is because the values are reported as e * 10^3
-#             temp_list.append([pdb_line[5], pdb_line[6], pdb_line[7],
-#                               0.001 * float(tresp_dict[atom_code])])
-#         else:
-#             # any atom not reported in tresp file has zero charge
-#             temp_list.append([pdb_line[6], pdb_line[7], pdb_line[8], 0.0])
+for i in range(len(residues[0])):
+    print("File residues and atom counts: ", residues[0][i], atom_counts[0][i])
 
-#     output = np.array(temp_list)
-#     # this fmt call is to make all the data regular, because
-#     # otherwise it's an absolute nightmare to read in fortran
-#     np.savetxt(output_file, output, fmt='%016.8e')
+for i in range(len(residues[1])):
+    print("Target residues and atom counts: ", residues[1][i], atom_counts[1][i])
+print(squared_distances)
+
+np.savetxt("file_residues.txt", residues[0])
+np.savetxt("target_residues.txt", residues[1])
+np.savetxt("squared_distances.txt", squared_distances)
