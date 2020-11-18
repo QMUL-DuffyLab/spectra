@@ -79,14 +79,19 @@ rate_calc(unsigned int N, double **eig,
         elem = cmperps * (pow(eig[k][i], 2.) * pow(eig[k][j], 2.) *
           p[k].nu * p[k].cn((wij[i][j]), vptr));
         if (print_details) {
-          fprintf(stdout, "\ni j k = %2d %2d %2d:\n"
-              "c_k^i = %8.6e\tc_k^j = %8.6e\t"
-              "c_k^i^2 = %8.6e\tc_k^j^2 = %8.6e\n"
-              "nu_k = %8.6e\nw_ij = %8.6e\tC_n(w_ij) = %8.6e\n"
-              "product = %8.6e\n",
-              i, j, k, eig[k][i], eig[k][j], 
-              pow(eig[k][i], 2.), pow(eig[k][j], 2.),
-              p[k].nu, wij[i][j], p[k].cn(wij[i][j], vptr), elem);
+          if (elem > 0.05) {
+            fprintf(stdout, "\ni j k = %2d %2d %2d:\n"
+                "c_k^i = %8.6e\tc_k^j = %8.6e\t"
+                "c_k^i^2 = %8.6e\tc_k^j^2 = %8.6e\n"
+                "nu_k = %8.6e\nw_ij = %8.6e\tC_n(w_ij) = %8.6e\n"
+                "(1 + coth) = %8.6e\tC''(wij) = %8.6e\n"
+                "product = %8.6e\n",
+                i, j, k, eig[k][i], eig[k][j], 
+                pow(eig[k][i], 2.), pow(eig[k][j], 2.),
+                p[k].nu, wij[i][j], p[k].cn(wij[i][j], vptr),
+                (1. + (1. / tanh(0.5 * wij[i][j] * 1.439 / 300.))),
+                (p[k].cw(wij[i][j], vptr)), elem);
+          }
         }
         kij[i][j] += elem;
       }

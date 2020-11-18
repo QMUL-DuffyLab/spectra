@@ -43,7 +43,7 @@ main(int argc, char** argv)
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = { .type=DELTA, .centre=15000., .width=300. };
   /* form of P_i(0) - check steady_state.h for details */
-  ss_init population_guess = BOLTZ_MUSQ;
+  ss_init population_guess = MUSQ;
 
   /* malloc 1d stuff, read them in */
   eigvals     = calloc(p->N, sizeof(double));
@@ -138,6 +138,7 @@ main(int argc, char** argv)
     fprintf(stdout, "Failed to close list of lineshape files %d.\n", cl);
     exit(EXIT_FAILURE);
   }
+
 
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);

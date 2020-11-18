@@ -128,8 +128,10 @@ main(int argc, char** argv)
     	/* unpack the ordering used by FFTW */
     	double k = i * 2. * M_PI / (pr.ns);
     	double freq = fmod(k, M_PI) - (M_PI * floor(k / M_PI));
+	/* fprintf(fp, " %18.10f %18.10f\n", */
+	/* 	freq / pf, out[i][0] * pf_norm * 6.4); */
 	fprintf(fp, " %18.10f %18.10f\n",
-		freq / pf, out[i][0] * pf_norm * 6.4);
+		freq / pf, out[i][0]);
     }
 
     fclose(fp);
@@ -142,6 +144,7 @@ main(int argc, char** argv)
     fftw_execute(plan); 
 
     fp = fopen(p.fw_file, "w");
+    /* FILE *gp = fopen("car_cw.dat", "w"); */
 
     for (unsigned long i = 0; i < pr.ns; i++) {
     	double k = i * 2. * M_PI / (pr.ns);
@@ -149,9 +152,12 @@ main(int argc, char** argv)
     	/* the 6.4 here is from an N in the python code */
 	fprintf(fp, " %18.10f %18.10f\n",
 		freq / pf, out[i][0]* pf_norm * 6.4);
+	/* fprintf(gp, " %18.10f %18.10f\n", */
+	/* 	freq / pf, p.cw(freq / pf, &p)); */
     }
 
     fclose(fp);
+    fclose(gp);
     fprintf(stdout, "FFT on F(t) performed.\n");
 
     time(&end_time);
