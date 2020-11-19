@@ -102,7 +102,17 @@ for item in filelist:
     temp_list = []
     # PDB file contains ligand code - use
     # that to check which tresp data to use
-    output_dir = args.input_dir + '/' + pigments[str(arr[0][4])]
+    if (args.protein == 'VANGELIS'):
+        res = "{}{}".format(arr[0][3], str(arr[0][4]))
+        if (pigments[res][3] == '1'):
+            output_dir = args.input_dir + '/B/' + pigments[res]
+        elif (pigments[res][3] == '5'):
+            output_dir = args.input_dir + '/F/' + pigments[res]
+        elif (pigments[res][3] == '6'):
+            output_dir = args.input_dir + '/G/' + pigments[res]
+    else:
+        output_dir = args.input_dir + '/' + pigments[str(arr[0][4])]
+
     os.makedirs(output_dir, exist_ok=True)
     frame = str(item)[int((str(item)).find(".")) + 1:]
     output_file = output_dir + '/frame{}.csv'.format(frame)

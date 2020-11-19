@@ -157,7 +157,7 @@ main(int argc, char** argv)
     }
 
     fclose(fp);
-    fclose(gp);
+    /* fclose(gp); */
     fprintf(stdout, "FFT on F(t) performed.\n");
 
     time(&end_time);

@@ -1,6 +1,5 @@
-#include "input.h"
 #include "steady_state.h"
-#include <fftw3.h>
+#include "forster.h"
 #include <stdio.h>
 #include <gsl/gsl_eigen.h>
 #define CVAC 299792458.0

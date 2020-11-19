@@ -204,6 +204,12 @@ program coupling_calc
                     coord_lengths(i), coord_lengths(j))
       end if
 
+      ! NB: after discussion with Chris - couplings less than 1 cm^-1
+      ! are too small to worry about
+      if (Jij(i, j).lt.1.0_dp) then
+        Jij(i, j) = 0.0_dp
+      end if
+
       deallocate(coords_j)
       
     end do j_loop
