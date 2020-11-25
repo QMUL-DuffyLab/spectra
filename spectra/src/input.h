@@ -15,9 +15,16 @@
 #define E0 8.854E-12
 #define JPERINVCM 1.986E-23
 #define KCOUL (1. / (4. * M_PI * E0 * 0.5))
-/* #define CONV (2. * M_PI * CMS * 100. * 1E-15) */
 #define TOFS (2. * M_PI * CMS * 100. * 1E-15)
 #define TOCM1 ((1.295E3 * 8.988E9 * 0.5))
+
+#define CVAC 299792458.0
+#define HBAR 1.0545718176E-34
+#define EV 1.602176634E-19
+#define PI 3.14159265358979
+/* 200 here because it's 2 \pi 100 (cm m^{-1}) */
+#define PS_TO_INV_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
+#define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR)
 
 /** Input struct for important parameters and filenames where
  * the exciton-basis data is to be read in from.

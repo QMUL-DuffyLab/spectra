@@ -79,7 +79,6 @@ rate_calc(unsigned int N, double **eig,
         elem = cmperps * (pow(eig[k][i], 2.) * pow(eig[k][j], 2.) *
           p[k].nu * p[k].cn((wij[i][j]), vptr));
         if (print_details) {
-          if (elem > 0.05) {
             fprintf(stdout, "\ni j k = %2d %2d %2d:\n"
                 "c_k^i = %8.6e\tc_k^j = %8.6e\t"
                 "c_k^i^2 = %8.6e\tc_k^j^2 = %8.6e\n"
@@ -91,7 +90,6 @@ rate_calc(unsigned int N, double **eig,
                 p[k].nu, wij[i][j], p[k].cn(wij[i][j], vptr),
                 (1. + (1. / tanh(0.5 * wij[i][j] * 1.439 / 300.))),
                 (p[k].cw(wij[i][j], vptr)), elem);
-          }
         }
         kij[i][j] += elem;
       }

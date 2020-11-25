@@ -38,6 +38,7 @@ endif
 
 SOURCES = ./src/input.c \
 	  ./src/invert_matrix.c \
+	  ./src/forster.c \
 	  ./src/fluorescence.c \
 	  ./src/steady_state.c \
 	  ./src/spectra.c \

@@ -206,7 +206,7 @@ program coupling_calc
 
       ! NB: after discussion with Chris - couplings less than 1 cm^-1
       ! are too small to worry about
-      if (Jij(i, j).lt.1.0_dp) then
+      if (abs(Jij(i, j) * e2kb * kc).lt.1.0_dp) then
         Jij(i, j) = 0.0_dp
       end if
 

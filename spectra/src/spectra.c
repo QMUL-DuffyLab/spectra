@@ -1,15 +1,9 @@
+#include "input.h"
 #include "steady_state.h"
 #include "forster.h"
+#include <fftw3.h>
 #include <stdio.h>
 #include <gsl/gsl_eigen.h>
-#define CVAC 299792458.0
-#define HBAR 1.0545718176E-34
-#define EV 1.602176634E-19
-#define PI 3.14159265358979
-/* 200 here because it's 2 \pi 100 (cm m^{-1}) */
-#define PS_TO_INV_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
-#define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR)
-
 
 int
 main(int argc, char** argv)
@@ -444,6 +438,12 @@ main(int argc, char** argv)
 
   }
   fclose(fp);
+
+  fprintf(stdout, "\n------------\n"
+                    "FORSTER TEST\n"
+                    "------------\n\n");
+
+  fprintf(stdout, "610-620 Forster rate = %8.6e\n", forster_test());
 
   free(p0); free(pt); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
   free(line); free(lineshape_files); free(integral);
