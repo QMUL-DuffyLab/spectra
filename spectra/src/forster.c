@@ -101,50 +101,23 @@ forster_overlap(chromophore* A, chromophore* F)
   }
 
   /* now get norms so we can normalise the spectra */
-  fprintf(stdout, "A sum = %12.8e %+12.8e\tF sum = %12.8e %+12.8e\n",
-          creal(A_sum), cimag(A_sum), creal(F_sum), cimag(F_sum));
   double A_norm = 1. / (sqrt(A->ns) * fabs(A_sum));
   double F_norm = 1. / (sqrt(F->ns) * fabs(F_sum));
-  fprintf(stdout, "|A| = %12.8e\t|F| = %12.8e\n", A_norm, F_norm);
-
 
   double integral = 0.;
   double dx = index_to_frequency(1, A->ns)
             - index_to_frequency(0, A->ns);
 
-  char fn[200];
-  strcpy(fn, "out/forster_test.dat");
-  FILE *fp = fopen(fn, "w");
   /* NB: need to check this - fine to take real part? */
   integral = 0.5 * dx * (A_norm * F_norm) * ((Aw[0][0] * Fw[0][0])
            + (Aw[A->ns - 1][0] * Fw[F->ns - 1][0]));
   for (unsigned i = 0; i < A->ns; i++) {
-    fprintf(fp, "%lf\t%lf\t%lf\n", A_norm * Aw[i][0], F_norm * Fw[i][0],
-            dx * (A_norm * Aw[i][0]) * (F_norm * Fw[i][0]));
     integral += dx * (A_norm * F_norm) * Aw[i][0] * Fw[i][0];
   }
-  fclose(fp);
   
-  strcpy(fn, "out/CLA_forster_test.dat");
-  fp = fopen(fn, "w");
-  for (unsigned i = 0; i < A->ns; i++) {
-    fprintf(fp, "%18.10f\t%18.10f\n", (double)i * dx, (A_norm * Aw[i][0]));
-  }
-  fclose(fp);
-
-  int status = generate_filename(sizeof(fn), fn, "CLA", "LUT");
-  if (status == 0) {
-    fp = fopen(fn, "w");
-    for (unsigned i = 0; i < A->ns; i++) {
-      fprintf(fp, "%18.10f\t%18.10f\n", (double)i * dx, (F_norm * Fw[i][0]));
-    }
-  }
-  fclose(fp);
-
   fftw_free(plan);
   fftw_free(Atime); fftw_free(Ftime);
   fftw_free(Aw); fftw_free(Fw);
-  fprintf(stdout, "dx = %12.8e\tForster overlap = %12.8e\n", dx, integral);
 
   return integral;
 }

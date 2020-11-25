@@ -78,7 +78,26 @@ elif (args.protein) == 'NLLZ':
         '1450': 'ZEA622',
         }
 elif (args.protein) == 'VANGELIS':
-    pigments = {}
+    pigments = {
+        '262' : 'C/CHL601', '266' : 'E/CHL601', '270' : 'H/CHL601',
+        '232' : 'C/CLA602', '238' : 'E/CLA602', '244' : 'H/CLA602',
+        '233' : 'C/CLA603', '239' : 'E/CLA603', '245' : 'H/CLA603',
+        '250' : 'C/CLA604', '252' : 'E/CLA604', '252' : 'H/CLA604',
+        '256' : 'C/CHL605', '258' : 'E/CHL605', '260' : 'H/CHL605',
+        '257' : 'C/CHL606', '259' : 'E/CHL606', '261' : 'H/CHL606',
+        '263' : 'C/CHL607', '267' : 'E/CHL607', '271' : 'H/CHL607',
+        '264' : 'C/CHL608', '268' : 'E/CHL608', '272' : 'H/CHL608',
+        '265' : 'C/CHL609', '269' : 'E/CHL609', '273' : 'H/CHL609',
+        '234' : 'C/CLA610', '240' : 'E/CLA610', '246' : 'H/CLA610',
+        '235' : 'C/CLA611', '241' : 'E/CLA611', '247' : 'H/CLA611',
+        '236' : 'C/CLA612', '242' : 'E/CLA612', '248' : 'H/CLA612',
+        '237' : 'C/CLA613', '243' : 'E/CLA613', '249' : 'H/CLA613',
+        '251' : 'C/CLA614', '253' : 'E/CLA614', '255' : 'H/CLA614',
+        '274' : 'C/LUT620', '276' : 'E/LUT620', '278' : 'H/LUT620',
+        '275' : 'C/LUT621', '277' : 'E/LUT621', '279' : 'H/LUT621',
+        '283' : 'C/XAT622', '284' : 'E/XAT622', '285' : 'H/XAT622',
+        '280' : 'C/NEX623', '281' : 'E/NEX623', '282' : 'H/NEX623',
+        }
 else:
     pigments = {}
 
@@ -97,24 +116,20 @@ lut_dict = dict(zip(lut_tresp[0], lut_tresp[1]))
 
 for item in filelist:
     # same deal - load in the PDB file
-    arr = np.genfromtxt(item, encoding='utf-8', dtype=None, skip_footer=2)
+    if (args.protein == 'VANGELIS'):
+        arr = np.genfromtxt(item, encoding='utf-8', dtype=None)
+    else:
+        arr = np.genfromtxt(item, encoding='utf-8', dtype=None, skip_footer=2)
+
     # we'll append each row of x, y, z, partial charge as we go
     temp_list = []
     # PDB file contains ligand code - use
     # that to check which tresp data to use
-    if (args.protein == 'VANGELIS'):
-        res = "{}{}".format(arr[0][3], str(arr[0][4]))
-        if (pigments[res][3] == '1'):
-            output_dir = args.input_dir + '/B/' + pigments[res]
-        elif (pigments[res][3] == '5'):
-            output_dir = args.input_dir + '/F/' + pigments[res]
-        elif (pigments[res][3] == '6'):
-            output_dir = args.input_dir + '/G/' + pigments[res]
-    else:
-        output_dir = args.input_dir + '/' + pigments[str(arr[0][4])]
+    output_dir = args.input_dir + '/' + pigments[str(arr[0][4])]
 
     os.makedirs(output_dir, exist_ok=True)
     frame = str(item)[int((str(item)).find(".")) + 1:]
+
     output_file = output_dir + '/frame{}.csv'.format(frame)
     print("Creating file {}".format(output_file))
 
