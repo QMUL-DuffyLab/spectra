@@ -168,8 +168,10 @@ if recalc_lineshapes:
 
 if int(args.frame) == 0:
     t0 = time.time_ns()
-    for i in range(1000):
-        run_frame(i + 1, 0, 0) # range starts from 0
+    # get the numbers - all pigment dirs have the same numbers by construction
+    numbers = [fn[5:-4] for fn in os.listdir("{}/{}".format(input_dir, pigment_dirs[0]))]
+    for i in range(len(numbers)):
+        run_frame(numbers[i], 0, 0) # range starts from 0
 
     t1 = time.time_ns()
     print("Total time taken (s): {:6.3f}".format(float(t1 - t0) / 1000000000))

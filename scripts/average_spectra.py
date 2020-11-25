@@ -26,19 +26,20 @@ aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/1/J_ij.out".format(args.input_dir)))
 
-num_frames = 1000 # NB: this should probably be calculated
-aw_max = np.zeros(num_frames)
-fw_max = np.zeros(num_frames)
-taus = np.zeros(num_frames)
+numbers = os.listdir(args.input_dir)
+
+aw_max = np.zeros(len(numbers))
+fw_max = np.zeros(len(numbers))
+taus = np.zeros(len(numbers))
 avg_tau = 0.0
 
 if args.recalc is 1:
     print("Summing A(w) and F(w) per frame")
-    for i in range(num_frames):
+    for i, number in enumerate(sorted(numbers)):
         if (i % 100) is 0:
             print(".", end='', flush=True)
 
-        direc = "{}/{}".format(args.input_dir, i + 1)
+        direc = "{}/{}".format(args.input_dir, number)
         aw_temp = np.loadtxt("{}/aw.dat".format(direc))
         fw_temp = np.loadtxt("{}/fw.dat".format(direc))
         taus[i] = np.loadtxt("{}/tau.dat".format(direc))
@@ -50,10 +51,10 @@ if args.recalc is 1:
         avg_tau = avg_tau + taus[i]
 
     print("\nDone.")
-    aws = aws / float(num_frames)
-    fws = fws / float(num_frames)
-    jij = jij / float(num_frames)
-    avg_tau = avg_tau / float(num_frames)
+    aws = aws / float(len(numbers))
+    fws = fws / float(len(numbers))
+    jij = jij / float(len(numbers))
+    avg_tau = avg_tau / float(len(numbers))
 else:
     aws = np.loadtxt("{}/aw_average.dat".format(args.input_dir))
     fws = np.loadtxt("{}/fw_average.dat".format(args.input_dir))
