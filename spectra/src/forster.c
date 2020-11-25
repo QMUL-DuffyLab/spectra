@@ -54,7 +54,7 @@ forster_overlap(chromophore* A, chromophore* F)
   Fw    = (fftw_complex*) fftw_malloc(
            sizeof(fftw_complex) * F->ns);
 
-  double complex elem, A_sum = 0., F_sum = 0.;
+  double complex elem;
   for (unsigned i = 0; i < A->ns; i++) {
     /* NB: rate or lifetime? also TOFS will be fine once
      * the includes are added. some problem with complex also */
@@ -64,7 +64,6 @@ forster_overlap(chromophore* A, chromophore* F)
                A->rate / (1000.));
     Atime[i][0] = creal(elem);
     Atime[i][1] = cimag(elem);
-    A_sum += elem;
 
     elem = Ft(F->w00,
                creal(F->gi[i]), cimag(F->gi[i]),
@@ -72,7 +71,6 @@ forster_overlap(chromophore* A, chromophore* F)
                F->rate / (1000.));
     Ftime[i][0] = creal(elem);
     Ftime[i][1] = cimag(elem);
-    F_sum += elem;
   }
 
   plan = fftw_plan_dft_1d(A->ns, 
@@ -82,25 +80,53 @@ forster_overlap(chromophore* A, chromophore* F)
   	 Ftime, Fw, FFTW_BACKWARD, FFTW_ESTIMATE);
   fftw_execute(plan);
 
+  /* find minima - need to subtract minimum values from the arrays */
+  double A_min = 0., F_min = 0.;
+  unsigned A_loc = 0, F_loc = 0;
+  for (unsigned i = 0; i < A->ns; i++) {
+    if (Aw[i][0] < Aw[A_loc][0]) {
+      A_loc = i;
+    }
+    if (Fw[i][0] < Fw[F_loc][0]) {
+      F_loc = i;
+    }
+  }
+  A_min = Aw[A_loc][0]; F_min = Fw[F_loc][0];
+  double A_sum = 0., F_sum = 0.;
+  for (unsigned i = 0; i < A->ns; i++) {
+    Aw[i][0] -= A_min;
+    Fw[i][0] -= F_min;
+    A_sum += Aw[i][0];
+    F_sum += Fw[i][0];
+  }
+
+  /* now get norms so we can normalise the spectra */
   fprintf(stdout, "A sum = %12.8e %+12.8e\tF sum = %12.8e %+12.8e\n",
           creal(A_sum), cimag(A_sum), creal(F_sum), cimag(F_sum));
-  double A_norm = (1. / sqrt(A->ns)) * cabs(A_sum);
-  double F_norm = (1. / sqrt(A->ns)) * cabs(F_sum);
+  double A_norm = 1. / (sqrt(A->ns) * fabs(A_sum));
+  double F_norm = 1. / (sqrt(F->ns) * fabs(F_sum));
   fprintf(stdout, "|A| = %12.8e\t|F| = %12.8e\n", A_norm, F_norm);
+
 
   double integral = 0.;
   double dx = index_to_frequency(1, A->ns)
             - index_to_frequency(0, A->ns);
 
+  char fn[200];
+  strcpy(fn, "out/forster_test.dat");
+  FILE *fp = fopen(fn, "w");
   /* NB: need to check this - fine to take real part? */
   integral = 0.5 * dx * (A_norm * F_norm) * ((Aw[0][0] * Fw[0][0])
            + (Aw[A->ns - 1][0] * Fw[F->ns - 1][0]));
   for (unsigned i = 0; i < A->ns; i++) {
+    fprintf(fp, "%lf\t%lf\t%lf\n", A_norm * Aw[i][0], F_norm * Fw[i][0],
+            dx * (A_norm * Aw[i][0]) * (F_norm * Fw[i][0]));
     integral += dx * (A_norm * F_norm) * Aw[i][0] * Fw[i][0];
   }
-  char fn[200];
+  fclose(fp);
+  
   strcpy(fn, "out/CLA_forster_test.dat");
-  FILE *fp = fopen(fn, "w");
+  fp = fopen(fn, "w");
   for (unsigned i = 0; i < A->ns; i++) {
     fprintf(fp, "%18.10f\t%18.10f\n", (double)i * dx, (A_norm * Aw[i][0]));
   }
