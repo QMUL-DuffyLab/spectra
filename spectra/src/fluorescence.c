@@ -268,6 +268,8 @@ decompose_transfer_matrix(unsigned n, double **Tij,
   status = invert_matrix_oop(n, Tij_vr, Tij_vr_inv);
   if (status != 0) {
   }
+
+  free(Tij_wr_vec);
 }
 
 /** Calulcate the mean excitation lifetime.
@@ -302,6 +304,7 @@ mean_excitation_lifetime(unsigned n, double **Tij_vr,
   matvec(n, Tij_vr_inv, p0, work);
   matvec(n, Tij_wr_inv, work, work2);
 
+  excite = 0.;
   for (i = 0; i < n; i++) {
     sum = 0.;
     for (j = 0; j < n; j++) {
@@ -309,8 +312,12 @@ mean_excitation_lifetime(unsigned n, double **Tij_vr,
     }
     excite -= sum;
   }
-  
+
+  for (i = 0; i < n; i++) {
+    free(Tij_wr_inv[i]);
+  }
   free(work); free(work2); free(Tij_wr_inv);
+
   return excite;
 }
 
@@ -337,5 +344,8 @@ population(unsigned n, double t, double *pt, double **Tij_vr,
   matvec(n, Tij_vr_inv, p0, work);
   matvec(n, exp_wr, work, work2);
   matvec(n, Tij_vr, work2, pt);
+  for (i = 0; i < n; i++) {
+    free(exp_wr[i]);
+  }
   free(exp_wr); free(work); free(work2);
 }

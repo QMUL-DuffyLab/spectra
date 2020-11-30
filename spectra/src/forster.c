@@ -31,8 +31,11 @@ assign_chromophore(chromophore* c, Parameters line_parameters)
 void
 free_chromophore(chromophore* c)
 {
-  free(c->gi);
   free(c);
+  /* NB: I thought it was required to free the variable-length member
+   * separately when you have one in a struct, but this free call
+   * doesn't work. Is it wrong? Check valgrind */
+  /* free(c->gi); */
 }
 
 static double
@@ -76,6 +79,8 @@ forster_overlap(chromophore* A, chromophore* F)
   plan = fftw_plan_dft_1d(A->ns, 
   	 Atime, Aw, FFTW_BACKWARD, FFTW_ESTIMATE);
   fftw_execute(plan);
+  fftw_destroy_plan(plan);
+
   plan = fftw_plan_dft_1d(F->ns, 
   	 Ftime, Fw, FFTW_BACKWARD, FFTW_ESTIMATE);
   fftw_execute(plan);
@@ -115,9 +120,10 @@ forster_overlap(chromophore* A, chromophore* F)
     integral += dx * (A_norm * F_norm) * Aw[i][0] * Fw[i][0];
   }
   
-  fftw_free(plan);
   fftw_free(Atime); fftw_free(Ftime);
   fftw_free(Aw); fftw_free(Fw);
+  fftw_destroy_plan(plan);
+  fftw_cleanup();
 
   return integral;
 }
@@ -166,6 +172,7 @@ forster_test()
     exit(EXIT_FAILURE);
   } else {
     for (unsigned j = 0; j < CLA610->ns; j++) {
+      /* NB: this fscanf call does not need the exact whitespace */
       int cl = fscanf(fp, "   %lf     %lf     %lf", &step, &real, &imag);
       if (cl != 3) {
         fprintf(stdout, "fscanf reading CLA_gt failed with error code %d;"
@@ -186,8 +193,8 @@ forster_test()
   fclose(gp);
 
   double rate = forster_rate(CLA610, LUT620, J610_620);
-  /* free_chromophore(CLA610); */
-  /* free_chromophore(LUT620); */
+  free_chromophore(CLA610);
+  free_chromophore(LUT620);
 
   /* units??? */
   return (200. * PI * CVAC * 1E-12) * rate;

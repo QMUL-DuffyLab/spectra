@@ -103,6 +103,8 @@ read(char *input_file, unsigned int N)
       arr[i] = atof(line);
     }
   }
+
+  fclose(fp);
   return arr;
 }
 
@@ -144,6 +146,9 @@ read_mu(char *input_file, unsigned int N)
       mu[i][2] = atof(token); 
     }
   }
+
+  fclose(fp);
+  free(token);
   return mu;
 }
 
@@ -187,6 +192,9 @@ read_eigvecs(char *input_file, unsigned int N)
         eig[i][N - 1] = atof(token); 
       }
   }
+
+  fclose(fp);
+  free(token);
   return eig;
 }
 
@@ -235,6 +243,7 @@ read_gi(char *input_files[],
         gi[i][j] = (real + I * imag);
       }
     }
+    fclose(fp);
   }
   return gi;
 }

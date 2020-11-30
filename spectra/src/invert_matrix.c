@@ -100,6 +100,8 @@ invert_matrix_oop(unsigned n, double** in, double** out)
   }
   info = LAPACKE_dgetri(LAPACK_ROW_MAJOR, n, contiguous, lda, ipiv);
   interchange_2d_contiguous('B', n, out, contiguous);
+  free(contiguous);
+  free(ipiv);
   return info;
 }
 

@@ -56,7 +56,7 @@ main(int argc, char** argv)
   /* malloc 2d stuff */
   lineshape_files = malloc(p->N * sizeof(char*));
   mu              = calloc(p->N, sizeof(double*));
-  gi_array        = calloc(p->N, sizeof(double complex*));
+  gi_array        = calloc(p->N, sizeof(complex double*));
   eig             = calloc(p->N, sizeof(double*));
   wij             = calloc(p->N, sizeof(double*));
   kij             = calloc(p->N, sizeof(double*));
@@ -66,7 +66,7 @@ main(int argc, char** argv)
 
   for (i = 0; i < p->N; i++) {
     lineshape_files[i] = malloc(200 * sizeof(char));
-    gi_array[i]        = calloc(p->tau, sizeof(double complex));
+    gi_array[i]        = calloc(p->tau, sizeof(complex double));
     mu[i]              = calloc(3, sizeof(double));
     eig[i]             = calloc(p->N, sizeof(double));
     wij[i]             = calloc(p->N, sizeof(double));
@@ -309,6 +309,9 @@ main(int argc, char** argv)
 
   }
 
+  fftw_free(out); fftw_free(in);
+  fftw_destroy_plan(plan);
+
   fprintf(stdout, "\nWriting F(w) file\n");
   fp = fopen(p->fw_file, "w");
   for (i = 0; i < p->tau; i++) {
@@ -443,13 +446,39 @@ main(int argc, char** argv)
                     "FORSTER TEST\n"
                     "------------\n\n");
 
+  /* prototype for an array of them */
+  chromophore *cs[p->N];
+  for (i = 0; i < p->N; i++) {
+    cs[i] = create_chromophore(p->tau);
+  }
+  fprintf(stdout, "%p\t%d\n", cs[7], cs[7]->ns);
+
   fprintf(stdout, "610-620 Forster rate = %8.6e\n", forster_test());
+
+  fftw_cleanup();
+
+  /* deallocations of 2d stuff */
+  for (i = 0; i < p->N; i++) {
+    free_chromophore(cs[i]);
+    free(gi_array[i]);
+    free(Tij_vr[i]);
+    free(Tij_vr_inv[i]);
+    free(Tij_wr[i]);
+    free(lineshape_files[i]);
+    free(eig[i]);
+    free(mu[i]);
+    free(wij[i]);
+    free(kij[i]);
+    free(Jij[i]);
+    free(chiw[i]);
+    free(pump[i]);
+  }
 
   free(p0); free(pt); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
   free(line); free(lineshape_files); free(integral);
   free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
   free(eig); free(wij); free(kij); free(p); free(line_params);
-  free(in); free(out); free(y); free(f); free(boltz); free(yprev);
-  free(ww);
+  free(y); free(f); free(boltz); free(yprev); free(rates);
+  free(ww); free(Jij); free(chiw); free(pump); free(chiw_ints);
   exit(EXIT_SUCCESS);
 }

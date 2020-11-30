@@ -15,6 +15,7 @@ pop_converge(double *y, double *yprev, unsigned int N, double thresh)
   if (conv == N) {
     result = 1;
   }
+  free(diff);
   return result;
 }
 
