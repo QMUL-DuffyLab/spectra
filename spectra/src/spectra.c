@@ -451,7 +451,6 @@ main(int argc, char** argv)
   for (i = 0; i < p->N; i++) {
     cs[i] = create_chromophore(p->tau);
   }
-  fprintf(stdout, "%p\t%d\n", cs[7], cs[7]->ns);
 
   fprintf(stdout, "610-620 Forster rate = %8.6e\n", forster_test());
 

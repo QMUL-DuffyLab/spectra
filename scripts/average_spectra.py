@@ -21,12 +21,12 @@ parser.add_argument("-r", "--recalc", type=int, default=1,
         help="Recalculate the average - 1 if yes, 0 if no")
 args = parser.parse_args()
 
-initial_data = np.loadtxt("{}/1/aw.dat".format(args.input_dir))
+numbers = os.listdir(args.input_dir)
+initial_data = np.loadtxt("{}/{}/aw.dat".format(args.input_dir, numbers[0]))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
-jij = np.zeros_like(np.loadtxt("{}/1/J_ij.out".format(args.input_dir)))
+jij = np.zeros_like(np.loadtxt("{}/{}/J_ij.out".format(args.input_dir, numbers[0])))
 
-numbers = os.listdir(args.input_dir)
 
 aw_max = np.zeros(len(numbers))
 fw_max = np.zeros(len(numbers))
