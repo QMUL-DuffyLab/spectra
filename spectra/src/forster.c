@@ -45,7 +45,11 @@ forster_overlap(chromophore* A, chromophore* F)
   fftw_plan plan;
 
   if (A->ns != F->ns) {
-    /* error */
+    /* this should never happen but will break the FT so check */
+    fprintf(stderr, "Error in forster_overlap: two g(t) lengths"
+        "should be the same but are %u and %u for acceptor and"
+        "donor respectively.\n", A->ns, F->ns);
+    return NAN;
   }
 
   Atime = (fftw_complex*) fftw_malloc(
@@ -79,6 +83,8 @@ forster_overlap(chromophore* A, chromophore* F)
   plan = fftw_plan_dft_1d(A->ns, 
   	 Atime, Aw, FFTW_BACKWARD, FFTW_ESTIMATE);
   fftw_execute(plan);
+  /* calling fftw_plan_dft_1d again without destroying the plan
+   * first seems to lead to a memory leak (so valgrind tells me) */
   fftw_destroy_plan(plan);
 
   plan = fftw_plan_dft_1d(F->ns, 
@@ -104,10 +110,16 @@ forster_overlap(chromophore* A, chromophore* F)
     A_sum += Aw[i][0];
     F_sum += Fw[i][0];
   }
+  fprintf(stdout, "A_min = %18.10f at w = %18.10f; Aw[A_loc][0] = %18.10f\n",
+          A_min, index_to_frequency(A_loc, A->ns), Aw[A_loc][0]);
+  fprintf(stdout, "F_min = %18.10f at w = %18.10f; Fw[F_loc][0] = %18.10f\n",
+          F_min, index_to_frequency(F_loc, F->ns), Fw[F_loc][0]);
 
   /* now get norms so we can normalise the spectra */
-  double A_norm = 1. / (sqrt(A->ns) * fabs(A_sum));
-  double F_norm = 1. / (sqrt(F->ns) * fabs(F_sum));
+  /* FFTW doesn't normalise but the Ns gives spurious results */
+  /* double norm = 1. / (sqrt(A->ns) * fabs(sum)); */
+  double A_norm = 1. / (fabs(A_sum));
+  double F_norm = 1. / (fabs(F_sum));
 
   double integral = 0.;
   double dx = index_to_frequency(1, A->ns)
@@ -116,14 +128,28 @@ forster_overlap(chromophore* A, chromophore* F)
   /* NB: need to check this - fine to take real part? */
   integral = 0.5 * dx * (A_norm * F_norm) * ((Aw[0][0] * Fw[0][0])
            + (Aw[A->ns - 1][0] * Fw[F->ns - 1][0]));
+  FILE *fp = fopen("out/aw_forster_test.dat", "w");
+  FILE *gp = fopen("out/fw_forster_test.dat", "w");
+  FILE *hp = fopen("out/forster_integral.dat", "w");
   for (unsigned i = 0; i < A->ns; i++) {
+    fprintf(fp, "%18.10f\t%18.10f\n",
+            index_to_frequency(i, A->ns), A_norm * Aw[i][0]);
+    fprintf(gp, "%18.10f\t%18.10f\n",
+            index_to_frequency(i, F->ns), F_norm * Fw[i][0]);
+    fprintf(hp, "%18.10f\t%18.10f\t%18.10f\t%18.10f\n",
+            index_to_frequency(i, F->ns), dx, A_norm * Aw[i][0], F_norm * Fw[i][0]);
     integral += dx * (A_norm * F_norm) * Aw[i][0] * Fw[i][0];
   }
+  fclose(fp);
+  fclose(gp);
+  fclose(hp);
   
   fftw_free(Atime); fftw_free(Ftime);
   fftw_free(Aw); fftw_free(Fw);
   fftw_destroy_plan(plan);
   fftw_cleanup();
+
+  fprintf(stdout, "raw integral = %12.8f\n", integral);
 
   return integral;
 }

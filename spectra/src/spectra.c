@@ -452,7 +452,9 @@ main(int argc, char** argv)
     cs[i] = create_chromophore(p->tau);
   }
 
-  fprintf(stdout, "610-620 Forster rate = %8.6e\n", forster_test());
+  double k_610_620 = forster_test();
+  fprintf(stdout, "610-620 Forster rate = %8.6e => %12.8f ps\n",
+          k_610_620, 1. / k_610_620);
 
   fftw_cleanup();
 

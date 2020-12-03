@@ -23,7 +23,8 @@
 #define EV 1.602176634E-19
 #define PI 3.14159265358979
 /* 200 here because it's 2 \pi 100 (cm m^{-1}) */
-#define PS_TO_INV_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
+#define CM_PER_PS 200.0 * PI * CVAC * 1E-12
+#define PS_PER_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
 #define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR)
 
 /** Input struct for important parameters and filenames where
