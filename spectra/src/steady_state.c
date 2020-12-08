@@ -132,6 +132,23 @@ incident(pulse p, unsigned int tau)
   return ww;
 }
 
+double
+intensity(double w, double t, pulse p)
+{
+  double sigma, f;
+  double gamma = 1./(2. * p.duration)
+               * pow(1./cosh((t - p.t_peak)/p.duration), 2.);
+  if (p.type == GAUSSIAN) {
+    sigma = p.width / (2. * sqrt(2. * log(2.)));
+    f = exp(pow(w - p.centre, 2.) / (2. * pow(sigma, 2.)))
+      * (1. / (sigma * sqrt(2. * PI)));
+    return p.amplitude * f * gamma;
+  } else {
+    /* not done this yet lol */
+    return NAN;
+  }
+}
+
 int
 pop_steady_f
 (const gsl_vector *x, void *params, gsl_vector *f)
