@@ -3,8 +3,8 @@
 chromophore*
 create_chromophore(unsigned ns)
 {
-  chromophore* c = malloc(sizeof(chromophore)
-                 +   ns * sizeof(double complex));
+  chromophore* c = (chromophore *)malloc(sizeof(chromophore)
+                 +   ns * sizeof(double _Complex));
   c->ns     = ns;
   c->w00    = NAN;
   c->lambda = NAN;
@@ -61,7 +61,7 @@ forster_overlap(chromophore* A, chromophore* F)
   Fw    = (fftw_complex*) fftw_malloc(
            sizeof(fftw_complex) * F->ns);
 
-  double complex elem;
+  double _Complex elem;
   for (unsigned i = 0; i < A->ns; i++) {
     /* NB: rate or lifetime? also TOFS will be fine once
      * the includes are added. some problem with complex also */

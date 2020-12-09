@@ -90,7 +90,7 @@ typedef enum ss_init {
 unsigned short int pop_converge(double *y, double *yprev, 
                                 unsigned int N, double thresh);
 double* incident(pulse p, unsigned int tau);
-double  intensity(double w, double t, pulse p);
+double intensity(double w, double t, pulse p);
 double* guess(const ss_init p,
                   const double* boltz, const double* musq,
                   unsigned const int max, unsigned const int N);

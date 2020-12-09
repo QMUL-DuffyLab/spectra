@@ -183,7 +183,7 @@ reorg_int(double w, void* params)
     return p->cw(w, p) * (1. / (M_PI * w));
 }
 
-double complex
+double _Complex
 At(double w0, double re, double im, double t,
    double gamma)
 {

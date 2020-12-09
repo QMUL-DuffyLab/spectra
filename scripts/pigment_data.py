@@ -139,8 +139,8 @@ site_energies = {
         'CLA612' : 14940,
         'CLA613' : 14840,
         'CLA614' : 14940,
-        'LUT620' : 14525, # testing
-        'LUT621' : 14475,
+        'LUT620' : 14940, # testing
+        'LUT621' : 14940,
         # 'LUT620' : 14500, # guess from chris - both luteins 14500
         # 'LUT621' : 14500,
         # 'LUT620' : 19538, # 620/621 from kieran carotenoid paper

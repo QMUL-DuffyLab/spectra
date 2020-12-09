@@ -1,11 +1,54 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <cmath>
-#include "forster.h"
-#include "steady_state.h"
+#include <cstdlib>
+#include <stdlib.h>
+/* #include "forster.h" */
+/* #include "steady_state.h" */
 
 #ifndef __VER_H__
 #define __VER_H__
+
+/* this stuff is from elsewhere - i want this to compile on its own lol
+ * worry about this stuff later */
+
+#define CVAC 299792458.0
+#define CM_PER_PS (200. * M_PI * CVAC * 1E-12)
+typedef enum pulse_type {
+  FLAT = 0,
+  LORENTZIAN = 1,
+  GAUSSIAN = 2,
+  DELTA = 3,
+} pulse_type;
+
+typedef struct pulse {
+  pulse_type type;
+  size_t target_state;
+  double amplitude;
+  double centre;
+  double width;
+  double t_peak;
+  double duration;
+} pulse;
+
+double
+intensity(double w, double t, pulse p)
+{
+  double sigma, f;
+  double gamma = 1./(2. * p.duration)
+               * pow(1./cosh((t - p.t_peak)/p.duration), 2.);
+  if (p.type == GAUSSIAN) {
+    sigma = p.width / (2. * sqrt(2. * log(2.)));
+    f = exp(pow(w - p.centre, 2.) / (2. * pow(sigma, 2.)))
+      * (1. / (sigma * sqrt(2. * M_PI)));
+    return p.amplitude * f * gamma;
+  } else {
+    /* not done this yet lol */
+    return NAN;
+  }
+}
+
 
 /** convert a set of tensor subscripts to a flattened index.
  *
@@ -15,30 +58,37 @@
 size_t
 sub2ind(std::vector<size_t> subscripts, std::vector<size_t> extents)
 {
-  size_t index = subscripts[0];
-  if (subscripts[0] >= extents[0]) {
-    std::cerr << "sub2ind: subscripts[0] > extents[0]" << std::endl;
+  /* std::cout << "subscripts: " << subscripts[subscripts.size() - 1] */
+  /*   << ", "; */
+  size_t index = subscripts[subscripts.size() - 1];
+  if (subscripts[subscripts.size() - 1] 
+      >= extents[extents.size() - 1]) {
+    std::cout << "sub2ind: subscripts[-1] > extents[-1]" << std::endl;
     index = -1;
   }
   if (subscripts.size() != extents.size()) {
-    std::cerr << "sub2ind error: subscript and extents vectors are"
+    std::cout << "sub2ind error: subscript and extents vectors are"
       " different sizes." << std::endl;
     index = -1;
   } else {
-    for (size_t i = 1; i < subscripts.size(); i++) {
+    for (size_t i = 0; i < subscripts.size() - 1; i++) {
+      /* std::cout << " i = " << i; */
       if (subscripts[i] >= extents[i]) {
         std::cerr << "sub2ind error: subscripts[" << i
           << "] > extents[" << i << "]" << std::endl;
         index = -1;
       } else {
         size_t prod = 1;
-        for (size_t j = 0; j < i; j++) {
+        for (size_t j = i + 1; j < subscripts.size(); j++) {
+          /* std::cout << " , j = " << j; */
           prod *= extents[j];
         }
         index += prod * subscripts[i];
       }
+      /* std::cout << subscripts[i] << ", "; */ 
     }
   }
+  /* std::cout << "index = " << index << std::endl; */
   return index;
 }
 
@@ -130,7 +180,7 @@ class Chromophore {
     void fc_calc();
     void set_k_ivr(double beta);
     void set_k_ic(double beta);
-    void dndt();
+    void dndt(double* population, double t, pulse pump);
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
     double get_w_vib(size_t i);
@@ -139,14 +189,7 @@ class Chromophore {
     double get_g_ic_ij(size_t i, size_t j);
     double get_g_ivr_i(size_t i);
     /* The indexing is disp[mode][elec_lower][elec_upper] */
-    double get_disp(size_t mode, size_t e_lower, size_t e_upper);
-    /* double get_fc( */
-    /*          size_t elec_i, */
-    /*          size_t elec_j, */
-    /*          size_t mode, */
-    /*          size_t vib_a, */
-    /*          size_t vib_b */
-    /*          ); */
+    double get_disp(std::vector<size_t> subscripts);
     double get_fc(std::vector<size_t> subscripts);
     void get_k_ivr(double beta, size_t elec, size_t norm);
 
@@ -158,6 +201,7 @@ class Chromophore {
     std::vector<size_t> ivr_extents;
     std::vector<size_t> ic_extents;
     std::vector<size_t> fc_extents;
+    std::vector<size_t> population_extents;
     std::vector<double> w_elec;
     std::vector<double> w_normal;
     /* std::vector<double> w_vib; */
@@ -186,6 +230,7 @@ class Chromophore {
     std::vector<double> fc;
     std::vector<double> k_ivr; /* rates for IVR */
     std::vector<double> k_ic;  /* rates for IC */
+    std::vector<double> dn;  /* rates for IC */
 };
 
 Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
@@ -201,6 +246,7 @@ Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
     n_normal(norm),
     n_vib(vib)
 {
+  set_extents();
   set_w_elec(wi, n_wi);
   set_w_normal(w_mode, n_mode);
   set_l_ic_ij(l_ic, side_l);
@@ -322,73 +368,110 @@ Chromophore::set_disp(double*** di,
 void
 Chromophore::fc_calc()
 {
-  double **fc_array = (double **)calloc(n_vib, sizeof(double*));
-  for (size_t row = 0; row < n_vib + 1; row++) {
-    fc_array[row]   = (double *) calloc(n_vib, sizeof(double));
-  }
+  size_t index;
+  /* NB: this assumes all modes have the same number of
+   * vibrational levels, but we assume that everywhere else too */
+  /* also for some reason this didn't work with c-style casts */
+  /* double **fc_array = static_cast<double**>(malloc(n_vib + 1 * sizeof(double*))); */
+  /* if (fc_array == NULL) { */
+  /*   std::cout << "fc_array couldn't be allocated? top level" */
+  /*     << std::endl; */
+  /* } else { */
+  /*   for (size_t row = 0; row < n_vib + 1; row++) { */
+  /*     fc_array[row]   = static_cast<double *>(calloc(n_vib + 1, sizeof(double))); */
+  /*     if (fc_array[row] == NULL) { */
+  /*       std::cout << "fc_array couldn't be allocated? bottom level." */
+  /*         << " row = " << row << std::endl; */
+  /*     } */
+  /*   } */
+  /* } */
+  /* double **fc_array = new double*[n_vib + 1]; */
+  /* for (size_t row = 0; row < n_vib + 1; row++) { */
+  /*   fc_array[row] = new double[n_vib + 1]; */
+  /* } */
+  std::vector<std::vector<double>> fc_array(n_vib + 1,
+              std::vector<double>(n_vib + 1, 0.));
 
   for (size_t i = 0; i < n_elec + 1; i++) {
+    /* std::cout << "i = " << i; */
     for (size_t j = 0; j < n_elec + 1; j++) {
       if (i != j) {
 
+        /* std::cout << ", j = " << j; */
         for (size_t alpha = 0; alpha < n_normal; alpha++) {
-          double displacement = get_disp(alpha, i, j);
+          double displacement = get_disp({alpha, i, j});
 
           fc_array[0][0] = exp(-0.5 * pow(displacement, 2.));
 
           for (size_t a = 1; a < n_vib + 1; a++) {
+            fc_array[0][a] = ((- 1. * displacement) /
+                           sqrt((double)a)) * fc_array[0][a - 1];
+            fc_array[a][0] = (double)(pow(-1., a)) * fc_array[0][a];
+          }
 
-            fc_array[0][a] = (- 1. * displacement) /
-                           sqrt((double)a * fc_array[0][a - 1]);
-            fc_array[a][0] = (pow(-1.0, a)) * fc_array[0][a];
-
-            for (size_t b = 1; b < n_vib + 1; b++) {
-
-              fc_array[a][b] = (- 1. * displacement) /  
-                (sqrt((double)b) * fc_array[a][b - 1])
+          for (size_t a = 1; a < n_vib + 1; a++) {
+            for (size_t b = a; b < n_vib + 1; b++) {
+              fc_array[a][b] = ((-1. * displacement) /  
+                (sqrt((double)b)) * fc_array[a][b - 1])
               + (sqrt((double)a)/sqrt((double)b)) * fc_array[a - 1][b - 1];
-              fc_array[b][a] = (pow(-1.0, b - a)) * fc_array[a][b];
-
-              fc.push_back(fc_array[a][b]);
+              fc_array[b][a] = (double)(pow(-1., (double)(b - a))) * fc_array[a][b];
             }
           }
+
+          /* this is how chris's code does it - weird. ask */
+          for (size_t a = 0; a < n_vib + 1; a++) {
+            for (size_t b = 0; b < n_vib + 1; b++) {
+              std::vector<size_t> subscripts = {i, j, alpha, a, b};
+              index = sub2ind(subscripts, fc_extents);
+              fc[index] = fc_array[a][b];
+            }
+          }
+
         }
 
-      } else {
-        /* this is to ensure fc is of the right length so the
-         * get_fc function works properly re: indexing */
-        for (size_t dummy = 0;
-             dummy < n_normal * n_vib + 1 * n_vib + 1;
-             dummy++) {
-          fc.push_back(0.0);
-        }
       }
     }
   }
-  free(fc_array);
+  /* free(fc_array); */
+  /* for (size_t row = 0; row < n_vib + 1; row++) { */
+  /*   delete [] fc_array[row]; */
+  /* } */
+  /* delete [] fc_array; */
+
 }
 
 void
 Chromophore::set_extents()
 {
+  size_t size = 1;
   extents.push_back(n_elec);
+  population_extents.push_back(n_elec);
   extents.push_back(n_normal);
   ic_extents = {n_elec, n_elec};
+  size *= n_elec * n_elec;
   for (size_t i = 0; i < n_normal; i++) {
     extents.push_back(n_vib);
+    population_extents.push_back(n_vib + 1);
     ic_extents.push_back(n_vib + 1);
     ic_extents.push_back(n_vib + 1);
+    size *= (n_vib + 1);
   }
+  k_ic.resize(size, 0.);
+  size = 1;
 
   ivr_extents.push_back(n_elec);
   ivr_extents.push_back(n_normal);
   ivr_extents.push_back(2);
+  size = n_elec * n_normal * 2;
+  k_ivr.resize(size, 0.);
 
   fc_extents.push_back(n_elec + 1);
   fc_extents.push_back(n_elec + 1);
   fc_extents.push_back(n_normal);
   fc_extents.push_back(n_vib + 1);
   fc_extents.push_back(n_vib + 1);
+  size = pow(n_elec + 1, 2) * pow(n_vib + 1, 2) * n_normal;
+  fc.resize(size, 0.);
 
 }
 
@@ -416,13 +499,6 @@ Chromophore::get_w_normal(size_t norm)
   return w_normal[norm];
 }
 
-/*
-double Chromophore::get_w_vib(size_t vib_a)
-{
-  return w_vib[vib_a];
-}
-*/
-
 double
 Chromophore::get_l_ic_ij(size_t elec_i, size_t elec_j)
 {
@@ -448,25 +524,20 @@ Chromophore::get_g_ivr_i(size_t elec_i)
 }
 
 double
-Chromophore::get_disp(
-             size_t mode,
-             size_t e_lower,
-             size_t e_upper
-)
+Chromophore::get_disp(std::vector<size_t> subscripts)
 {
   /* the ordering's a bit off here - extents lists the electronic
    * extents first, then the normal modes, whereas the disp array
    * indexes them with the mode first. that could be changed, then
    * this would just be return disp[sub2ind()] etc */
-  size_t index = (mode   + n_normal * 
-                 (e_lower  + (n_elec + 1)  * e_upper));
+  size_t index = sub2ind(subscripts, {n_normal, n_elec + 1, n_elec + 1});
   return disp[index];
 }
 
 double
 Chromophore::get_fc(std::vector<size_t> subscripts)
 {
-  return fc[sub2ind(subscripts, extents)];
+  return fc[sub2ind(subscripts, fc_extents)];
 }
 
 /* this could be replaced with the existing cw_obo but
@@ -632,10 +703,6 @@ Chromophore::set_k_ic(double beta)
                 g_ic_ij[ij_index]) * CM_PER_PS;
           }
         }
-        /* NB: this should work, I hope, but it won't leave zeroes
-         * where i = j. that would require making the vector that length
-         * and initialising it all to zero first, i think */
-
 
       }
 
@@ -644,7 +711,7 @@ Chromophore::set_k_ic(double beta)
 }
 
 void
-Chromophore::dndt()
+Chromophore::dndt(double* population, double t, pulse pump)
 {
   std::vector<size_t> n_extents;
   std::vector<size_t> vib_extents;
@@ -659,7 +726,8 @@ Chromophore::dndt()
   std::vector<double> dndt_ivr(n_total, 0.);
   std::vector<double> dndt_ic(n_total, 0.);
   std::vector<double> dndt_pump(n_total, 0.);
-  std::vector<double> n(n_total, 0.); /* should be a class member?? */
+  std::vector<double> dndt(n_total, 0.);
+  /* std::vector<double> n(n_total, 0.); /1* should be a class member?? *1/ */
 
   std::vector<size_t> subscripts;
   std::vector<size_t> sub_lower, sub_upper;
@@ -675,7 +743,7 @@ Chromophore::dndt()
         dndt_ivr[i] -= subscripts[alpha + 1]
                     * k_ivr[sub2ind({subscripts[0], alpha, 0},
                       {n_elec, n_normal, 2})]
-                    * n[i]; /* loss of population to lower vibronic state */
+                    * population[i]; /* loss of population to lower vibropopulationc state */
         sub_lower = subscripts;
         sub_lower[alpha + 1]--;
         i_lower = sub2ind(sub_lower, n_extents);
@@ -683,21 +751,21 @@ Chromophore::dndt()
         dndt_ivr[i] += subscripts[alpha + 1]
                     * k_ivr[sub2ind({subscripts[0], alpha, 1},
                       {n_elec, n_normal, 2})]
-                    * n[i_lower]; /* gain of population from level below */
+                    * population[i_lower]; /* gain of population from level below */
       }
 
       if (subscripts[alpha + 1] < n_vib - 1) {
         dndt_ivr[i] -= (subscripts[alpha + 1] + 1.)
                     * k_ivr[sub2ind({subscripts[0], alpha, 1},
                       {n_elec, n_normal, 2})]
-                    * n[i]; /* loss of population to upper state */
+                    * population[i]; /* loss of population to upper state */
         sub_upper = subscripts;
         sub_upper[alpha + 1]++;
         i_upper = sub2ind(sub_upper, n_extents);
         dndt_ivr[i] += (subscripts[alpha + 1] + 1.)
                     * k_ivr[sub2ind({subscripts[0], alpha, 0},
                       {n_elec, n_normal, 2})]
-                    * n[i_upper]; /* gain from the upper state */
+                    * population[i_upper]; /* gain from the upper state */
       }
     }
 
@@ -713,6 +781,7 @@ Chromophore::dndt()
       for (size_t k = 0; k < (n_normal * (n_vib + 1)); k++) {
         std::vector<size_t> b = ind2sub(k, vib_extents);
 
+        /* indices */
         std::vector<size_t> n_i, n_i_plus, n_i_minus;
         std::vector<size_t> k_ba_ji, k_ba_ij, k_ab_ji, k_ab_ij;
         k_ba_ji = {i + 1, i};
@@ -743,7 +812,7 @@ Chromophore::dndt()
           k_ba_ij.push_back(b[bi]);
         }
 
-        if (i == 0) { /* electronic ground state */
+        if (i == 0) { /* electropopulationc ground state */
           double fc_i_plus = 1.;
           for (size_t alpha = 0; alpha < n_normal; alpha++) {
             fc_i_plus *= pow(fc[sub2ind({i, i + 1, alpha, 
@@ -751,12 +820,12 @@ Chromophore::dndt()
 
             dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_plus
             * k_ic[sub2ind(k_ba_ji, ic_extents)]
-            * n[sub2ind(n_i, n_extents)];
+            * population[sub2ind(n_i, n_extents)];
             dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
             * k_ic[sub2ind(k_ba_ij, ic_extents)]
-            * n[sub2ind(n_i_plus, n_extents)];
+            * population[sub2ind(n_i_plus, n_extents)];
           }
-        } else if (i == n_elec - 1) { /* highest electronic state */
+        } else if (i == n_elec - 1) { /* highest electropopulationc state */
           double fc_i_minus = 1.;
           for (size_t alpha = 0; alpha < n_normal; alpha++) {
             fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
@@ -764,10 +833,10 @@ Chromophore::dndt()
 
             dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_minus
             * k_ic[sub2ind(k_ab_ji, ic_extents)]
-            * n[sub2ind(n_i, n_extents)];
+            * population[sub2ind(n_i, n_extents)];
             dndt_ic[sub2ind(n_i, n_extents)] += fc_i_minus
             * k_ic[sub2ind(k_ab_ij, ic_extents)]
-            * n[sub2ind(n_i_minus, n_extents)];
+            * population[sub2ind(n_i_minus, n_extents)];
           }
         } else { /* intermediate */
           double fc_i_plus = 1.; double fc_i_minus = 1.;
@@ -779,28 +848,26 @@ Chromophore::dndt()
 
             dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_plus
             * k_ic[sub2ind(k_ba_ji, ic_extents)]
-            * n[sub2ind(n_i, n_extents)];
+            * population[sub2ind(n_i, n_extents)];
             dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
             * k_ic[sub2ind(k_ba_ij, ic_extents)]
-            * n[sub2ind(n_i_plus, n_extents)];
+            * population[sub2ind(n_i_plus, n_extents)];
 
             dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_minus
             * k_ic[sub2ind(k_ab_ji, ic_extents)]
-            * n[sub2ind(n_i, n_extents)];
+            * population[sub2ind(n_i, n_extents)];
             dndt_ic[sub2ind(n_i, n_extents)] += fc_i_minus
             * k_ic[sub2ind(k_ab_ij, ic_extents)]
-            * n[sub2ind(n_i_minus, n_extents)];
+            * population[sub2ind(n_i_minus, n_extents)];
           }
 
-        } /* end of electronic state if/else */
+        } /* end of electropopulationc state if/else */
 
       }
     }
   }
 
   /* pumping. again this seems to be duplication of above loops */
-  pulse pump;
-  double t; /* these need to be parameters obv */
   for (size_t j = 0; j < (n_normal * (n_vib + 1)); j++) {
     std::vector<size_t> a = ind2sub(j, vib_extents);
     for (size_t k = 0; k < (n_normal * (n_vib + 1)); k++) {
@@ -820,24 +887,18 @@ Chromophore::dndt()
               fc_extents)], 2.);
         dndt_pump[sub2ind(gs_sub, n_extents)]
               -= intensity(delta_x0_ba, t, pump) * fc_sq
-              * n[sub2ind(gs_sub, n_extents)];
+              * population[sub2ind(gs_sub, n_extents)];
         dndt_pump[sub2ind(exc_sub, n_extents)]
               += intensity(delta_x0_ba, t, pump) * fc_sq
-              * n[sub2ind(gs_sub, n_extents)];
+              * population[sub2ind(gs_sub, n_extents)];
       }
     }
   }
 
-  
-
-  /* the first subscript labels the electronic state;
-   * the remainder are vibrational indices for it */
-  std::vector<size_t> vib_indices(subscripts.size() - 1);
-  std::vector<size_t> vib_indices2(subscripts.size() - 1);
-  copy(subscripts.begin() + 1, subscripts.end(), vib_indices);
-  copy(subscripts.begin() + 1, subscripts.end(), vib_indices2);
-
-
+  for (size_t i = 0; i < n_total; i++) {
+    dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
+    fprintf(stdout, "%lu\t%18.10f\n", i, dndt[i]);
+  }
 
 }
 
@@ -846,6 +907,113 @@ Chromophore::dndt()
  * for populations we need a set of [N_chromophores][extents]
  *
  */
+
+int
+main(int argc, char** argv)
+{
+
+  size_t n_elec = 3, n_normal = 2, n_vib = 3;
+
+  /* these will need to be calloc'd and filled from a file eventually */
+  double *wi = (double *)calloc(n_elec + 1, sizeof(double));
+  wi[0] = 0.; wi[1] = 10000.0; wi[2] = 20000.0; wi[3] = 30000.0;
+
+  double *wnorm = (double *)calloc(n_normal, sizeof(double));
+  wnorm[0] = 1100.; wnorm[1] = 1500.0;
+
+  double **licij = (double **)calloc(n_elec, sizeof(double**));
+  for (size_t i = 0; i < n_elec; i++) {
+    licij[i] = (double *)calloc(n_elec, sizeof(double*));
+  }
+  licij[0][1] = 200.;
+  licij[1][2] = 1000.;
+
+  double *livri = (double *)calloc(n_elec, sizeof(double));
+  livri[0] = 50.0; livri[1] = 100.0; livri[2] = 300.0;
+
+  /* these need to be converted from fs to cm^-1 */
+  double **gicij = (double **)calloc(n_elec, sizeof(double**));
+  for (size_t i = 0; i < n_elec; i++) {
+    gicij[i] = (double *)calloc(n_elec, sizeof(double*));
+  }
+  gicij[0][1] = 163.6;
+  gicij[1][2] = 163.6;
+
+  double *givri = (double *)calloc(n_elec, sizeof(double));
+  givri[0] = 163.6; givri[1] = 163.6; givri[2] = 163.6;
+
+  double ***d = (double ***)calloc(n_normal, sizeof(double**));
+  for (size_t i = 0; i < n_elec + 1; i++) {
+    d[i] = (double **)calloc(n_elec + 1, sizeof(double*));
+    for (size_t j = 0; j < n_elec + 1; j++) {
+      d[i][j] = (double *)calloc(n_elec + 1, sizeof(double));
+    }
+  }
+  d[0][0][1] = 1.;
+  d[1][0][1] = 1.;
+  d[0][1][2] = 1.;
+  d[1][1][2] = 1.;
+  d[0][0][2] = 0.7;
+  d[1][0][2] = 0.7;
+  d[0][1][3] = 0.4;
+  d[1][1][3] = 0.4;
+
+  Chromophore lutein = Chromophore(n_elec, n_normal, n_vib,
+      wi, n_elec + 1,
+      wnorm, n_normal,
+      licij, n_elec,
+      livri, n_elec,
+      gicij, n_elec,
+      givri, n_elec,
+      d, n_normal, n_elec + 1, n_elec + 1
+      );
+
+  free(d); free(givri); free(gicij); free(livri); free(licij);
+  free(wnorm); free(wi);
+
+  pulse pump = {
+    .type = GAUSSIAN,
+    .target_state = 2,
+    .amplitude = 100.,
+    .centre = 20000.,
+    .width = 10.,
+    .t_peak = 0.1,
+    .duration = 70E-3,
+  };
+
+  for (size_t i = 0; i < n_elec + 1; i++) {
+    for (size_t j = 0; j < n_elec + 1; j++) {
+      if (i != j) {
+        for (size_t alpha = 0; alpha < n_normal; alpha++) {
+          /* double displacement = lutein.get_disp(alpha, i, j); */
+          /* std::cout << "disp[" << alpha << "][" */
+          /*   << i << "][" << j << "] = " << displacement */
+          /*   << std::endl; */
+
+          for (size_t a = 0; a < n_vib + 1; a++) {
+            for (size_t b = 0; b < n_vib + 1; b++) {
+                double fc = lutein.get_fc({i, j, alpha, a, b});
+                /* std::cout << "fc[" << i << "][" << j << "][" */ 
+                /*   << alpha << "][" << a << "][" << b << "] = " << fc */
+                /*   << std::endl; */
+                std::cout << std::setprecision(12) << fc << std::endl;
+
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return 0;
+
+  double *pop = (double *)calloc(n_elec * pow(n_vib + 1, n_normal),
+                                 sizeof(double));
+  for (size_t t = 0; t < 10; t++) {
+    lutein.dndt(pop, (double)t, pump);
+  }
+
+}
 
 
 #endif

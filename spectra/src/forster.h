@@ -15,7 +15,7 @@ typedef struct chromophore {
   double w00;
   double lambda;
   double rate; /* rate in inverse picoseconds!! */
-  double complex gi[];
+  double _Complex gi[];
 } chromophore;
 
 chromophore* create_chromophore(unsigned ns);

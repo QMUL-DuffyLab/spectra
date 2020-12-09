@@ -4,7 +4,7 @@ unsigned short int
 pop_converge(double *y, double *yprev, unsigned int N, double thresh)
 {
   unsigned short int result = 0;
-  double *diff = calloc(N, sizeof(double));
+  double *diff = (double *)calloc(N, sizeof(double));
   unsigned int conv = 0;
   for (unsigned int i = 0; i < N; i++) {
     diff[i] = fabs(yprev[i] - y[i]);
@@ -25,7 +25,7 @@ guess(const ss_init p, const double* boltz, const double* musq,
 {
   short print_guess = 0;
   double sum = 0.;
-  double *guess = calloc(N, sizeof(double));
+  double *guess = (double *)calloc(N, sizeof(double));
   if (print_guess) {
     fprintf(stdout, "Initial population guess:\n");
   }
@@ -85,7 +85,7 @@ incident(pulse p, unsigned int tau)
   /* returns W(\omega), the spectrum of incident light */
   double wn, diff, min;
   unsigned int min_arg;
-  double *ww = calloc(tau, sizeof(double));
+  double *ww = (double *)calloc(tau, sizeof(double));
   double sum = 0.0; /* lorentzian / gaussian won't be normalised */
   for (unsigned int i = 0; i < tau; i++) {
     wn = (i * 2. * M_PI / tau) * (1. / TOFS);
@@ -209,7 +209,7 @@ pop_steady_fdf
 double*
 steady_state_populations(double *guess, void *params, unsigned n)
 {
-  double *populations = calloc(n, sizeof(double));
+  double *populations = (double *)calloc(n, sizeof(double));
   const gsl_multiroot_fdfsolver_type *T;
   int status;
   unsigned i, iter = 0;
