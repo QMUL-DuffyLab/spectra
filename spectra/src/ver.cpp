@@ -160,6 +160,7 @@ EL_STRUCT(2,3);
 class Chromophore {
   public:
     Chromophore(size_t elec, size_t norm, size_t vib,
+                double beta,
                 double* wi, size_t n_wi,
                 double* w_mode, size_t n_mode,
                 double** l_ic, size_t side_l,
@@ -180,9 +181,10 @@ class Chromophore {
     void fc_calc();
     void set_k_ivr(double beta);
     void set_k_ic(double beta);
-    void dndt(double* population, double t, pulse pump);
+    void dndt(std::vector<double> population, double t, pulse pump);
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
+    std::vector<double> get_w_normal();
     double get_w_vib(size_t i);
     double get_l_ic_ij(size_t i, size_t j);
     double get_l_ivr_i(size_t i);
@@ -230,10 +232,12 @@ class Chromophore {
     std::vector<double> fc;
     std::vector<double> k_ivr; /* rates for IVR */
     std::vector<double> k_ic;  /* rates for IC */
-    std::vector<double> dn;  /* rates for IC */
+    double beta;
+    /* std::vector<double> dn;  /1* rates for IC *1/ */
 };
 
 Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
+    double bet,
     double* wi, size_t n_wi,
     double* w_mode, size_t n_mode,
     double** l_ic, size_t side_l,
@@ -244,7 +248,8 @@ Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
     )
   : n_elec(elec),
     n_normal(norm),
-    n_vib(vib)
+    n_vib(vib),
+    beta(bet)
 {
   set_extents();
   set_w_elec(wi, n_wi);
@@ -254,6 +259,8 @@ Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
   set_g_ic_ij(g_ic, side_g);
   set_g_ivr_i(g_ivr, n_g);
   set_disp(di, n_mode_di, e_l, e_u);
+  set_k_ivr(beta);
+  set_k_ic(beta);
   fc_calc();
 }
 
@@ -488,6 +495,12 @@ Chromophore::get_w_elec(size_t elec_i)
   return w_elec[elec_i];
 }
 
+std::vector<double>
+Chromophore::get_w_normal()
+{
+  return w_normal;
+}
+
 double
 Chromophore::get_w_normal(size_t norm)
 {
@@ -613,6 +626,7 @@ k_inter(std::vector<size_t> e_ij,
   } else {
     k = k_calc(delta_ij_ab, beta, lambda, gamma);
   }
+  /* std::cout << k << std::endl; */
   return k;
 }
 
@@ -633,6 +647,8 @@ double thermal_osc(std::vector<size_t> a,
   for (size_t i = 0; i < w_alpha.size(); i++) {
     Z *= exp(-0.5 * beta * w_alpha[i]) / (1 - exp(- beta * w_alpha[i]));
   }
+  /* std::cout << a[0] << a[1] */ 
+  /* << std::endl; //<< w_alpha[0] << w_alpha[1] << n_a << Z << std::endl; */
   return n_a / Z;
 }
 
@@ -665,7 +681,7 @@ Chromophore::set_k_ic(double beta)
     total_vib_rates *= pow((n_vib + 1), 2);
   }
   /* make it the correct length. can we zero it out here? */
-  k_ic.resize(pow(n_elec, 2) * total_vib_rates);
+  k_ic.resize(pow(n_elec, 2) * total_vib_rates, 0.);
 
   for (size_t i = 0; i < n_elec; i++) {
     for (size_t j = 0; j < n_elec; j++) {
@@ -701,6 +717,7 @@ Chromophore::set_k_ic(double beta)
             k_ic[index] = k_inter(e_ij, a, b, w_e, w_normal, beta,
                 l_ic_ij[ij_index],
                 g_ic_ij[ij_index]) * CM_PER_PS;
+            /* std::cout << index << ", " << k_ic[index] << std::endl; */
           }
         }
 
@@ -711,7 +728,7 @@ Chromophore::set_k_ic(double beta)
 }
 
 void
-Chromophore::dndt(double* population, double t, pulse pump)
+Chromophore::dndt(std::vector<double> population, double t, pulse pump)
 {
   std::vector<size_t> n_extents;
   std::vector<size_t> vib_extents;
@@ -729,9 +746,10 @@ Chromophore::dndt(double* population, double t, pulse pump)
   std::vector<double> dndt(n_total, 0.);
   /* std::vector<double> n(n_total, 0.); /1* should be a class member?? *1/ */
 
-  std::vector<size_t> subscripts;
-  std::vector<size_t> sub_lower, sub_upper;
-  size_t i_lower, i_upper;
+  std::vector<size_t> subscripts(n_extents.size(), 0);
+  std::vector<size_t> sub_lower(n_extents.size(), 0),
+                      sub_upper(n_extents.size(), 0);
+  size_t i_lower = 0, i_upper = 0;
   for (size_t i = 0; i < n_total; i++) {
     subscripts = ind2sub(i, n_extents);  
      
@@ -891,13 +909,17 @@ Chromophore::dndt(double* population, double t, pulse pump)
         dndt_pump[sub2ind(exc_sub, n_extents)]
               += intensity(delta_x0_ba, t, pump) * fc_sq
               * population[sub2ind(gs_sub, n_extents)];
+        /* fprintf(stdout, "%lu\t%18.10f\n", sub2ind(gs_sub, n_extents), */
+        /*     dndt_pump[sub2ind(gs_sub, n_extents)]); */
       }
     }
   }
 
   for (size_t i = 0; i < n_total; i++) {
     dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
-    fprintf(stdout, "%lu\t%18.10f\n", i, dndt[i]);
+    fprintf(stdout, "%lu\t%18.10f\t%18.10f\t%18.10f\t%18.10f\n", i,
+        dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]);
+    population[i] = dndt[i];
   }
 
 }
@@ -913,6 +935,7 @@ main(int argc, char** argv)
 {
 
   size_t n_elec = 3, n_normal = 2, n_vib = 3;
+  double beta = 1./200.; /* temp in wavenumbers i think */
 
   /* these will need to be calloc'd and filled from a file eventually */
   double *wi = (double *)calloc(n_elec + 1, sizeof(double));
@@ -942,34 +965,47 @@ main(int argc, char** argv)
   double *givri = (double *)calloc(n_elec, sizeof(double));
   givri[0] = 163.6; givri[1] = 163.6; givri[2] = 163.6;
 
-  double ***d = (double ***)calloc(n_normal, sizeof(double**));
+  double ***disp = (double ***)calloc(n_normal, sizeof(double**));
   for (size_t i = 0; i < n_elec + 1; i++) {
-    d[i] = (double **)calloc(n_elec + 1, sizeof(double*));
+    disp[i] = (double **)calloc(n_elec + 1, sizeof(double*));
     for (size_t j = 0; j < n_elec + 1; j++) {
-      d[i][j] = (double *)calloc(n_elec + 1, sizeof(double));
+      disp[i][j] = (double *)calloc(n_elec + 1, sizeof(double));
     }
   }
-  d[0][0][1] = 1.;
-  d[1][0][1] = 1.;
-  d[0][1][2] = 1.;
-  d[1][1][2] = 1.;
-  d[0][0][2] = 0.7;
-  d[1][0][2] = 0.7;
-  d[0][1][3] = 0.4;
-  d[1][1][3] = 0.4;
+  disp[0][0][1] = 1.;
+  disp[1][0][1] = 1.;
+  disp[0][1][2] = 1.;
+  disp[1][1][2] = 1.;
+  disp[0][0][2] = 0.7;
+  disp[1][0][2] = 0.7;
+  disp[0][1][3] = 0.4;
+  disp[1][1][3] = 0.4;
 
   Chromophore lutein = Chromophore(n_elec, n_normal, n_vib,
-      wi, n_elec + 1,
+      beta, wi, n_elec + 1,
       wnorm, n_normal,
       licij, n_elec,
       livri, n_elec,
       gicij, n_elec,
       givri, n_elec,
-      d, n_normal, n_elec + 1, n_elec + 1
+      disp, n_normal, n_elec + 1, n_elec + 1
       );
 
-  free(d); free(givri); free(gicij); free(livri); free(licij);
-  free(wnorm); free(wi);
+  for (size_t i = 0; i < n_elec + 1; i++) {
+    for (size_t j = 0; j < n_elec + 1; j++) {
+      free(disp[i][j]);
+    }
+    free(disp[i]);
+    free(gicij[i]);
+    free(licij[i]);
+  }
+  free(disp);
+  free(givri);
+  free(gicij);
+  free(livri);
+  free(licij);
+  free(wnorm);
+  free(wi);
 
   pulse pump = {
     .type = GAUSSIAN,
@@ -981,39 +1017,83 @@ main(int argc, char** argv)
     .duration = 70E-3,
   };
 
-  for (size_t i = 0; i < n_elec + 1; i++) {
-    for (size_t j = 0; j < n_elec + 1; j++) {
-      if (i != j) {
-        for (size_t alpha = 0; alpha < n_normal; alpha++) {
-          /* double displacement = lutein.get_disp(alpha, i, j); */
-          /* std::cout << "disp[" << alpha << "][" */
-          /*   << i << "][" << j << "] = " << displacement */
-          /*   << std::endl; */
+  /* for (size_t i = 0; i < n_elec + 1; i++) { */
+  /*   for (size_t j = 0; j < n_elec + 1; j++) { */
+  /*     if (i != j) { */
+  /*       for (size_t alpha = 0; alpha < n_normal; alpha++) { */
+  /*         for (size_t a = 0; a < n_vib + 1; a++) { */
+  /*           for (size_t b = 0; b < n_vib + 1; b++) { */
+  /*             std::vector<size_t> subscripts = {i, j, alpha, a, b}; */
+  /*             size_t index = sub2ind(subscripts, {4, 4, 2, 4, 4}); */
+  /*             std::cout << "subscripts = (" << i << ", " << j << ", " */
+  /*                       << alpha << ", " << a << ", " << b << ")" */
+  /*                       << ". index = " */
+  /*                       << index; */
+  /*               subscripts = ind2sub(index, {4, 4, 2, 4, 4}); */
+  /*             std::cout << ". reverse subscripts = (" << i << ", " << j */
+  /*                       << ", " << alpha << ", " << a << ", " << b << ")" */
+  /*                       << std::endl; */
+  /*               /1* double fc = lutein.get_fc({i, j, alpha, a, b}); *1/ */
+  /*               /1* std::cout << std::setprecision(12) << fc << std::endl; *1/ */
+  /*           } */
+  /*         } */
+  /*       } */
+  /*     } */
+  /*   } */
+  /* } */
 
-          for (size_t a = 0; a < n_vib + 1; a++) {
-            for (size_t b = 0; b < n_vib + 1; b++) {
-                double fc = lutein.get_fc({i, j, alpha, a, b});
-                /* std::cout << "fc[" << i << "][" << j << "][" */ 
-                /*   << alpha << "][" << a << "][" << b << "] = " << fc */
-                /*   << std::endl; */
-                std::cout << std::setprecision(12) << fc << std::endl;
+  /* this should be available via c.get_n_extents() or something */
+  /* NB: this whole thing should be a method - calculate initial
+   * populations; only parameter is beta */
+  size_t pop_total = n_elec * pow(n_vib + 1, n_normal);
+  /* double *pop = static_cast<double *>(calloc(pop_total, sizeof(double))); */
+  /* double *n0 = static_cast<double *>(calloc(pop_total, sizeof(double))); */
+  std::vector<double> pop(pop_total, 0.);
+  std::vector<double> n0(pop_total, 0.);
 
-            }
-          }
-        }
-      }
-    }
+  std::vector<size_t> pop_extents(n_normal + 1, 0);
+  std::vector<size_t> vib_extents(n_normal, 0);
+  pop_extents[0] = n_elec;
+  for (size_t i = 0; i < n_normal; i++) {
+    pop_extents[i + 1] = (n_vib + 1);
+    vib_extents[i] = (n_vib + 1);
   }
-
+  std::cout << "vib_extents = ";
+  for (size_t i = 0; i < vib_extents.size(); i++) {
+    std::cout << vib_extents[i] << " ";
+  }
+  std::cout << std::endl;
+  for (size_t i = 0; i < pow(n_vib + 1, n_normal); i++) {
+    std::vector<size_t> tot_subs(pop_extents.size(), 0);
+    std::vector<size_t> vib_subs(vib_extents.size(), 0);
+    vib_subs = ind2sub(i, vib_extents);
+    for (size_t j = 0; j < vib_subs.size(); j++) {
+      tot_subs[j + 1] = vib_subs[j];
+    }
+    std::cout << "i = " << i << ". ";
+    std::cout << "tot_subs = ";
+    for (size_t j = 0; j < tot_subs.size(); j++) {
+      std::cout << tot_subs[j] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "vib_subs = ";
+    for (size_t j = 0; j < vib_subs.size(); j++) {
+      std::cout << vib_subs[j] << " ";
+    }
+    std::cout << std::endl;
+    size_t index = sub2ind(tot_subs, pop_extents);
+    n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
+    double elem = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
+    fprintf(stdout, "%18.10f\n", elem);
+    /* population = n[0] */
+    pop[index] = n0[index];
+  }
   return 0;
 
-  double *pop = (double *)calloc(n_elec * pow(n_vib + 1, n_normal),
-                                 sizeof(double));
   for (size_t t = 0; t < 10; t++) {
     lutein.dndt(pop, (double)t, pump);
   }
 
 }
-
-
+ 
 #endif
