@@ -945,31 +945,65 @@ main(int argc, char** argv)
   wnorm[0] = 1100.; wnorm[1] = 1500.0;
 
   double **licij = (double **)calloc(n_elec, sizeof(double**));
-  for (size_t i = 0; i < n_elec; i++) {
-    licij[i] = (double *)calloc(n_elec, sizeof(double*));
+  if (licij == NULL) {
+    std::cout << "licij array calloc didn't work" << std::endl;
+  } else {
+    for (size_t i = 0; i < n_elec; i++) {
+      licij[i] = (double *)calloc(n_elec, sizeof(double*));
+      if (licij[i] == NULL) {
+        std::cout << "licij[" << i <<"] calloc didn't work" << std::endl;
+      }
+    }
   }
   licij[0][1] = 200.;
   licij[1][2] = 1000.;
 
   double *livri = (double *)calloc(n_elec, sizeof(double));
-  livri[0] = 50.0; livri[1] = 100.0; livri[2] = 300.0;
+  if (livri == NULL) {
+    std::cout << "livri array calloc didn't work" << std::endl;
+  } else {
+    livri[0] = 50.0; livri[1] = 100.0; livri[2] = 300.0;
+  }
 
   /* these need to be converted from fs to cm^-1 */
   double **gicij = (double **)calloc(n_elec, sizeof(double**));
-  for (size_t i = 0; i < n_elec; i++) {
-    gicij[i] = (double *)calloc(n_elec, sizeof(double*));
+  if (gicij == NULL) {
+    std::cout << "gicij array calloc didn't work" << std::endl;
+  } else {
+    for (size_t i = 0; i < n_elec; i++) {
+      gicij[i] = (double *)calloc(n_elec, sizeof(double*));
+      if (licij[i] == NULL) {
+        std::cout << "gicij[" << i <<"] calloc didn't work" << std::endl;
+      }
+    }
   }
   gicij[0][1] = 163.6;
   gicij[1][2] = 163.6;
 
   double *givri = (double *)calloc(n_elec, sizeof(double));
-  givri[0] = 163.6; givri[1] = 163.6; givri[2] = 163.6;
+  if (givri == NULL) {
+    std::cout << "livri array calloc didn't work" << std::endl;
+  } else {
+    givri[0] = 163.6; givri[1] = 163.6; givri[2] = 163.6;
+  }
 
-  double ***disp = (double ***)calloc(n_normal, sizeof(double**));
-  for (size_t i = 0; i < n_elec + 1; i++) {
-    disp[i] = (double **)calloc(n_elec + 1, sizeof(double*));
-    for (size_t j = 0; j < n_elec + 1; j++) {
-      disp[i][j] = (double *)calloc(n_elec + 1, sizeof(double));
+  double ***disp = (double ***)calloc(n_normal, sizeof(*disp));
+  if (disp == NULL) {
+    std::cout << "disp array calloc didn't work" << std::endl;
+  } else {
+    for (size_t i = 0; i < n_normal; i++) {
+      disp[i] = (double **)calloc(n_elec + 1, sizeof(*(disp[i])));
+      if (disp[i] == NULL) {
+        std::cout << "disp[" << i <<"] calloc didn't work" << std::endl;
+      } else {
+        for (size_t j = 0; j < n_elec + 1; j++) {
+          disp[i][j] = (double *)calloc(n_elec + 1, sizeof(*(disp[i][j])));
+          if (disp[i][j] == NULL) {
+            std::cout << "disp[" << i <<"][" << j 
+              << "] calloc didn't work" << std::endl;
+          }
+        }
+      }
     }
   }
   disp[0][0][1] = 1.;
@@ -991,13 +1025,17 @@ main(int argc, char** argv)
       disp, n_normal, n_elec + 1, n_elec + 1
       );
 
-  for (size_t i = 0; i < n_elec + 1; i++) {
+  for (size_t i = 0; i < n_normal; i++) {
     for (size_t j = 0; j < n_elec + 1; j++) {
       free(disp[i][j]);
     }
-    free(disp[i]);
+  }
+  for (size_t i = 0; i < n_elec; i++) {
     free(gicij[i]);
     free(licij[i]);
+    if (i < n_normal) {
+      free(disp[i]);
+    }
   }
   free(disp);
   free(givri);
@@ -1017,30 +1055,31 @@ main(int argc, char** argv)
     .duration = 70E-3,
   };
 
-  /* for (size_t i = 0; i < n_elec + 1; i++) { */
-  /*   for (size_t j = 0; j < n_elec + 1; j++) { */
-  /*     if (i != j) { */
-  /*       for (size_t alpha = 0; alpha < n_normal; alpha++) { */
-  /*         for (size_t a = 0; a < n_vib + 1; a++) { */
-  /*           for (size_t b = 0; b < n_vib + 1; b++) { */
-  /*             std::vector<size_t> subscripts = {i, j, alpha, a, b}; */
-  /*             size_t index = sub2ind(subscripts, {4, 4, 2, 4, 4}); */
-  /*             std::cout << "subscripts = (" << i << ", " << j << ", " */
-  /*                       << alpha << ", " << a << ", " << b << ")" */
-  /*                       << ". index = " */
-  /*                       << index; */
-  /*               subscripts = ind2sub(index, {4, 4, 2, 4, 4}); */
-  /*             std::cout << ". reverse subscripts = (" << i << ", " << j */
-  /*                       << ", " << alpha << ", " << a << ", " << b << ")" */
-  /*                       << std::endl; */
-  /*               /1* double fc = lutein.get_fc({i, j, alpha, a, b}); *1/ */
-  /*               /1* std::cout << std::setprecision(12) << fc << std::endl; *1/ */
-  /*           } */
-  /*         } */
-  /*       } */
-  /*     } */
-  /*   } */
-  /* } */
+  for (size_t i = 0; i < n_elec + 1; i++) {
+    for (size_t j = 0; j < n_elec + 1; j++) {
+      if (i != j) {
+        for (size_t alpha = 0; alpha < n_normal; alpha++) {
+          for (size_t a = 0; a < n_vib + 1; a++) {
+            for (size_t b = 0; b < n_vib + 1; b++) {
+              std::vector<size_t> subscripts = {i, j, alpha, a, b};
+              size_t index = sub2ind(subscripts, {4, 4, 2, 4, 4});
+              std::cout << "subscripts = (" << i << ", " << j << ", "
+                        << alpha << ", " << a << ", " << b << ")"
+                        << ". index = "
+                        << index;
+                subscripts = ind2sub(index, {4, 4, 2, 4, 4});
+              std::cout << ". reverse subscripts = (" << i << ", " << j
+                        << ", " << alpha << ", " << a << ", " << b << ")"
+                        << std::endl;
+                /* double fc = lutein.get_fc({i, j, alpha, a, b}); */
+                /* std::cout << std::setprecision(12) << fc << std::endl; */
+            }
+          }
+        }
+      }
+    }
+  }
+  return 0;
 
   /* this should be available via c.get_n_extents() or something */
   /* NB: this whole thing should be a method - calculate initial
@@ -1053,6 +1092,8 @@ main(int argc, char** argv)
 
   std::vector<size_t> pop_extents(n_normal + 1, 0);
   std::vector<size_t> vib_extents(n_normal, 0);
+  std::vector<size_t> tot_subs(pop_extents.size(), 0);
+  std::vector<size_t> vib_subs(vib_extents.size(), 0);
   pop_extents[0] = n_elec;
   for (size_t i = 0; i < n_normal; i++) {
     pop_extents[i + 1] = (n_vib + 1);
@@ -1064,8 +1105,6 @@ main(int argc, char** argv)
   }
   std::cout << std::endl;
   for (size_t i = 0; i < pow(n_vib + 1, n_normal); i++) {
-    std::vector<size_t> tot_subs(pop_extents.size(), 0);
-    std::vector<size_t> vib_subs(vib_extents.size(), 0);
     vib_subs = ind2sub(i, vib_extents);
     for (size_t j = 0; j < vib_subs.size(); j++) {
       tot_subs[j + 1] = vib_subs[j];
