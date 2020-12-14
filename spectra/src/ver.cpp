@@ -120,7 +120,9 @@ ind2sub(size_t index, std::vector<size_t> extents)
   } else {
     subscripts[extents.size() - 1] = index % extents[extents.size() - 1];
     /* declare outside loop so we can use it for the last subscript */
-    size_t prod;
+    /* declare as 1 here! otherwise it's uninitialised for a
+     * two-index vector, causes all kinds of hell later */
+    size_t prod = 1;
     for (size_t i = extents.size() - 2; i > 0; i--) {
       prod = 1;
       for (size_t j = extents.size() - 1; j > i; j--) {
@@ -1055,78 +1057,73 @@ main(int argc, char** argv)
     .duration = 70E-3,
   };
 
-  for (size_t i = 0; i < n_elec + 1; i++) {
-    for (size_t j = 0; j < n_elec + 1; j++) {
-      if (i != j) {
-        for (size_t alpha = 0; alpha < n_normal; alpha++) {
-          for (size_t a = 0; a < n_vib + 1; a++) {
-            for (size_t b = 0; b < n_vib + 1; b++) {
-              std::vector<size_t> subscripts = {i, j, alpha, a, b};
-              size_t index = sub2ind(subscripts, {4, 4, 2, 4, 4});
-              std::cout << "subscripts = (" << i << ", " << j << ", "
-                        << alpha << ", " << a << ", " << b << ")"
-                        << ". index = "
-                        << index;
-                subscripts = ind2sub(index, {4, 4, 2, 4, 4});
-              std::cout << ". reverse subscripts = (" << i << ", " << j
-                        << ", " << alpha << ", " << a << ", " << b << ")"
-                        << std::endl;
-                /* double fc = lutein.get_fc({i, j, alpha, a, b}); */
-                /* std::cout << std::setprecision(12) << fc << std::endl; */
-            }
-          }
-        }
-      }
-    }
-  }
-  return 0;
-
   /* this should be available via c.get_n_extents() or something */
   /* NB: this whole thing should be a method - calculate initial
    * populations; only parameter is beta */
-  size_t pop_total = n_elec * pow(n_vib + 1, n_normal);
   /* double *pop = static_cast<double *>(calloc(pop_total, sizeof(double))); */
   /* double *n0 = static_cast<double *>(calloc(pop_total, sizeof(double))); */
+  std::vector<size_t> pop_extents = {n_elec};
+  /* std::vector<size_t> vib_extents(n_normal, 0); */
+  std::vector<size_t> vib_extents;
+
+  /* pop_extents[0] = n_elec; */
+  size_t pop_total = n_elec;
+  size_t vib_total = 1;
+  for (size_t i = 0; i < n_normal; i++) {
+    /* pop_extents[i + 1] = (n_vib + 1); */
+    /* vib_extents[i] = (n_vib + 1); */
+    pop_extents.push_back(n_vib + 1);
+    vib_extents.push_back(n_vib + 1);
+    pop_total *= n_vib + 1;
+    vib_total *= n_vib + 1;
+  }
   std::vector<double> pop(pop_total, 0.);
   std::vector<double> n0(pop_total, 0.);
 
-  std::vector<size_t> pop_extents(n_normal + 1, 0);
-  std::vector<size_t> vib_extents(n_normal, 0);
-  std::vector<size_t> tot_subs(pop_extents.size(), 0);
-  std::vector<size_t> vib_subs(vib_extents.size(), 0);
-  pop_extents[0] = n_elec;
-  for (size_t i = 0; i < n_normal; i++) {
-    pop_extents[i + 1] = (n_vib + 1);
-    vib_extents[i] = (n_vib + 1);
+  /* std::cout << "vib_extents = "; */
+  fprintf(stdout, "ind2sub test\n");
+  for (size_t i = 0; i < 16; i++) {
+    fprintf(stdout, "%lu ", i);
+    std::vector<size_t> testvec = ind2sub(i, {4, 4});
+    for (size_t j = 0; j < testvec.size(); j++) {
+      fprintf(stdout, "%lu ", testvec[j]);
+    }
+    fprintf(stdout, "\n");
+    /* std::cout << vib_extents[i] << " "; */
   }
-  std::cout << "vib_extents = ";
-  for (size_t i = 0; i < vib_extents.size(); i++) {
-    std::cout << vib_extents[i] << " ";
-  }
-  std::cout << std::endl;
-  for (size_t i = 0; i < pow(n_vib + 1, n_normal); i++) {
+  /* std::cout << std::endl; */
+  for (size_t i = 0; i < vib_total; i++) {
+    std::vector<size_t> tot_subs(pop_extents.size(), 0);
+    std::vector<size_t> vib_subs(vib_extents.size(), 0);
     vib_subs = ind2sub(i, vib_extents);
     for (size_t j = 0; j < vib_subs.size(); j++) {
+      fprintf(stdout, "%lu ", vib_subs[j]);
       tot_subs[j + 1] = vib_subs[j];
     }
-    std::cout << "i = " << i << ". ";
-    std::cout << "tot_subs = ";
+    fprintf(stdout, "\n");
+    /* std::cout << "i = " << i << ". "; */
+    /* std::cout << "tot_subs = "; */
     for (size_t j = 0; j < tot_subs.size(); j++) {
-      std::cout << tot_subs[j] << " ";
+      /* std::cout << tot_subs[j] << " "; */
     }
-    std::cout << std::endl;
-    std::cout << "vib_subs = ";
+    /* std::cout << std::endl; */
+    /* std::cout << "vib_subs = "; */
     for (size_t j = 0; j < vib_subs.size(); j++) {
-      std::cout << vib_subs[j] << " ";
+      /* std::cout << vib_subs[j] << " "; */
     }
-    std::cout << std::endl;
+    /* std::cout << std::endl; */
     size_t index = sub2ind(tot_subs, pop_extents);
     n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
-    double elem = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
-    fprintf(stdout, "%18.10f\n", elem);
+    /* double elem = thermal_osc(vib_subs, lutein.get_w_normal(), beta); */
+    /* fprintf(stdout, "%18.10f\n", elem); */
     /* population = n[0] */
     pop[index] = n0[index];
   }
+
+  for (size_t i = 0; i < pop_total; i++) {
+    fprintf(stdout, "%lu\t%18.10f\n", i, pop[i]);
+  }
+
   return 0;
 
   for (size_t t = 0; t < 10; t++) {
