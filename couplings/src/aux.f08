@@ -94,6 +94,31 @@ module aux
       
     end subroutine mu_calc
 
+    function k_factor(mu1, mu2, r1, r2) result(k12)
+      implicit none
+      real(dp), dimension(3), intent(in) :: mu1, mu2, r1, r2
+      real(dp), dimension(3) :: rij
+      real(dp) :: k12
+      real(dp) :: abs1, abs2
+      integer :: i
+
+      ! normalise the dipoles and get r_ij
+      abs1 = 0.0_dp
+      abs2 = 0.0_dp
+      do i = 1, 3
+        abs1 = abs1 + mu1(i)**2
+        abs2 = abs2 + mu2(i)**2
+        rij(i) = r2(i) - r1(i)
+      end do
+
+      k12 = 0.0_dp
+      do i = 1, 3
+        k12 = k12 + (mu1(i) / sqrt(abs1)) * (mu2(i) / sqrt(abs2))&
+        - 3.0_dp * (mu1(i) * rij(i)) * (mu2(i) * rij(i))
+      end do
+      
+    end function k_factor
+
     function get_pigment_code(gnt_files, i) result(code)
       implicit none
       character(100), dimension(:), intent(in) :: gnt_files

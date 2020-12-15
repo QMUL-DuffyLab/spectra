@@ -11,6 +11,7 @@ program coupling_calc
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
   character(3), dimension(:), allocatable :: unique_pigments
+  character(5) :: char_code
   character(100), dimension(:), allocatable :: coord_files,&
     gnt_files
   integer :: i, j, k, coord_stat, control_len, tau,&
@@ -176,8 +177,11 @@ program coupling_calc
     close(12)
 
     do k = 1, coord_lengths(i)
+      read(10, fmt='(A5, 1X)', advance='no') char_code
       read(10, fmt=coord_fmt) coords_i(1, k), coords_i(2, k),&
                               coords_i(3, k), coords_i(4, k)
+      ! write(*, *) i, k, coords_i(1, k), coords_i(2, k),&
+      !                         coords_i(3, k), coords_i(4, k)
     end do
     close(10)
 
@@ -186,6 +190,7 @@ program coupling_calc
       allocate(coords_j(4, coord_lengths(j)))
       open(unit=10, file=trim(adjustl(coord_files(j))))
       do k = 1, coord_lengths(j)
+        read(10, fmt='(A5, 1X)', advance='no') char_code
         read(10, fmt=coord_fmt) coords_j(1, k), coords_j(2, k),&
                                 coords_j(3, k), coords_j(4, k)
       end do
@@ -203,6 +208,7 @@ program coupling_calc
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
       end if
+      write(*, *) i, j, Jij(i, j)
 
       ! NB: after discussion with Chris - couplings less than 1 cm^-1
       ! are too small to worry about

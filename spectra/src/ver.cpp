@@ -183,7 +183,8 @@ class Chromophore {
     void fc_calc();
     void set_k_ivr(double beta);
     void set_k_ic(double beta);
-    void dndt(std::vector<double> population, double t, pulse pump);
+    std::vector<double> dndt(std::vector<double> population,
+                             double t, pulse pump);
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
     std::vector<double> get_w_normal();
@@ -729,7 +730,7 @@ Chromophore::set_k_ic(double beta)
   }
 }
 
-void
+std::vector<double>
 Chromophore::dndt(std::vector<double> population, double t, pulse pump)
 {
   std::vector<size_t> n_extents;
@@ -921,9 +922,8 @@ Chromophore::dndt(std::vector<double> population, double t, pulse pump)
     dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
     fprintf(stdout, "%lu\t%18.10f\t%18.10f\t%18.10f\t%18.10f\n", i,
         dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]);
-    population[i] = dndt[i];
   }
-
+  return dndt;
 }
 
 /* OTHER THOUGHTS:
@@ -987,6 +987,10 @@ main(int argc, char** argv)
     std::cout << "livri array calloc didn't work" << std::endl;
   } else {
     givri[0] = 163.6; givri[1] = 163.6; givri[2] = 163.6;
+  }
+  for (size_t i = 0; i < n_elec; i++) {
+    /* the damping times were given in femtoseconds */
+    givri[i] *= 1E-3 / (CM_PER_PS);
   }
 
   double ***disp = (double ***)calloc(n_normal, sizeof(*disp));
@@ -1060,18 +1064,12 @@ main(int argc, char** argv)
   /* this should be available via c.get_n_extents() or something */
   /* NB: this whole thing should be a method - calculate initial
    * populations; only parameter is beta */
-  /* double *pop = static_cast<double *>(calloc(pop_total, sizeof(double))); */
-  /* double *n0 = static_cast<double *>(calloc(pop_total, sizeof(double))); */
   std::vector<size_t> pop_extents = {n_elec};
-  /* std::vector<size_t> vib_extents(n_normal, 0); */
   std::vector<size_t> vib_extents;
 
-  /* pop_extents[0] = n_elec; */
   size_t pop_total = n_elec;
   size_t vib_total = 1;
   for (size_t i = 0; i < n_normal; i++) {
-    /* pop_extents[i + 1] = (n_vib + 1); */
-    /* vib_extents[i] = (n_vib + 1); */
     pop_extents.push_back(n_vib + 1);
     vib_extents.push_back(n_vib + 1);
     pop_total *= n_vib + 1;
@@ -1080,43 +1078,15 @@ main(int argc, char** argv)
   std::vector<double> pop(pop_total, 0.);
   std::vector<double> n0(pop_total, 0.);
 
-  /* std::cout << "vib_extents = "; */
-  fprintf(stdout, "ind2sub test\n");
-  for (size_t i = 0; i < 16; i++) {
-    fprintf(stdout, "%lu ", i);
-    std::vector<size_t> testvec = ind2sub(i, {4, 4});
-    for (size_t j = 0; j < testvec.size(); j++) {
-      fprintf(stdout, "%lu ", testvec[j]);
-    }
-    fprintf(stdout, "\n");
-    /* std::cout << vib_extents[i] << " "; */
-  }
-  /* std::cout << std::endl; */
   for (size_t i = 0; i < vib_total; i++) {
     std::vector<size_t> tot_subs(pop_extents.size(), 0);
     std::vector<size_t> vib_subs(vib_extents.size(), 0);
     vib_subs = ind2sub(i, vib_extents);
     for (size_t j = 0; j < vib_subs.size(); j++) {
-      fprintf(stdout, "%lu ", vib_subs[j]);
       tot_subs[j + 1] = vib_subs[j];
     }
-    fprintf(stdout, "\n");
-    /* std::cout << "i = " << i << ". "; */
-    /* std::cout << "tot_subs = "; */
-    for (size_t j = 0; j < tot_subs.size(); j++) {
-      /* std::cout << tot_subs[j] << " "; */
-    }
-    /* std::cout << std::endl; */
-    /* std::cout << "vib_subs = "; */
-    for (size_t j = 0; j < vib_subs.size(); j++) {
-      /* std::cout << vib_subs[j] << " "; */
-    }
-    /* std::cout << std::endl; */
     size_t index = sub2ind(tot_subs, pop_extents);
     n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
-    /* double elem = thermal_osc(vib_subs, lutein.get_w_normal(), beta); */
-    /* fprintf(stdout, "%18.10f\n", elem); */
-    /* population = n[0] */
     pop[index] = n0[index];
   }
 
@@ -1126,8 +1096,9 @@ main(int argc, char** argv)
 
   return 0;
 
+  std::vector<double> dndt(pop_total, 0.);
   for (size_t t = 0; t < 10; t++) {
-    lutein.dndt(pop, (double)t, pump);
+    dndt = lutein.dndt(pop, (double)t, pump);
   }
 
 }

@@ -150,13 +150,15 @@ for item in filelist:
         # but i doubt it's worth the effort
         if atom_code in tresp_dict.keys():
             # the 0.001 is because the values are reported as e * 10^3
-            temp_list.append([pdb_line[5], pdb_line[6], pdb_line[7],
+            temp_list.append([pdb_line[2], pdb_line[5], pdb_line[6], pdb_line[7],
                               0.001 * float(tresp_dict[atom_code])])
         else:
             # any atom not reported in tresp file has zero charge
-            temp_list.append([pdb_line[6], pdb_line[7], pdb_line[8], 0.0])
+            temp_list.append([pdb_line[2], pdb_line[5], pdb_line[6], pdb_line[7], 0.0])
 
-    output = np.array(temp_list)
-    # this fmt call is to make all the data regular, because
-    # otherwise it's an absolute nightmare to read in fortran
-    np.savetxt(output_file, output, fmt='%016.8e')
+    # i was using numpy for this but it really doesn't like assigning the
+    # structured array and keeping the correct dtypes, for some reason, and
+    # i can't be bothered to figure out why, so do this the old-fashioned way
+    with open(output_file, 'w') as f:
+        for line in temp_list:
+            f.write("{:5s} {:016.8e} {:016.8e} {:016.8e} {:016.8e}\n".format(line[0], line[1], line[2], line[3], line[4]))

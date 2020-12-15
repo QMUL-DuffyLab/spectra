@@ -8,6 +8,8 @@ throughout this repo I've labelled pigments by ligand codes from RCSB PDB; e.g. 
 
 lineshapes for individual pigments are in the lineshape folder; the only reason to mess with these is if the parameters or spectral desnsity ansatzes change.
 
+The integrator contained in files `helper.h, LSODA.h, LSODA.cpp` is [Dilawar Singh](https://github.com/dilawar/libsoda)'s C++ version of LSODA from QUADPACK.
+
 REQUIREMENTS
 ------------
 
