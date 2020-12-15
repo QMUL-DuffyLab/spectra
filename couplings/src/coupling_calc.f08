@@ -9,9 +9,10 @@ program coupling_calc
   character(100) :: input_dir, temp_string, tau_string
   character(200) :: input_file, jij_file, pop_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
-    gamma_i_file, spectra_input_file, aw_output_file, fw_output_file
+    gamma_i_file, spectra_input_file, aw_output_file, fw_output_file,&
+    kappa_file, theta_file
   character(3), dimension(:), allocatable :: unique_pigments
-  character(5) :: char_code
+  character(5) :: atom_code, pigment_code
   character(100), dimension(:), allocatable :: coord_files,&
     gnt_files
   integer :: i, j, k, coord_stat, control_len, tau,&
@@ -22,7 +23,7 @@ program coupling_calc
   real(dp), dimension(:), allocatable :: work, eigvals, ei, lambda,&
     lifetimes, dipoles, raw_osc, norm_osc, osc_check
   real(dp), dimension(:,:), allocatable :: coords_i, coords_j,&
-    Jij, Jeig, mu, mu_ex
+    Jij, Jeig, mu, mu_ex, r_charge, kappa, theta
   complex(cdp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
@@ -60,6 +61,8 @@ program coupling_calc
   fw_output_file  = trim(adjustl(input_dir)) // "/fw.dat"
   pop_file        = trim(adjustl(input_dir)) // "/populations.dat"
   spectra_input_file = "in/input_spectra.dat"
+  kappa_file  = trim(adjustl(input_dir)) // "/kappa.dat"
+  theta_file  = trim(adjustl(input_dir)) // "/theta.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;
@@ -92,8 +95,11 @@ program coupling_calc
   allocate(coord_lengths(control_len))
   allocate(Jij(control_len, control_len))
   allocate(Jeig(control_len, control_len))
+  allocate(kappa(control_len, control_len))
+  allocate(theta(control_len, control_len))
   allocate(mu(control_len, 3))
   allocate(mu_ex(control_len, 3)) ! fortran is column major
+  allocate(r_charge(control_len, 3))
   allocate(eigvals(control_len))
   allocate(lambda(control_len))
   allocate(lifetimes(control_len))
@@ -175,22 +181,35 @@ program coupling_calc
       read (12, '(F18.10, 1X, F18.10, 1X, F18.10)') r, gnt(i, k)
     end do
     close(12)
+    pigment_code = get_pigment_code(gnt_files, i)
 
     do k = 1, coord_lengths(i)
-      read(10, fmt='(A5, 1X)', advance='no') char_code
+      read(10, fmt='(A5, 1X)', advance='no') atom_code
       read(10, fmt=coord_fmt) coords_i(1, k), coords_i(2, k),&
                               coords_i(3, k), coords_i(4, k)
-      ! write(*, *) i, k, coords_i(1, k), coords_i(2, k),&
-      !                         coords_i(3, k), coords_i(4, k)
+      if (trim(adjustl(pigment_code)).eq."CHL") then
+        if (trim(adjustl(atom_code)).eq."MG") then
+          r_charge(i, :) = coords_i(1:3, k)
+        end if
+      else if (trim(adjustl(pigment_code)).eq."CLA") then
+        if (trim(adjustl(atom_code)).eq."MG") then
+          r_charge(i, :) = coords_i(1:3, k)
+        end if
+      else if (trim(adjustl(pigment_code)).eq."LUT") then
+        if (trim(adjustl(atom_code)).eq."C20") then
+          r_charge(i, :) = coords_i(1:3, k)
+        end if
+      end if
     end do
     close(10)
+    write(*, *) pigment_code, i, r_charge(i, :)
 
     j_loop: do j = i, control_len
 
       allocate(coords_j(4, coord_lengths(j)))
       open(unit=10, file=trim(adjustl(coord_files(j))))
       do k = 1, coord_lengths(j)
-        read(10, fmt='(A5, 1X)', advance='no') char_code
+        read(10, fmt='(A5, 1X)', advance='no') atom_code
         read(10, fmt=coord_fmt) coords_j(1, k), coords_j(2, k),&
                                 coords_j(3, k), coords_j(4, k)
       end do
@@ -208,7 +227,7 @@ program coupling_calc
         Jij(i, j) = J_calc(coords_i, coords_j,&
                     coord_lengths(i), coord_lengths(j))
       end if
-      write(*, *) i, j, Jij(i, j)
+      ! write(*, *) i, j, Jij(i, j)
 
       ! NB: after discussion with Chris - couplings less than 1 cm^-1
       ! are too small to worry about
@@ -221,6 +240,21 @@ program coupling_calc
     end do j_loop
     deallocate(coords_i)
   end do i_loop
+
+  do i = 1, control_len
+    do j = 1, control_len
+      if (i.eq.j) then
+        kappa(i, j) = 1.0_dp
+        theta(i, j) = 0.0_dp
+      else
+        theta(i, j) = angle(mu(i, :), mu(j, :))
+        kappa(i, j) = k_factor(mu(i, :), mu(j, :), &
+                      r_charge(i, :), r_charge(j, :))
+      end if
+      write(*,*) i, j, kappa(i, j), theta(i, j)
+    end do
+  end do
+
 
   norm_osc = normalise_dipoles(raw_osc, pigment_counts)
   allocate(osc_check(num_unique_pigments))
@@ -315,6 +349,8 @@ program coupling_calc
   open(unit=14, file=mu_i_file)
   open(unit=15, file=lambda_i_file)
   open(unit=16, file=gamma_i_file)
+  open(unit=17, file=kappa_file)
+  open(unit=18, file=theta_file)
 
   do i = 1, control_len
     do j = 1, control_len
@@ -322,14 +358,18 @@ program coupling_calc
       ! (Jij(i, j), j = 1, control_len)
       ! but it made the code slower?
       if (i.gt.j) then 
-        write(10, '(17F16.5)', advance='no') Jij(j, i)
+        write(10, '(20F16.5)', advance='no') Jij(j, i)
       else
-        write(10, '(17F16.5)', advance='no') Jij(i, j)
+        write(10, '(20F16.5)', advance='no') Jij(i, j)
       end if
-      write(11, '(17F16.5)', advance='no') Jeig(i, j)
+      write(11, '(20F16.5)', advance='no') Jeig(i, j)
+      write(17, '(20F16.5)', advance='no') kappa(i, j)
+      write(18, '(20F16.5)', advance='no') theta(i, j)
     end do
     write(10,*) ! blank line between rows!
     write(11,*)
+    write(17,*)
+    write(18,*)
     write(13, '(F18.10, 1X, F18.10, 1X, F18.10)') mu(i, 1),&
       mu(i, 2), mu(i, 3)
     write(14, '(F18.10, 1X, F18.10, 1X, F18.10)') mu_ex(i, 1),&
@@ -340,12 +380,12 @@ program coupling_calc
 
     ! now write out all the g_i(tau)s
     write(unit=g_i_count,fmt='(I0.2)') i
-    open(unit=17, file=trim(adjustl(input_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
+    open(unit=19, file=trim(adjustl(input_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat")
     write(20, '(a)') trim(adjustl(input_dir)) // "/g_i_" // trim(adjustl(g_i_count)) // ".dat"
     do j = 1, tau
-      write(17, '(F18.10, 1X, F18.10)') gnt(i, j)
+      write(19, '(F18.10, 1X, F18.10)') gnt(i, j)
     end do
-    close(17)
+    close(19)
 
   end do
   close(10)
@@ -355,17 +395,22 @@ program coupling_calc
   close(14)
   close(15)
   close(16)
+  close(17)
+  close(18)
 
   deallocate(coord_files)
   deallocate(gnt_files)
   deallocate(coord_lengths)
   deallocate(Jij)
   deallocate(Jeig)
+  deallocate(kappa)
+  deallocate(theta)
   deallocate(work)
   deallocate(eigvals)
   deallocate(ei)
   deallocate(mu)
   deallocate(mu_ex)
+  deallocate(r_charge)
   deallocate(lambda)
   deallocate(lifetimes)
   deallocate(gnt)

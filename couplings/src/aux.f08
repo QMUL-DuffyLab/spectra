@@ -94,28 +94,61 @@ module aux
       
     end subroutine mu_calc
 
-    function k_factor(mu1, mu2, r1, r2) result(k12)
+    function angle(mu1, mu2) result(theta)
       implicit none
-      real(dp), dimension(3), intent(in) :: mu1, mu2, r1, r2
-      real(dp), dimension(3) :: rij
-      real(dp) :: k12
-      real(dp) :: abs1, abs2
+      real(dp), dimension(3), intent(in) :: mu1, mu2
+      real(dp) :: theta, abs1, abs2, dot
       integer :: i
 
-      ! normalise the dipoles and get r_ij
       abs1 = 0.0_dp
       abs2 = 0.0_dp
       do i = 1, 3
         abs1 = abs1 + mu1(i)**2
         abs2 = abs2 + mu2(i)**2
-        rij(i) = r2(i) - r1(i)
       end do
+
+      dot = 0.0_dp
+      do i = 1, 3
+        dot = dot + (mu1(i) / sqrt(abs1)) * (mu2(i) / sqrt(abs2))
+      end do
+      ! for i = j dot can come out as 1.000000000002 or something;
+      ! fix that
+      if (dot.gt.1.0_dp.and.abs(dot - 1.0_dp).lt.1e-6) then
+        dot = 1.0_dp
+      end if
+      theta = acos(dot)
+      
+    end function angle
+
+    function k_factor(mu1, mu2, r1, r2) result(k12)
+      implicit none
+      real(dp), dimension(3), intent(in) :: mu1, mu2, r1, r2
+      real(dp), dimension(3) :: rij
+      real(dp) :: k12, abs1, abs2, absrij
+      integer :: i
+
+      ! normalise the dipoles and get r_ij
+      abs1 = 0.0_dp
+      abs2 = 0.0_dp
+      absrij = 0.0_dp
+      do i = 1, 3
+        abs1 = abs1 + mu1(i)**2
+        abs2 = abs2 + mu2(i)**2
+        rij(i) = r2(i) - r1(i)
+        absrij = absrij + rij(i)**2
+      end do
+      ! if i = j r_ij will be = 0; in that case don't do
+      ! rij / sqrt(absrij) because 0.0 / 0.0 returns NAN
+      if (absrij.gt.1E-10) then
+        rij = rij / sqrt(absrij)
+      end if
 
       k12 = 0.0_dp
       do i = 1, 3
         k12 = k12 + (mu1(i) / sqrt(abs1)) * (mu2(i) / sqrt(abs2))&
         - 3.0_dp * (mu1(i) * rij(i)) * (mu2(i) * rij(i))
       end do
+      ! k12 = k12 * (sqrt(absrij))**3
       
     end function k_factor
 
