@@ -1121,10 +1121,10 @@ main(int argc, char** argv)
     fprintf(stdout, "%lu\t%18.10f\n", i, pop[i]);
   }
 
-  std::vector<double> dndt(pop_total, 0.);
-  for (size_t t = 0; t < 10; t++) {
-    dndt = lutein.dndt(pop, (double)t, pump);
-  }
+  /* std::vector<double> dndt(pop_total, 0.); */
+  /* for (size_t t = 0; t < 10; t++) { */
+  /*   dndt = lutein.dndt(pop, (double)t, pump); */
+  /* } */
   vera_lsoda_data *vls = (vera_lsoda_data *)malloc(sizeof(vera_lsoda_data));
   vls->chromo = &lutein;
   vls->pump = &pump;
@@ -1133,17 +1133,37 @@ main(int argc, char** argv)
   LSODA lsoda;
   std::vector<double> yout;
   int istate = 1;
-  double t = 0., tout = 1., dt = 1.;
-  for (size_t i = 0; i < 10; i++) {
-    lsoda.lsoda_update(func, pop_total, y, yout,
-        &t, tout, &istate, data);
-    tout += dt;
+
+  size_t n_steps = 10000;
+  double ti = 0., tf = 10., dt = (tf - ti) / n_steps;
+
+  double t = ti, tout = dt;
+  for (size_t i = 0; i < n_steps; i++) {
     std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
               << setprecision(8) 
               << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
               << setprecision(8) 
               << y[sub2ind({2, 0, 0}, pop_extents)] << std::endl;
+
+    lsoda.lsoda_update(func, pop_total, y, yout,
+        &t, tout, &istate, data);
+    tout += dt;
+
+    for (size_t j = 0; j < pop_total; j++) {
+      y[i] = yout[i + 1];
+    }
+
+    if (istate <= 0)
+    {
+       std::cerr << "error istate = " <<  istate << std::endl;
+       throw runtime_error( "Failed to compute the solution." );
+    }
+
+
   }
+
+  free(pop);
+  free(vls);
 
   return 0;
 
