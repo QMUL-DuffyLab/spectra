@@ -1,5 +1,10 @@
 #ifndef HELPER_H
 #define HELPER_H
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
 
 template <typename T = double> bool areEqual(T a, T b) {
   return std::fabs(a - b) < 1e-6;

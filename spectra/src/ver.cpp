@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <stdlib.h>
+#include "helper.h"
+#include "LSODA.h"
 /* #include "forster.h" */
 /* #include "steady_state.h" */
 
@@ -12,6 +14,8 @@
 
 /* this stuff is from elsewhere - i want this to compile on its own lol
  * worry about this stuff later */
+
+class Chromophore;
 
 #define CVAC 299792458.0
 #define CM_PER_PS (200. * M_PI * CVAC * 1E-12)
@@ -52,8 +56,6 @@ intensity(double w, double t, pulse p)
 
 /** convert a set of tensor subscripts to a flattened index.
  *
- * haven't tested it, just wrote it down on pen and paper
- * so hopefully it's correct lmao
  */
 size_t
 sub2ind(std::vector<size_t> subscripts, std::vector<size_t> extents)
@@ -94,8 +96,6 @@ sub2ind(std::vector<size_t> subscripts, std::vector<size_t> extents)
 
 /** reverse of sub2ind.
  *
- * again i haven't checked this yet, just spent ten minutes
- * writing it out by hand and i think this is how it should look
  */
 std::vector<size_t>
 ind2sub(size_t index, std::vector<size_t> extents)
@@ -183,7 +183,7 @@ class Chromophore {
     void fc_calc();
     void set_k_ivr(double beta);
     void set_k_ic(double beta);
-    std::vector<double> dndt(std::vector<double> population,
+    std::vector<double> dndt(double *population,
                              double t, pulse pump);
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
@@ -731,7 +731,7 @@ Chromophore::set_k_ic(double beta)
 }
 
 std::vector<double>
-Chromophore::dndt(std::vector<double> population, double t, pulse pump)
+Chromophore::dndt(double *population, double t, pulse pump)
 {
   std::vector<size_t> n_extents;
   std::vector<size_t> vib_extents;
@@ -920,8 +920,8 @@ Chromophore::dndt(std::vector<double> population, double t, pulse pump)
 
   for (size_t i = 0; i < n_total; i++) {
     dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
-    fprintf(stdout, "%lu\t%18.10f\t%18.10f\t%18.10f\t%18.10f\n", i,
-        dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]);
+    /* fprintf(stdout, "%lu\t%18.10f\t%18.10f\t%18.10f\t%18.10f\n", i, */
+    /*     dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]); */
   }
   return dndt;
 }
@@ -931,6 +931,26 @@ Chromophore::dndt(std::vector<double> population, double t, pulse pump)
  * for populations we need a set of [N_chromophores][extents]
  *
  */
+
+typedef struct vera_lsoda_data {
+  Chromophore *chromo;
+  /* std::vector<double> *population; */
+  pulse *pump;
+} vera_lsoda_data;
+
+
+void
+func(double t, double *y, double *ydot, void *data)
+{
+  vera_lsoda_data *vls = (vera_lsoda_data *)data;
+  Chromophore *chromo = vls->chromo;
+  std::vector<double> ydot_vec = chromo->dndt(y, t, (*vls->pump));
+  size_t i;
+  for (i = 0; i < ydot_vec.size(); i++) {
+    ydot[i] = ydot_vec[i];
+  }
+}
+ 
 
 int
 main(int argc, char** argv)
@@ -991,6 +1011,9 @@ main(int argc, char** argv)
   for (size_t i = 0; i < n_elec; i++) {
     /* the damping times were given in femtoseconds */
     givri[i] *= 1E-3 / (CM_PER_PS);
+    for (size_t j = 0; j < n_elec; j++) {
+      gicij[i][j] *= 1E-3 / (CM_PER_PS);
+    }
   }
 
   double ***disp = (double ***)calloc(n_normal, sizeof(*disp));
@@ -1075,8 +1098,11 @@ main(int argc, char** argv)
     pop_total *= n_vib + 1;
     vib_total *= n_vib + 1;
   }
-  std::vector<double> pop(pop_total, 0.);
+  double *pop = (double *)calloc(pop_total, sizeof(double));
   std::vector<double> n0(pop_total, 0.);
+  /* vec is because LSODA requires vector argument
+   * - this could maybe be fixed somehow with vector.data()? */
+  std::vector<double> y(pop_total, 0.);
 
   for (size_t i = 0; i < vib_total; i++) {
     std::vector<size_t> tot_subs(pop_extents.size(), 0);
@@ -1088,19 +1114,39 @@ main(int argc, char** argv)
     size_t index = sub2ind(tot_subs, pop_extents);
     n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
     pop[index] = n0[index];
+    y[index] = pop[index];
   }
 
   for (size_t i = 0; i < pop_total; i++) {
     fprintf(stdout, "%lu\t%18.10f\n", i, pop[i]);
   }
 
-  return 0;
-
   std::vector<double> dndt(pop_total, 0.);
   for (size_t t = 0; t < 10; t++) {
     dndt = lutein.dndt(pop, (double)t, pump);
   }
+  vera_lsoda_data *vls = (vera_lsoda_data *)malloc(sizeof(vera_lsoda_data));
+  vls->chromo = &lutein;
+  vls->pump = &pump;
+  void *data = (void *)vls;
+
+  LSODA lsoda;
+  std::vector<double> yout;
+  int istate = 1;
+  double t = 0., tout = 1., dt = 1.;
+  for (size_t i = 0; i < 10; i++) {
+    lsoda.lsoda_update(func, pop_total, y, yout,
+        &t, tout, &istate, data);
+    tout += dt;
+    std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
+              << setprecision(8) 
+              << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
+              << setprecision(8) 
+              << y[sub2ind({2, 0, 0}, pop_extents)] << std::endl;
+  }
+
+  return 0;
 
 }
- 
+
 #endif
