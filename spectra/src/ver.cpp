@@ -44,7 +44,7 @@ intensity(double w, double t, pulse p)
                * pow(1./cosh((t - p.t_peak)/p.duration), 2.);
   if (p.type == GAUSSIAN) {
     sigma = p.width / (2. * sqrt(2. * log(2.)));
-    f = exp(pow(w - p.centre, 2.) / (2. * pow(sigma, 2.)))
+    f = exp(-1. * pow(w - p.centre, 2.) / (2. * pow(sigma, 2.)))
       * (1. / (sigma * sqrt(2. * M_PI)));
     return p.amplitude * f * gamma;
   } else {
@@ -473,7 +473,7 @@ Chromophore::set_extents()
   ivr_extents.push_back(n_normal);
   ivr_extents.push_back(2);
   size = n_elec * n_normal * 2;
-  k_ivr.resize(size, 0.);
+  /* k_ivr.resize(size, 0.); */
 
   fc_extents.push_back(n_elec + 1);
   fc_extents.push_back(n_elec + 1);
@@ -572,7 +572,7 @@ C_OBO(double w, double l, double g)
 double
 k_calc(double w, double beta, double lambda, double gamma)
 {
-  return C_OBO(w, lambda, gamma) * (1.0 / (tanh(0.5 * beta * w)) + 1);
+  return C_OBO(w, lambda, gamma) * ((1.0 / tanh(0.5 * beta * w)) + 1);
 }
 
 /** Vibrational relaxation rates on the same mode/electronic state. 
@@ -620,10 +620,15 @@ k_inter(std::vector<size_t> e_ij,
       << ", w_alpha.size() = " << w_alpha.size() << std::endl;
   }
   for (size_t i = 0; i < a.size(); i++) {
-    w_ab += (w_alpha[i] * (a[i] - b[i]));
+    /* note - casting int here might be a problem if
+     * a[i] or b[i] get very large. but i think we're fine */
+    w_ab += (w_alpha[i] * (int)(a[i] - b[i]));
+    /* std::cout << a[i] << "\t" << b[i] << "\t" << w_alpha[i] */ 
+    /*   << "\t" << w_ab << std::endl; */
   }
   double w_ij = fabs(w_e[0] - w_e[1]);
   double delta_ij_ab = w_ij + w_ab;
+  /* std::cout << w_ab << "\t" << w_ij << std::endl; */
   if (e_ij[0] > e_ij[1]) {
     k = k_calc(-delta_ij_ab, beta, lambda, gamma);
   } else {
@@ -664,11 +669,15 @@ Chromophore::set_k_ivr(double beta)
        * first then the forward one, or so i thought.
        * this is the same ordering but check it!!
        */
-      k_ivr.push_back(
+      k_ivr.push_back(CM_PER_PS *
           k_calc(w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]));
-      k_ivr.push_back(
+      k_ivr.push_back(CM_PER_PS *
           k_calc(-1. * w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]));
     }
+  }
+  std::cout << "k_ivr:" << std::endl;
+  for (size_t i = 0; i < k_ivr.size(); i++) {
+    std::cout << i << "\t" << k_ivr[i] << std::endl;
   }
 }
 
@@ -686,6 +695,7 @@ Chromophore::set_k_ic(double beta)
   /* make it the correct length. can we zero it out here? */
   k_ic.resize(pow(n_elec, 2) * total_vib_rates, 0.);
 
+  /* std::cout << "k_ic:" << std::endl; */
   for (size_t i = 0; i < n_elec; i++) {
     for (size_t j = 0; j < n_elec; j++) {
 
@@ -720,13 +730,14 @@ Chromophore::set_k_ic(double beta)
             k_ic[index] = k_inter(e_ij, a, b, w_e, w_normal, beta,
                 l_ic_ij[ij_index],
                 g_ic_ij[ij_index]) * CM_PER_PS;
-            /* std::cout << index << ", " << k_ic[index] << std::endl; */
           }
         }
 
       }
-
     }
+  }
+  for (size_t i = 0; i < k_ic.size() ; i++) {
+      fprintf(stdout, "%5lu   %12.8f\n",i, k_ic[i]);
   }
 }
 
@@ -833,32 +844,32 @@ Chromophore::dndt(double *population, double t, pulse pump)
           k_ba_ij.push_back(b[bi]);
         }
 
-        if (i == 0) { /* electropopulationc ground state */
+        if (i == 0) { /* electronic ground state */
           double fc_i_plus = 1.;
           for (size_t alpha = 0; alpha < n_normal; alpha++) {
             fc_i_plus *= pow(fc[sub2ind({i, i + 1, alpha, 
                       a[alpha], b[alpha]}, fc_extents)], 2.);
-
-            dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_plus
-            * k_ic[sub2ind(k_ba_ji, ic_extents)]
-            * population[sub2ind(n_i, n_extents)];
-            dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
-            * k_ic[sub2ind(k_ba_ij, ic_extents)]
-            * population[sub2ind(n_i_plus, n_extents)];
           }
-        } else if (i == n_elec - 1) { /* highest electropopulationc state */
+
+          dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_plus
+          * k_ic[sub2ind(k_ba_ji, ic_extents)]
+          * population[sub2ind(n_i, n_extents)];
+          dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
+          * k_ic[sub2ind(k_ba_ij, ic_extents)]
+          * population[sub2ind(n_i_plus, n_extents)];
+        } else if (i == n_elec - 1) { /* highest electronic state */
           double fc_i_minus = 1.;
           for (size_t alpha = 0; alpha < n_normal; alpha++) {
             fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
                       b[alpha], a[alpha]}, fc_extents)], 2.);
-
-            dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_minus
-            * k_ic[sub2ind(k_ab_ji, ic_extents)]
-            * population[sub2ind(n_i, n_extents)];
-            dndt_ic[sub2ind(n_i, n_extents)] += fc_i_minus
-            * k_ic[sub2ind(k_ab_ij, ic_extents)]
-            * population[sub2ind(n_i_minus, n_extents)];
           }
+
+          dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_minus
+          * k_ic[sub2ind(k_ab_ji, ic_extents)]
+          * population[sub2ind(n_i, n_extents)];
+          dndt_ic[sub2ind(n_i, n_extents)] += fc_i_minus
+          * k_ic[sub2ind(k_ab_ij, ic_extents)]
+          * population[sub2ind(n_i_minus, n_extents)];
         } else { /* intermediate */
           double fc_i_plus = 1.; double fc_i_minus = 1.;
           for (size_t alpha = 0; alpha < n_normal; alpha++) {
@@ -866,21 +877,21 @@ Chromophore::dndt(double *population, double t, pulse pump)
                       a[alpha], b[alpha]}, fc_extents)], 2.);
             fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
                       b[alpha], a[alpha]}, fc_extents)], 2.);
-
-            dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_plus
-            * k_ic[sub2ind(k_ba_ji, ic_extents)]
-            * population[sub2ind(n_i, n_extents)];
-            dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
-            * k_ic[sub2ind(k_ba_ij, ic_extents)]
-            * population[sub2ind(n_i_plus, n_extents)];
-
-            dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_minus
-            * k_ic[sub2ind(k_ab_ji, ic_extents)]
-            * population[sub2ind(n_i, n_extents)];
-            dndt_ic[sub2ind(n_i, n_extents)] += fc_i_minus
-            * k_ic[sub2ind(k_ab_ij, ic_extents)]
-            * population[sub2ind(n_i_minus, n_extents)];
           }
+
+          dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_plus
+          * k_ic[sub2ind(k_ba_ji, ic_extents)]
+          * population[sub2ind(n_i, n_extents)];
+          dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
+          * k_ic[sub2ind(k_ba_ij, ic_extents)]
+          * population[sub2ind(n_i_plus, n_extents)];
+
+          dndt_ic[sub2ind(n_i, n_extents)] -= fc_i_minus
+          * k_ic[sub2ind(k_ab_ji, ic_extents)]
+          * population[sub2ind(n_i, n_extents)];
+          dndt_ic[sub2ind(n_i, n_extents)] += fc_i_minus
+          * k_ic[sub2ind(k_ab_ij, ic_extents)]
+          * population[sub2ind(n_i_minus, n_extents)];
 
         } /* end of electropopulationc state if/else */
 
@@ -897,24 +908,24 @@ Chromophore::dndt(double *population, double t, pulse pump)
       double delta_x0_ba = w_elec[pump.target_state] - w_elec[0];
       double fc_sq = 1.;
       for (size_t alpha = 0; alpha < n_normal; alpha++) {
-        std::vector<size_t> gs_sub = {0};
-        std::vector<size_t> exc_sub = {pump.target_state};
-        for (size_t ai = 0; ai < a.size(); ai++) {
-          gs_sub.push_back(a[ai]);
-          exc_sub.push_back(b[ai]);
-        }
+        delta_x0_ba += w_normal[alpha] * (b[alpha] - a[alpha]);
         fc_sq *= pow(fc[sub2ind({0,
               pump.target_state, alpha, a[alpha], b[alpha]},
               fc_extents)], 2.);
-        dndt_pump[sub2ind(gs_sub, n_extents)]
-              -= intensity(delta_x0_ba, t, pump) * fc_sq
-              * population[sub2ind(gs_sub, n_extents)];
-        dndt_pump[sub2ind(exc_sub, n_extents)]
-              += intensity(delta_x0_ba, t, pump) * fc_sq
-              * population[sub2ind(gs_sub, n_extents)];
-        /* fprintf(stdout, "%lu\t%18.10f\n", sub2ind(gs_sub, n_extents), */
-        /*     dndt_pump[sub2ind(gs_sub, n_extents)]); */
       }
+
+      std::vector<size_t> gs_sub = {0};
+      std::vector<size_t> exc_sub = {pump.target_state};
+      for (size_t ai = 0; ai < a.size(); ai++) {
+        gs_sub.push_back(a[ai]);
+        exc_sub.push_back(b[ai]);
+      }
+      dndt_pump[sub2ind(gs_sub, n_extents)]
+            -= intensity(delta_x0_ba, t, pump) * fc_sq
+            * population[sub2ind(gs_sub, n_extents)];
+      dndt_pump[sub2ind(exc_sub, n_extents)]
+            += intensity(delta_x0_ba, t, pump) * fc_sq
+            * population[sub2ind(gs_sub, n_extents)];
     }
   }
 
@@ -1002,6 +1013,7 @@ main(int argc, char** argv)
   gicij[0][1] = 163.6;
   gicij[1][2] = 163.6;
 
+  fprintf(stdout, "%8.6f\n", CM_PER_PS);
   double *givri = (double *)calloc(n_elec, sizeof(double));
   if (givri == NULL) {
     std::cout << "livri array calloc didn't work" << std::endl;
@@ -1010,11 +1022,21 @@ main(int argc, char** argv)
   }
   for (size_t i = 0; i < n_elec; i++) {
     /* the damping times were given in femtoseconds */
-    givri[i] *= 1E-3 / (CM_PER_PS);
+    givri[i] = 1. / (givri[i] * 1E-3 * CM_PER_PS);
     for (size_t j = 0; j < n_elec; j++) {
-      gicij[i][j] *= 1E-3 / (CM_PER_PS);
+      if (gicij[i][j] != 0) {
+        gicij[i][j] = 1. / (gicij[i][j] * 1E-3 * CM_PER_PS);
+      }
     }
   }
+  /* for (size_t i = 0; i < n_elec; i++) { */
+  /*   std::cout << givri[i] << std::endl; */
+  /* } */
+  /* for (size_t i = 0; i < n_elec; i++) { */
+  /*   for (size_t j = 0; j < n_elec; j++) { */
+  /*     std::cout << gicij[i][j] << std::endl; */
+  /*   } */
+  /* } */
 
   double ***disp = (double ***)calloc(n_normal, sizeof(*disp));
   if (disp == NULL) {
@@ -1144,6 +1166,7 @@ main(int argc, char** argv)
               << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
               << setprecision(8) 
               << y[sub2ind({2, 0, 0}, pop_extents)] << std::endl;
+    std::cout << "Step " << i << ": " << std::endl;
 
     lsoda.lsoda_update(func, pop_total, y, yout,
         &t, tout, &istate, data);
