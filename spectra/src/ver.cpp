@@ -568,34 +568,19 @@ C_OBO(double w, double l, double g)
   }
 }
 
-/* wrapper function because we'll use this multiple times */
+
+/** Vibrational relaxation rates on the same mode/electronic state. 
+ *
+ * wrapper function because we'll use this multiple times.
+ * Computed by (secular, Markovian) Redfield theory.
+ * w is the frequency (e.g of normal mode or energy gap between states).
+ * lambda and gamma are parameters for the spectral density.
+ *
+ */
 double
 k_calc(double w, double beta, double lambda, double gamma)
 {
   return C_OBO(w, lambda, gamma) * ((1.0 / tanh(0.5 * beta * w)) + 1);
-}
-
-/** Vibrational relaxation rates on the same mode/electronic state. 
- *
- * Computed by (secular, Markovian) Redfield theory.
- * w_alpha is the frequency of normal mode alpha.
- * lambda and gamma are parameters for the spectral density.
- * returns (k_up, k_down)
- * - NB: this is actually not used at all I don't think because
- *   it returns a vector and you can't e.g. push it onto another vector
- *
- */
-std::vector<double> k_alpha(double w_alpha, double beta,
-                            double lambda, double gamma)
-{
-  std::vector<double> k;
-  k.push_back(k_calc(-1. * w_alpha, beta, lambda, gamma));
-  k.push_back(k_calc(w_alpha, beta, lambda, gamma));
-  /* k.push_back(C_OBO((-1.) * w_alpha, lambda, gamma) * */ 
-  /*            (1.0 / (tanh(-0.5 * beta * w_alpha)) + 1)); */
-  /* k.push_back(C_OBO(w_alpha, lambda, gamma) * */ 
-  /*            (1.0 / (tanh(0.5 * beta * w_alpha)) + 1)); */
-  return k;
 }
 
 /** Interconversion rate between vibronic states on different manifolds.
@@ -623,18 +608,14 @@ k_inter(std::vector<size_t> e_ij,
     /* note - casting int here might be a problem if
      * a[i] or b[i] get very large. but i think we're fine */
     w_ab += (w_alpha[i] * (int)(a[i] - b[i]));
-    /* std::cout << a[i] << "\t" << b[i] << "\t" << w_alpha[i] */ 
-    /*   << "\t" << w_ab << std::endl; */
   }
   double w_ij = fabs(w_e[0] - w_e[1]);
   double delta_ij_ab = w_ij + w_ab;
-  /* std::cout << w_ab << "\t" << w_ij << std::endl; */
   if (e_ij[0] > e_ij[1]) {
     k = k_calc(-delta_ij_ab, beta, lambda, gamma);
   } else {
     k = k_calc(delta_ij_ab, beta, lambda, gamma);
   }
-  /* std::cout << k << std::endl; */
   return k;
 }
 
@@ -655,8 +636,6 @@ double thermal_osc(std::vector<size_t> a,
   for (size_t i = 0; i < w_alpha.size(); i++) {
     Z *= exp(-0.5 * beta * w_alpha[i]) / (1 - exp(- beta * w_alpha[i]));
   }
-  /* std::cout << a[0] << a[1] */ 
-  /* << std::endl; //<< w_alpha[0] << w_alpha[1] << n_a << Z << std::endl; */
   return n_a / Z;
 }
 
@@ -674,10 +653,6 @@ Chromophore::set_k_ivr(double beta)
       k_ivr.push_back(CM_PER_PS *
           k_calc(-1. * w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]));
     }
-  }
-  std::cout << "k_ivr:" << std::endl;
-  for (size_t i = 0; i < k_ivr.size(); i++) {
-    std::cout << i << "\t" << k_ivr[i] << std::endl;
   }
 }
 
@@ -703,8 +678,6 @@ Chromophore::set_k_ic(double beta)
         std::vector<size_t> e_ij = {i, j};
         size_t ij_index = sub2ind(e_ij, {n_elec, n_elec});
         std::vector<double> w_e = {w_elec[i], w_elec[j]};
-        /* for (size_t  = 0; i < n_elec; i++) { */
-        /* } */
         /* chris did this by creating an array with dimensions
          * k_ic_extents and then making an iterator over the last
          * (2 * n_normal) dimensions of that array. but i feel like
@@ -735,9 +708,6 @@ Chromophore::set_k_ic(double beta)
 
       }
     }
-  }
-  for (size_t i = 0; i < k_ic.size() ; i++) {
-      fprintf(stdout, "%5lu   %12.8f\n",i, k_ic[i]);
   }
 }
 
@@ -931,7 +901,7 @@ Chromophore::dndt(double *population, double t, pulse pump)
 
   for (size_t i = 0; i < n_total; i++) {
     dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
-    /* fprintf(stdout, "%lu\t%18.10f\t%18.10f\t%18.10f\t%18.10f\n", i, */
+    /* fprintf(stdout, "%5lu  %18.10f  %18.10f  %18.10f  %18.10f\n", i, */
     /*     dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]); */
   }
   return dndt;
@@ -1139,14 +1109,10 @@ main(int argc, char** argv)
     y[index] = pop[index];
   }
 
-  for (size_t i = 0; i < pop_total; i++) {
-    fprintf(stdout, "%lu\t%18.10f\n", i, pop[i]);
-  }
-
-  /* std::vector<double> dndt(pop_total, 0.); */
-  /* for (size_t t = 0; t < 10; t++) { */
-  /*   dndt = lutein.dndt(pop, (double)t, pump); */
+  /* for (size_t i = 0; i < pop_total; i++) { */
+  /*   fprintf(stdout, "%lu\t%18.10f\n", i, pop[i]); */
   /* } */
+
   vera_lsoda_data *vls = (vera_lsoda_data *)malloc(sizeof(vera_lsoda_data));
   vls->chromo = &lutein;
   vls->pump = &pump;
@@ -1161,20 +1127,20 @@ main(int argc, char** argv)
 
   double t = ti, tout = dt;
   for (size_t i = 0; i < n_steps; i++) {
-    std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
-              << setprecision(8) 
-              << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
-              << setprecision(8) 
-              << y[sub2ind({2, 0, 0}, pop_extents)] << std::endl;
-    std::cout << "Step " << i << ": " << std::endl;
 
     lsoda.lsoda_update(func, pop_total, y, yout,
         &t, tout, &istate, data);
     tout += dt;
 
     for (size_t j = 0; j < pop_total; j++) {
-      y[i] = yout[i + 1];
+      y[j] = yout[j + 1];
     }
+    std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
+              << setprecision(8) 
+              << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
+              << setprecision(8) 
+              << y[sub2ind({2, 0, 0}, pop_extents)] << std::endl;
+    /* std::cout << "Step " << i << ": " << std::endl; */
 
     if (istate <= 0)
     {
