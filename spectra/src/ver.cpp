@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <vector>
 #include <cmath>
+#include <chrono>
 #include <cstdlib>
 #include <stdlib.h>
 #include "helper.h"
@@ -779,9 +780,9 @@ Chromophore::dndt(double *population, double t, pulse pump)
    * i haven't figured out how yet exactly */
 
   for (size_t i = 0; i < n_elec; i++) {
-    for (size_t j = 0; j < (n_normal * (n_vib + 1)); j++) {
+    for (size_t j = 0; j < (pow((n_vib + 1), n_normal)); j++) {
       std::vector<size_t> a = ind2sub(j, vib_extents);
-      for (size_t k = 0; k < (n_normal * (n_vib + 1)); k++) {
+      for (size_t k = 0; k < (pow((n_vib + 1), n_normal)); k++) {
         std::vector<size_t> b = ind2sub(k, vib_extents);
 
         /* indices */
@@ -799,20 +800,21 @@ Chromophore::dndt(double *population, double t, pulse pump)
           k_ab_ji.push_back(a[ai]);
           k_ab_ij.push_back(a[ai]);
         }
-        for (size_t bi = 0; bi < a.size(); bi++) {
+        for (size_t bi = 0; bi < b.size(); bi++) {
           n_i_plus.push_back(b[bi]);
           n_i_minus.push_back(b[bi]);
           k_ba_ji.push_back(b[bi]);
           k_ba_ij.push_back(b[bi]);
         }
+
         /* two sets of vibrational indices to worry about */
         for (size_t ai = 0; ai < a.size(); ai++) {
-          k_ab_ji.push_back(a[ai]);
-          k_ab_ij.push_back(a[ai]);
+          k_ba_ji.push_back(a[ai]);
+          k_ba_ij.push_back(a[ai]);
         }
-        for (size_t bi = 0; bi < a.size(); bi++) {
-          k_ba_ji.push_back(b[bi]);
-          k_ba_ij.push_back(b[bi]);
+        for (size_t bi = 0; bi < b.size(); bi++) {
+          k_ab_ji.push_back(b[bi]);
+          k_ab_ij.push_back(b[bi]);
         }
 
         if (i == 0) { /* electronic ground state */
@@ -828,6 +830,7 @@ Chromophore::dndt(double *population, double t, pulse pump)
           dndt_ic[sub2ind(n_i, n_extents)] += fc_i_plus
           * k_ic[sub2ind(k_ba_ij, ic_extents)]
           * population[sub2ind(n_i_plus, n_extents)];
+
         } else if (i == n_elec - 1) { /* highest electronic state */
           double fc_i_minus = 1.;
           for (size_t alpha = 0; alpha < n_normal; alpha++) {
@@ -864,7 +867,7 @@ Chromophore::dndt(double *population, double t, pulse pump)
           * k_ic[sub2ind(k_ab_ij, ic_extents)]
           * population[sub2ind(n_i_minus, n_extents)];
 
-        } /* end of electropopulationc state if/else */
+        } /* end of electronic state if/else */
 
       }
     }
@@ -879,7 +882,7 @@ Chromophore::dndt(double *population, double t, pulse pump)
       double delta_x0_ba = w_elec[pump.target_state] - w_elec[0];
       double fc_sq = 1.;
       for (size_t alpha = 0; alpha < n_normal; alpha++) {
-        delta_x0_ba += w_normal[alpha] * (b[alpha] - a[alpha]);
+        delta_x0_ba += w_normal[alpha] * (int)(b[alpha] - a[alpha]);
         fc_sq *= pow(fc[sub2ind({0,
               pump.target_state, alpha, a[alpha], b[alpha]},
               fc_extents)], 2.);
@@ -906,6 +909,8 @@ Chromophore::dndt(double *population, double t, pulse pump)
     ic_sum   += dndt_ic[i];
     pump_sum += dndt_pump[i];
     dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
+    /* fprintf(stdout, "%5lu  %18.10f  %18.10f  %18.10f  %18.10f\n", */
+    /*     i, dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]); */ 
   }
   /* fprintf(stdout, "%18.10f  %18.10f  %18.10f\n", ivr_sum, ic_sum, pump_sum); */ 
   return dndt;
@@ -940,6 +945,8 @@ func(double t, double *y, double *ydot, void *data)
 int
 main(int argc, char** argv)
 {
+
+  chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
   size_t n_elec = 3, n_normal = 2, n_vib = 3;
   double beta = 1./200.; /* temp in wavenumbers i think */
@@ -1076,7 +1083,7 @@ main(int argc, char** argv)
     .centre = 20000.,
     .width = 10.,
     .t_peak = 0.1,
-    .duration = 70E-3,
+    .duration = 70.0E-3,
   };
 
   /* this should be available via c.get_n_extents() or something */
@@ -1130,17 +1137,10 @@ main(int argc, char** argv)
 
   double t = ti, tout = dt;
   double ysum = 0.;
+
+
   for (size_t i = 0; i < n_steps; i++) {
 
-    ysum = 0.;
-    lsoda.lsoda_update(func, pop_total, y, yout,
-        &t, tout, &istate, data);
-    tout += dt;
-
-    for (size_t j = 0; j < pop_total; j++) {
-      y[j] = yout[j + 1];
-      ysum += y[j];
-    }
     std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
               << setprecision(8) 
               << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
@@ -1152,6 +1152,20 @@ main(int argc, char** argv)
               << y[sub2ind({0, 1, 0}, pop_extents)] << ' ' 
               << setprecision(8) << ysum
               << std::endl;
+
+    ysum = 0.;
+    /* 1.49e-8 is the default value for rtol and atol
+     * in the scipy odeint, which also uses lsoda afaik.
+     * i was trying to match the output from that but
+     * the tolerances don't seem to make much difference? */
+    lsoda.lsoda_update(func, pop_total, y, yout,
+        &t, tout, &istate, data, 1.49e-8, 1.49e-8);
+    tout += dt;
+
+    for (size_t j = 0; j < pop_total; j++) {
+      y[j] = yout[j + 1];
+      ysum += y[j];
+    }
     /* std::cout << "Step " << i << ": " << std::endl; */
     /* if (fabs(ysum - 1.) > 1E-4) { */
     /*   fprintf(stdout, "Sum of populations .ne. 1: ysum = %12.8f," */
@@ -1169,6 +1183,9 @@ main(int argc, char** argv)
 
   free(pop);
   free(vls);
+
+  chrono::steady_clock::time_point end = chrono::steady_clock::now();
+  std::cout << "|| Time taken (ms)= " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << std::endl;
 
   return 0;
 
