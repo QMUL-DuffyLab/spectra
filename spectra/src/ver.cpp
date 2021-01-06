@@ -728,7 +728,6 @@ Chromophore::dndt(double *population, double t, pulse pump)
   std::vector<double> dndt_ic(n_total, 0.);
   std::vector<double> dndt_pump(n_total, 0.);
   std::vector<double> dndt(n_total, 0.);
-  /* std::vector<double> n(n_total, 0.); /1* should be a class member?? *1/ */
 
   std::vector<size_t> subscripts(n_extents.size(), 0);
   std::vector<size_t> sub_lower(n_extents.size(), 0),
@@ -740,34 +739,36 @@ Chromophore::dndt(double *population, double t, pulse pump)
     /* IVR. can probably be optimised */
     for (size_t alpha = 0; alpha < n_normal; alpha++) {
       if (subscripts[alpha + 1] > 0) {
-        /* k_ivr line needs changing! need to add k_ivr_extents and
-         * k_ic_extents as class members, I think */
+        /* loss of population to lower vibronic state */
         dndt_ivr[i] -= subscripts[alpha + 1]
                     * k_ivr[sub2ind({subscripts[0], alpha, 0},
                       {n_elec, n_normal, 2})]
-                    * population[i]; /* loss of population to lower vibropopulationc state */
+                    * population[i];
         sub_lower = subscripts;
         sub_lower[alpha + 1]--;
         i_lower = sub2ind(sub_lower, n_extents);
 
+        /* gain of population from level below */
         dndt_ivr[i] += subscripts[alpha + 1]
                     * k_ivr[sub2ind({subscripts[0], alpha, 1},
                       {n_elec, n_normal, 2})]
-                    * population[i_lower]; /* gain of population from level below */
+                    * population[i_lower];
       }
 
-      if (subscripts[alpha + 1] < n_vib - 1) {
+      if (subscripts[alpha + 1] < n_vib) {
+        /* loss of population to upper state */
         dndt_ivr[i] -= (subscripts[alpha + 1] + 1.)
                     * k_ivr[sub2ind({subscripts[0], alpha, 1},
                       {n_elec, n_normal, 2})]
-                    * population[i]; /* loss of population to upper state */
+                    * population[i];
         sub_upper = subscripts;
         sub_upper[alpha + 1]++;
         i_upper = sub2ind(sub_upper, n_extents);
+        /* gain from the upper state */
         dndt_ivr[i] += (subscripts[alpha + 1] + 1.)
                     * k_ivr[sub2ind({subscripts[0], alpha, 0},
                       {n_elec, n_normal, 2})]
-                    * population[i_upper]; /* gain from the upper state */
+                    * population[i_upper];
       }
     }
 
@@ -899,11 +900,14 @@ Chromophore::dndt(double *population, double t, pulse pump)
     }
   }
 
+  double ivr_sum = 0., ic_sum = 0., pump_sum = 0.;
   for (size_t i = 0; i < n_total; i++) {
+    ivr_sum  += dndt_ivr[i];
+    ic_sum   += dndt_ic[i];
+    pump_sum += dndt_pump[i];
     dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
-    /* fprintf(stdout, "%5lu  %18.10f  %18.10f  %18.10f  %18.10f\n", i, */
-    /*     dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]); */
   }
+  /* fprintf(stdout, "%18.10f  %18.10f  %18.10f\n", ivr_sum, ic_sum, pump_sum); */ 
   return dndt;
 }
 
@@ -983,7 +987,6 @@ main(int argc, char** argv)
   gicij[0][1] = 163.6;
   gicij[1][2] = 163.6;
 
-  fprintf(stdout, "%8.6f\n", CM_PER_PS);
   double *givri = (double *)calloc(n_elec, sizeof(double));
   if (givri == NULL) {
     std::cout << "livri array calloc didn't work" << std::endl;
@@ -1126,21 +1129,34 @@ main(int argc, char** argv)
   double ti = 0., tf = 10., dt = (tf - ti) / n_steps;
 
   double t = ti, tout = dt;
+  double ysum = 0.;
   for (size_t i = 0; i < n_steps; i++) {
 
+    ysum = 0.;
     lsoda.lsoda_update(func, pop_total, y, yout,
         &t, tout, &istate, data);
     tout += dt;
 
     for (size_t j = 0; j < pop_total; j++) {
       y[j] = yout[j + 1];
+      ysum += y[j];
     }
     std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
               << setprecision(8) 
               << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
               << setprecision(8) 
-              << y[sub2ind({2, 0, 0}, pop_extents)] << std::endl;
+              << y[sub2ind({2, 0, 0}, pop_extents)] << ' '
+              << setprecision(8) 
+              << y[sub2ind({0, 0, 1}, pop_extents)] << ' ' 
+              << setprecision(8) 
+              << y[sub2ind({0, 1, 0}, pop_extents)] << ' ' 
+              << setprecision(8) << ysum
+              << std::endl;
     /* std::cout << "Step " << i << ": " << std::endl; */
+    /* if (fabs(ysum - 1.) > 1E-4) { */
+    /*   fprintf(stdout, "Sum of populations .ne. 1: ysum = %12.8f," */
+    /*       " step number = %5lu\n", ysum, i); */
+    /* } */
 
     if (istate <= 0)
     {
