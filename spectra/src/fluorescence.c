@@ -45,6 +45,42 @@ check_detailed_balance(unsigned n, double t, double thresh,
           sum, sum / (n * n), max);
 }
 
+double
+redfield_rate(unsigned int N, double **eig, 
+          unsigned i, unsigned j, double wij, Parameters *p)
+{
+  /* single redfield rate - so we can build a matrix by looping
+   * over and switching between forster/redfield element-wise */
+  double elem = 0.0, rate = 0.;
+  double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
+  unsigned short print_kij = 1;
+  unsigned short print_details = 0;
+  void *vptr;
+  for (unsigned k = 0; k < N; k++) {
+    vptr = &p[k];
+    elem = cmperps * (pow(eig[k][i], 2.) * pow(eig[k][j], 2.) *
+      p[k].nu * p[k].cn(wij, vptr));
+    if (print_details) {
+        fprintf(stdout, "\ni j k = %2d %2d %2d:\n"
+            "c_k^i = %8.6e\tc_k^j = %8.6e\t"
+            "c_k^i^2 = %8.6e\tc_k^j^2 = %8.6e\n"
+            "nu_k = %8.6e\nw_ij = %8.6e\tC_n(w_ij) = %8.6e\n"
+            "(1 + coth) = %8.6e\tC''(wij) = %8.6e\n"
+            "product = %8.6e\n",
+            i, j, k, eig[k][i], eig[k][j], 
+            pow(eig[k][i], 2.), pow(eig[k][j], 2.),
+            p[k].nu, wij, p[k].cn(wij, vptr),
+            (1. + (1. / tanh(0.5 * wij * 1.439 / 300.))),
+            (p[k].cw(wij, vptr)), elem);
+    }
+    rate += elem;
+  }
+  if (print_kij) {
+    fprintf(stdout, "%8.3e\n", rate);
+  }
+  return rate;
+}
+
 double**
 rate_calc(unsigned int N, double **eig, 
           double** wij, Parameters *p)

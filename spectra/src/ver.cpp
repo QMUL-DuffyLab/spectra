@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <vector>
 #include <cmath>
@@ -140,25 +141,6 @@ ind2sub(size_t index, std::vector<size_t> extents)
 
   return subscripts;
 }
-
-/* this won't work - was thinking about a C only version */
-/*
-#define EL_STRUCT(N_NORMAL, N_VIB)\
-  struct e_state_#N_NORMAL_#N_VIB {\
-  static double n_normal = N_NORMAL;\
-  static double n_vib = N_VIB;\
-  double w;\
-  double w_normal[N_NORMAL];\
-  double** l_ic_ij;\
-  double l_ivr_i[N_VIB];\
-  double** g_ic_ij;\
-  double g_ivr_i[N_VIB];\
-  double disp[N_VIB + 1][N_VIB + 1];\
-  double fc[N_NORMAL][N_VIB + 1][N_VIB + 1];\
-  } e_state_#N_NORMAL_#N_VIB;
-
-EL_STRUCT(2,3);
-*/
 
 class Chromophore {
   public:
@@ -916,10 +898,8 @@ Chromophore::dndt(double *population, double t, pulse pump)
   return dndt;
 }
 
-/* OTHER THOUGHTS:
- *
- * for populations we need a set of [N_chromophores][extents]
- *
+/*
+ * LSODA struct and function
  */
 
 typedef struct vera_lsoda_data {
@@ -941,12 +921,152 @@ func(double t, double *y, double *ydot, void *data)
   }
 }
  
+/*
+ * input file stuff
+ */
+
+void
+read_params(Chromophore *chromophore, char *filename)
+{
+  size_t i, n_elec, n_normal, n_vib = 0;
+  double beta = 0.;
+  std::string line, rest;
+  std::string::size_type sz;
+  std::vector<double> w_elec, w_normal,
+    l_ic_ij, l_ivr_i, g_ic_ij, g_ivr_i, disp;
+  std::ifstream param_file;
+  param_file.open(filename);
+  if (param_file.is_open()) {
+    while(param_file.good()) {
+      std::getline(param_file, line);
+      if (line.find("n_elec")!=std::string::npos) {
+        sz = line.find("=") + 1; /* start after the equals! */
+        n_elec = std::stoul(line.substr(sz));
+      }
+      if (line.find("n_normal")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        n_normal = std::stoul(line.substr(sz));
+      }
+      if (line.find("n_vib")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        n_vib = std::stoul(line.substr(sz));
+      }
+      if (line.find("beta")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        beta = std::stod(line.substr(sz));
+      }
+      /* arrays - given as name = space-separated list e.g. 
+       * w_elec = 0.0 10000.0 20000.0 30000.0 */
+      if (line.find("w_elec")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_elec; i++) {
+          w_elec.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("w_normal")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_normal; i++) {
+          w_normal.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("l_ic_ij")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < (pow(n_elec, 2)); i++) {
+          l_ic_ij.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("l_ivr_i")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_elec; i++) {
+          l_ivr_i.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("g_ic_ij")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < (pow(n_elec, 2)); i++) {
+          g_ic_ij.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("g_ivr_i")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_elec; i++) {
+          g_ivr_i.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("disp")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < (n_normal * pow(n_elec + 1, 2)); i++) {
+          disp.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+
+    }
+  }
+  /* could add pumping parameters here if necessary */
+  std::cout << "n_elec = " << n_elec << std::endl;
+  std::cout << "n_normal = " << n_normal << std::endl;
+  std::cout << "n_vib = " << n_vib << std::endl;
+  std::cout << "beta = " << beta << std::endl;
+  std::cout << "w_elec = ";
+  for (i = 0; i < w_elec.size(); i++ ) {
+    std::cout << w_elec[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "w_normal = ";
+  for (i = 0; i < w_normal.size(); i++ ) {
+    std::cout << w_normal[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "l_ic_ij = ";
+  for (i = 0; i < l_ic_ij.size(); i++ ) {
+    std::cout << l_ic_ij[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "l_ivr_i = ";
+  for (i = 0; i < l_ivr_i.size(); i++ ) {
+    std::cout << l_ivr_i[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "g_ic_ij = ";
+  for (i = 0; i < g_ic_ij.size(); i++ ) {
+    std::cout << g_ic_ij[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "g_ivr_i = ";
+  for (i = 0; i < g_ivr_i.size(); i++ ) {
+    std::cout << g_ivr_i[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "disp =            ";
+  for (i = 0; i < disp.size(); i++ ) {
+    std::cout << disp[i] << " ";
+  }
+  std::cout << std::endl;
+
+}
 
 int
 main(int argc, char** argv)
 {
 
   chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+
+  Chromophore *c = NULL;
+  read_params(c, argv[1]);
 
   size_t n_elec = 3, n_normal = 2, n_vib = 3;
   double beta = 1./200.; /* temp in wavenumbers i think */
@@ -1075,6 +1195,18 @@ main(int argc, char** argv)
   free(licij);
   free(wnorm);
   free(wi);
+  
+  std::cout << "disp from lutein: ";
+  for (size_t i = 0; i < n_normal; i++) {
+    for (size_t j = 0; j < n_elec + 1; j++) {
+      for (size_t k = 0; k < n_elec + 1; k++) {
+        std::cout << lutein.get_disp({i, j, k}) << " ";
+      }
+    }
+  }
+  std::cout << std::endl;
+
+  return 0;
 
   pulse pump = {
     .type = GAUSSIAN,
