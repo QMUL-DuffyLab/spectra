@@ -31,11 +31,11 @@ assign_chromophore(chromophore* c, Parameters line_parameters)
 void
 free_chromophore(chromophore* c)
 {
-  free(c);
   /* NB: I thought it was required to free the variable-length member
    * separately when you have one in a struct, but this free call
    * doesn't work. Is it wrong? Check valgrind */
   /* free(c->gi); */
+  free(c);
 }
 
 static double

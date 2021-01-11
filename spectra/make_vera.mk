@@ -1,5 +1,5 @@
 OBJDIR = obj
-EXEC = ver_test
+EXEC = vera_test
 vpath %.o $(OBJDIR)/
 vpath %.cpp $(SRCDIR)/
 
@@ -37,7 +37,7 @@ ifeq ($(UNAME), Linux)
 endif
 
 SOURCES = ./src/LSODA.cpp \
-	  ./src/ver.cpp
+	  ./src/vera.cpp
 
 VPATH := $(sort $(dir $(SOURCES)))
 OBJECTS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(notdir $(SOURCES)))

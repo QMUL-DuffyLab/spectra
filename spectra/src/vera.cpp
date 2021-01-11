@@ -11,13 +11,11 @@
 /* #include "forster.h" */
 /* #include "steady_state.h" */
 
-#ifndef __VER_H__
-#define __VER_H__
+#ifndef __VERA_H__
+#define __VERA_H__
 
 /* this stuff is from elsewhere - i want this to compile on its own lol
  * worry about this stuff later */
-
-class Chromophore;
 
 #define CVAC 299792458.0
 #define CM_PER_PS (200. * M_PI * CVAC * 1E-12)
@@ -55,6 +53,17 @@ intensity(double w, double t, pulse p)
   }
 }
 
+/* this could be replaced with the existing cw_obo but
+ * would require something like (void *) params etc. */
+double
+C_OBO(double w, double l, double g)
+{
+  if (w != INFINITY) {
+    return 2.0 * l * g * w / (pow(w, 2.) + pow(g, 2.));
+  } else {
+    return 0.0;
+  }
+}
 
 /** convert a set of tensor subscripts to a flattened index.
  *
@@ -142,9 +151,9 @@ ind2sub(size_t index, std::vector<size_t> extents)
   return subscripts;
 }
 
-class Chromophore {
+class VERA {
   public:
-    Chromophore(size_t elec, size_t norm, size_t vib,
+    VERA(size_t elec, size_t norm, size_t vib,
                 double beta,
                 double* wi, size_t n_wi,
                 double* w_mode, size_t n_mode,
@@ -154,15 +163,32 @@ class Chromophore {
                 double* g_ivr, size_t n_g,
                 double*** di, size_t n_mode_di, size_t e_l, size_t e_u
                 );
+    VERA(size_t elec, size_t norm, size_t vib,
+                double beta,
+                std::vector<double> w_elec,
+                std::vector<double> w_mode,
+                std::vector<double> l_ic,
+                std::vector<double> l_ivr,
+                std::vector<double> g_ic,
+                std::vector<double> g_ivr,
+                std::vector<double> di
+                );
     /* this needs changing - should the set functions be public? */
     void set_extents();
     void set_w_elec(double* wi, size_t n_wi);
+    void set_w_elec(std::vector<double> wi);
     void set_w_normal(double* w_mode, size_t n_mode);
+    void set_w_normal(std::vector<double> w_mode);
     void set_l_ic_ij(double** l_ic, size_t size);
+    void set_l_ic_ij(std::vector<double> l_ic);
     void set_l_ivr_i(double* l_ivr, size_t n);
+    void set_l_ivr_i(std::vector<double> l_ivr);
     void set_g_ic_ij(double** g_ic, size_t size);
+    void set_g_ic_ij(std::vector<double> g_ic);
     void set_g_ivr_i(double* g_ivr, size_t n);
+    void set_g_ivr_i(std::vector<double> g_ivr);
     void set_disp(double*** di, size_t n_mode, size_t e_l, size_t e_u);
+    void set_disp(std::vector<double> di);
     void fc_calc();
     void set_k_ivr(double beta);
     void set_k_ic(double beta);
@@ -188,6 +214,7 @@ class Chromophore {
     std::vector<size_t> extents;
     std::vector<size_t> ivr_extents;
     std::vector<size_t> ic_extents;
+    std::vector<size_t> disp_extents;
     std::vector<size_t> fc_extents;
     std::vector<size_t> population_extents;
     std::vector<double> w_elec;
@@ -219,10 +246,9 @@ class Chromophore {
     std::vector<double> k_ivr; /* rates for IVR */
     std::vector<double> k_ic;  /* rates for IC */
     double beta;
-    /* std::vector<double> dn;  /1* rates for IC *1/ */
 };
 
-Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
+VERA::VERA(size_t elec, size_t norm, size_t vib,
     double bet,
     double* wi, size_t n_wi,
     double* w_mode, size_t n_mode,
@@ -250,8 +276,36 @@ Chromophore::Chromophore(size_t elec, size_t norm, size_t vib,
   fc_calc();
 }
 
+VERA::VERA(size_t elec, size_t norm, size_t vib,
+    double bet,
+    std::vector<double> wi,
+    std::vector<double> w_mode,
+    std::vector<double> l_ic,
+    std::vector<double> l_ivr,
+    std::vector<double> g_ic,
+    std::vector<double> g_ivr,
+    std::vector<double> di
+    )
+  : n_elec(elec),
+    n_normal(norm),
+    n_vib(vib),
+    beta(bet)
+{
+  set_extents();
+  set_w_elec(wi);
+  set_w_normal(w_mode);
+  set_l_ic_ij(l_ic);
+  set_l_ivr_i(l_ivr);
+  set_g_ic_ij(g_ic);
+  set_g_ivr_i(g_ivr);
+  set_disp(di);
+  set_k_ivr(beta);
+  set_k_ic(beta);
+  fc_calc();
+}
+
 void
-Chromophore::set_w_elec(double* wi, size_t n_wi)
+VERA::set_w_elec(double* wi, size_t n_wi)
 {
   /* note - could specify the wi as a vector too. HMMM */
   if (n_wi != n_elec + 1) {
@@ -264,7 +318,20 @@ Chromophore::set_w_elec(double* wi, size_t n_wi)
 }
 
 void
-Chromophore::set_w_normal(double* w_mode, size_t n_mode)
+VERA::set_w_elec(std::vector<double> wi)
+{
+  /* note - could specify the wi as a vector too. HMMM */
+  if (wi.size() != n_elec + 1) {
+    std::cerr << "length of wi array does not match n_elec + 1"
+              << std::endl;
+  }
+  for (size_t i = 0; i < wi.size(); i++) {
+    w_elec.push_back(wi[i]);
+  }
+}
+
+void
+VERA::set_w_normal(double* w_mode, size_t n_mode)
 {
   /* note - could specify the wi as a vector too. HMMM */
   if (n_mode != n_normal) {
@@ -277,7 +344,20 @@ Chromophore::set_w_normal(double* w_mode, size_t n_mode)
 }
 
 void
-Chromophore::set_l_ic_ij(double** l_ic, size_t side)
+VERA::set_w_normal(std::vector<double> w_mode)
+{
+  /* note - could specify the wi as a vector too. HMMM */
+  if (w_mode.size() != n_normal) {
+    std::cerr << "length of w_mode array does not match n_normal"
+              << std::endl;
+  }
+  for (size_t i = 0; i < w_mode.size(); i++) {
+    w_normal.push_back(w_mode[i]);
+  }
+}
+
+void
+VERA::set_l_ic_ij(double** l_ic, size_t side)
 {
   if (side != n_elec) {
     std::cerr << "side of l_ic_ij array does not match n_elec"
@@ -285,13 +365,25 @@ Chromophore::set_l_ic_ij(double** l_ic, size_t side)
   }
   for (size_t i = 0; i < side; i++) {
     for (size_t j = 0; j < side; j++) {
-      l_ic_ij.push_back(l_ic[i][j]);
+      l_ic_ij[sub2ind({i, j}, {side, side})] = l_ic[i][j];
     }
   }
 }
 
 void
-Chromophore::set_l_ivr_i(double* l_ivr, size_t n)
+VERA::set_l_ic_ij(std::vector<double> l_ic)
+{
+  if (l_ic.size() != pow(n_elec, 2)) {
+    std::cerr << "side of l_ic_ij array does not match n_elec"
+              << std::endl;
+  }
+  for (size_t i = 0; i < l_ic.size(); i++) {
+    l_ic_ij[i] = l_ic[i];
+  }
+}
+
+void
+VERA::set_l_ivr_i(double* l_ivr, size_t n)
 {
   /* note - could specify the wi as a vector too. HMMM */
   if (n != n_elec) {
@@ -299,12 +391,25 @@ Chromophore::set_l_ivr_i(double* l_ivr, size_t n)
               << std::endl;
   }
   for (size_t i = 0; i < n; i++) {
-    l_ivr_i.push_back(l_ivr[i]);
+    l_ivr_i[i] = l_ivr[i];
   }
 }
 
 void
-Chromophore::set_g_ic_ij(double** g_ic, size_t side)
+VERA::set_l_ivr_i(std::vector<double> l_ivr)
+{
+  /* note - could specify the wi as a vector too. HMMM */
+  if (l_ivr.size() != n_elec) {
+    std::cerr << "length of l_ivr array does not match n_elec"
+              << std::endl;
+  }
+  for (size_t i = 0; i < l_ivr.size(); i++) {
+    l_ivr_i[i] = l_ivr[i];
+  }
+}
+
+void
+VERA::set_g_ic_ij(double** g_ic, size_t side)
 {
   if (side != n_elec) {
     std::cerr << "side of g_ic_ij array does not match n_elec"
@@ -312,13 +417,25 @@ Chromophore::set_g_ic_ij(double** g_ic, size_t side)
   }
   for (size_t i = 0; i < side; i++) {
     for (size_t j = 0; j < side; j++) {
-      g_ic_ij.push_back(g_ic[i][j]);
+      g_ic_ij[sub2ind({i, j}, {side, side})] = g_ic[i][j];
     }
   }
 }
 
 void
-Chromophore::set_g_ivr_i(double* g_ivr, size_t n)
+VERA::set_g_ic_ij(std::vector<double> g_ic)
+{
+  if (g_ic.size() != pow(n_elec, 2)) {
+    std::cerr << "side of g_ic_ij array does not match n_elec"
+              << std::endl;
+  }
+  for (size_t i = 0; i < g_ic.size(); i++) {
+    g_ic_ij[i] = g_ic[i];
+  }
+}
+
+void
+VERA::set_g_ivr_i(double* g_ivr, size_t n)
 {
   /* note - could specify the wi as a vector too. HMMM */
   if (n != n_elec) {
@@ -326,15 +443,28 @@ Chromophore::set_g_ivr_i(double* g_ivr, size_t n)
               << std::endl;
   }
   for (size_t i = 0; i < n; i++) {
-    g_ivr_i.push_back(g_ivr[i]);
+    g_ivr_i[i] = g_ivr[i];
+  }
+}
+
+void
+VERA::set_g_ivr_i(std::vector<double> g_ivr)
+{
+  /* note - could specify the wi as a vector too. HMMM */
+  if (g_ivr.size() != n_elec) {
+    std::cerr << "length of l_ivr array does not match n_elec"
+              << std::endl;
+  }
+  for (size_t i = 0; i < g_ivr.size(); i++) {
+    g_ivr_i[i] = (g_ivr[i]);
   }
 }
 
 void 
-Chromophore::set_disp(double*** di,
-                           size_t n_mode,
-                           size_t e_l,
-                           size_t e_u
+VERA::set_disp(double*** di,
+               size_t n_mode,
+               size_t e_l,
+               size_t e_u
                           )
 {
   if (n_mode != n_normal) {
@@ -352,14 +482,26 @@ Chromophore::set_disp(double*** di,
   for (size_t i = 0; i < n_mode; i++) {
     for (size_t j = 0; j < e_l; j++) {
       for (size_t k = 0; k < e_u; k++) {
-        disp.push_back(di[i][j][k]);
+        disp[sub2ind({i, j, k}, disp_extents)] = di[i][j][k];
       }
     }
   }
 }
 
+void 
+VERA::set_disp(std::vector<double> di)
+{
+  if (di.size() != (n_normal * pow(n_elec + 1, 2))) {
+    std::cerr << "size of disp vector doesn't match extents"
+              << std::endl;
+  }
+  for (size_t i = 0; i < di.size(); i++) {
+    disp[i] = di[i];
+  }
+}
+
 void
-Chromophore::fc_calc()
+VERA::fc_calc()
 {
   size_t index;
   /* NB: this assumes all modes have the same number of
@@ -434,7 +576,7 @@ Chromophore::fc_calc()
 }
 
 void
-Chromophore::set_extents()
+VERA::set_extents()
 {
   size_t size = 1;
   extents.push_back(n_elec);
@@ -450,13 +592,22 @@ Chromophore::set_extents()
     size *= (n_vib + 1);
   }
   k_ic.resize(size, 0.);
+  l_ic_ij.resize(size, 0.);
+  g_ic_ij.resize(size, 0.);
   size = 1;
 
   ivr_extents.push_back(n_elec);
   ivr_extents.push_back(n_normal);
   ivr_extents.push_back(2);
   size = n_elec * n_normal * 2;
-  /* k_ivr.resize(size, 0.); */
+  k_ivr.resize(size, 0.);
+  l_ivr_i.resize(size, 0.);
+  g_ivr_i.resize(size, 0.);
+
+  /* pretty sure this is always true, regardless
+   * of the values of n_normal or n_elec */
+  disp_extents = {n_normal, n_elec + 1, n_elec + 1};
+  disp.resize((n_normal * pow(n_elec + 1, 2)), 0.);
 
   fc_extents.push_back(n_elec + 1);
   fc_extents.push_back(n_elec + 1);
@@ -471,7 +622,7 @@ Chromophore::set_extents()
 /* getting things */
 
 double
-Chromophore::get_w_elec(size_t elec_i)
+VERA::get_w_elec(size_t elec_i)
 {
   if (elec_i > n_elec) {
     std::cout << "invalid index passed to get_w_elec: "
@@ -482,13 +633,13 @@ Chromophore::get_w_elec(size_t elec_i)
 }
 
 std::vector<double>
-Chromophore::get_w_normal()
+VERA::get_w_normal()
 {
   return w_normal;
 }
 
 double
-Chromophore::get_w_normal(size_t norm)
+VERA::get_w_normal(size_t norm)
 {
   if (norm >= n_normal) {
     std::cout << "invalid index passed to get_w_elec: "
@@ -499,58 +650,41 @@ Chromophore::get_w_normal(size_t norm)
 }
 
 double
-Chromophore::get_l_ic_ij(size_t elec_i, size_t elec_j)
+VERA::get_l_ic_ij(size_t elec_i, size_t elec_j)
 {
   return l_ic_ij[elec_i + (n_elec * elec_j)];
 }
 
 double
-Chromophore::get_l_ivr_i(size_t elec_i)
+VERA::get_l_ivr_i(size_t elec_i)
 {
   return l_ivr_i[elec_i];
 }
 
 double
-Chromophore::get_g_ic_ij(size_t elec_i, size_t elec_j)
+VERA::get_g_ic_ij(size_t elec_i, size_t elec_j)
 {
   return g_ic_ij[elec_i + (n_elec * elec_j)];
 }
 
 double
-Chromophore::get_g_ivr_i(size_t elec_i)
+VERA::get_g_ivr_i(size_t elec_i)
 {
   return g_ivr_i[elec_i];
 }
 
 double
-Chromophore::get_disp(std::vector<size_t> subscripts)
+VERA::get_disp(std::vector<size_t> subscripts)
 {
-  /* the ordering's a bit off here - extents lists the electronic
-   * extents first, then the normal modes, whereas the disp array
-   * indexes them with the mode first. that could be changed, then
-   * this would just be return disp[sub2ind()] etc */
   size_t index = sub2ind(subscripts, {n_normal, n_elec + 1, n_elec + 1});
   return disp[index];
 }
 
 double
-Chromophore::get_fc(std::vector<size_t> subscripts)
+VERA::get_fc(std::vector<size_t> subscripts)
 {
   return fc[sub2ind(subscripts, fc_extents)];
 }
-
-/* this could be replaced with the existing cw_obo but
- * would require something like (void *) params etc. */
-double
-C_OBO(double w, double l, double g)
-{
-  if (w != INFINITY) {
-    return 2.0 * l * g * w / (pow(w, 2.) + pow(g, 2.));
-  } else {
-    return 0.0;
-  }
-}
-
 
 /** Vibrational relaxation rates on the same mode/electronic state. 
  *
@@ -623,7 +757,7 @@ double thermal_osc(std::vector<size_t> a,
 }
 
 void
-Chromophore::set_k_ivr(double beta)
+VERA::set_k_ivr(double beta)
 {
   for (size_t i = 0; i < n_elec; i++) {
     for (size_t alpha = 0; alpha < n_normal; alpha++) {
@@ -631,16 +765,22 @@ Chromophore::set_k_ivr(double beta)
        * first then the forward one, or so i thought.
        * this is the same ordering but check it!!
        */
-      k_ivr.push_back(CM_PER_PS *
-          k_calc(w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]));
-      k_ivr.push_back(CM_PER_PS *
-          k_calc(-1. * w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]));
+      size_t index = sub2ind({i, alpha, 0}, ivr_extents);
+      k_ivr[index] = CM_PER_PS *
+          k_calc(w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]);
+      index = sub2ind({i, alpha, 1}, ivr_extents);
+      k_ivr[index] = CM_PER_PS *
+          k_calc(-1. * w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i]);
+      /* k_ivr.push_back(CM_PER_PS * */
+      /*     k_calc(w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i])); */
+      /* k_ivr.push_back(CM_PER_PS * */
+      /*     k_calc(-1. * w_normal[alpha], beta, l_ivr_i[i], g_ivr_i[i])); */
     }
   }
 }
 
 void
-Chromophore::set_k_ic(double beta)
+VERA::set_k_ic(double beta)
 {
   std::vector<size_t> vib_extents;
   size_t total_vib_rates = 1;
@@ -695,7 +835,7 @@ Chromophore::set_k_ic(double beta)
 }
 
 std::vector<double>
-Chromophore::dndt(double *population, double t, pulse pump)
+VERA::dndt(double *population, double t, pulse pump)
 {
   std::vector<size_t> n_extents;
   std::vector<size_t> vib_extents;
@@ -903,8 +1043,7 @@ Chromophore::dndt(double *population, double t, pulse pump)
  */
 
 typedef struct vera_lsoda_data {
-  Chromophore *chromo;
-  /* std::vector<double> *population; */
+  VERA *chromo;
   pulse *pump;
 } vera_lsoda_data;
 
@@ -913,7 +1052,7 @@ void
 func(double t, double *y, double *ydot, void *data)
 {
   vera_lsoda_data *vls = (vera_lsoda_data *)data;
-  Chromophore *chromo = vls->chromo;
+  VERA *chromo = vls->chromo;
   std::vector<double> ydot_vec = chromo->dndt(y, t, (*vls->pump));
   size_t i;
   for (i = 0; i < ydot_vec.size(); i++) {
@@ -925,8 +1064,8 @@ func(double t, double *y, double *ydot, void *data)
  * input file stuff
  */
 
-void
-read_params(Chromophore *chromophore, char *filename)
+VERA
+create_VERA_from_file(char *filename)
 {
   size_t i, n_elec, n_normal, n_vib = 0;
   double beta = 0.;
@@ -960,7 +1099,7 @@ read_params(Chromophore *chromophore, char *filename)
       if (line.find("w_elec")!=std::string::npos) {
         sz = line.find("=") + 1;
         rest = line.substr(sz);
-        for (i = 0; i < n_elec; i++) {
+        for (i = 0; i < n_elec + 1; i++) {
           w_elec.push_back(std::stod(rest, &sz));
           rest = rest.substr(sz);
         }
@@ -1016,6 +1155,17 @@ read_params(Chromophore *chromophore, char *filename)
 
     }
   }
+  for (i = 0; i < g_ic_ij.size(); i++) {
+    if (g_ic_ij[i] != 0.) {
+      g_ic_ij[i] = 1. / (g_ic_ij[i] * 1E-3 * CM_PER_PS);
+    }
+  }
+  for (i = 0; i < g_ivr_i.size(); i++) {
+    if (g_ivr_i[i] != 0.) {
+      g_ivr_i[i] = 1. / (g_ivr_i[i] * 1E-3 * CM_PER_PS);
+    }
+  }
+
   /* could add pumping parameters here if necessary */
   std::cout << "n_elec = " << n_elec << std::endl;
   std::cout << "n_normal = " << n_normal << std::endl;
@@ -1056,7 +1206,10 @@ read_params(Chromophore *chromophore, char *filename)
     std::cout << disp[i] << " ";
   }
   std::cout << std::endl;
-
+  VERA result = VERA(n_elec, n_normal, n_vib, beta,
+      w_elec, w_normal, l_ic_ij, l_ivr_i, g_ic_ij,
+      g_ivr_i, disp);
+  return result;
 }
 
 int
@@ -1065,8 +1218,7 @@ main(int argc, char** argv)
 
   chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
-  Chromophore *c = NULL;
-  read_params(c, argv[1]);
+  /* VERA c = create_VERA_from_file(argv[1]); */
 
   size_t n_elec = 3, n_normal = 2, n_vib = 3;
   double beta = 1./200.; /* temp in wavenumbers i think */
@@ -1129,14 +1281,6 @@ main(int argc, char** argv)
       }
     }
   }
-  /* for (size_t i = 0; i < n_elec; i++) { */
-  /*   std::cout << givri[i] << std::endl; */
-  /* } */
-  /* for (size_t i = 0; i < n_elec; i++) { */
-  /*   for (size_t j = 0; j < n_elec; j++) { */
-  /*     std::cout << gicij[i][j] << std::endl; */
-  /*   } */
-  /* } */
 
   double ***disp = (double ***)calloc(n_normal, sizeof(*disp));
   if (disp == NULL) {
@@ -1166,7 +1310,17 @@ main(int argc, char** argv)
   disp[0][1][3] = 0.4;
   disp[1][1][3] = 0.4;
 
-  Chromophore lutein = Chromophore(n_elec, n_normal, n_vib,
+  std::cout << "disp from array:  ";
+  for (size_t i = 0; i < n_normal; i++) {
+    for (size_t j = 0; j < n_elec + 1; j++) {
+      for (size_t k = 0; k < n_elec + 1; k++) {
+        std::cout << disp[i][j][k] << " ";
+      }
+    }
+  }
+  std::cout << std::endl;
+  
+  VERA lutein = VERA(n_elec, n_normal, n_vib,
       beta, wi, n_elec + 1,
       wnorm, n_normal,
       licij, n_elec,
@@ -1195,7 +1349,7 @@ main(int argc, char** argv)
   free(licij);
   free(wnorm);
   free(wi);
-  
+
   std::cout << "disp from lutein: ";
   for (size_t i = 0; i < n_normal; i++) {
     for (size_t j = 0; j < n_elec + 1; j++) {
@@ -1206,7 +1360,17 @@ main(int argc, char** argv)
   }
   std::cout << std::endl;
 
-  return 0;
+  /* std::cout << "disp from c:      "; */
+  /* for (size_t i = 0; i < n_normal; i++) { */
+  /*   for (size_t j = 0; j < n_elec + 1; j++) { */
+  /*     for (size_t k = 0; k < n_elec + 1; k++) { */
+  /*       std::cout << c.get_disp({i, j, k}) << " "; */
+  /*     } */
+  /*   } */
+  /* } */
+  /* std::cout << std::endl; */
+
+  /* return 0; */
 
   pulse pump = {
     .type = GAUSSIAN,
