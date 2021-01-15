@@ -3,6 +3,8 @@
 #include "forster.h"
 #include <fftw3.h>
 #include <stdio.h>
+#include <cmath>
+#include <complex>
 #include <gsl/gsl_eigen.h>
 
 int
@@ -13,7 +15,7 @@ main(int argc, char** argv)
   int status;
   char *line, **lineshape_files;
   double kd;
-  double complex **gi_array;
+  fftw_complex **gi_array;
   double *eigvals, *gamma, *rates, *musq, *chi_p,
          *lambda, *integral, *chiw_ints, *ww,
          **wij, **kij, **Jij, **mu, **eig, **chiw, **pump;
@@ -34,46 +36,65 @@ main(int argc, char** argv)
   fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
 
   /* specifies form of incident light for source term in P_i eqns */
-  pulse pump_properties = { .type=DELTA, .centre=15000., .width=300. };
+  pulse pump_properties = {
+    .type=DELTA,
+    .target_state = 2,
+    .amplitude = 100.,
+    .centre=15000.,
+    .width=300.,
+    .t_peak = 0.1,
+    .duration = 70.0E-3
+  };
+
+  pulse VERA_pump = {
+    .type = GAUSSIAN,
+    .target_state = 2,
+    .amplitude = 100.,
+    .centre = 20000.,
+    .width = 10.,
+    .t_peak = 0.1,
+    .duration = 70.0E-3,
+  };
+
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MUSQ;
 
   /* malloc 1d stuff, read them in */
-  eigvals     = calloc(p->N, sizeof(double));
-  gamma       = calloc(p->N, sizeof(double));
-  rates       = calloc(p->N, sizeof(double));
-  musq        = calloc(p->N, sizeof(double));
-  lambda      = calloc(p->N, sizeof(double));
-  line_params = malloc(p->N * sizeof(Parameters));
-  chiw_ints   = calloc(p->N, sizeof(double));
-  ww          = calloc(p->tau, sizeof(double));
-  integral    = calloc(p->tau, sizeof(double));
-  in          = (fftw_complex*) fftw_malloc(
-                 sizeof(fftw_complex) * p->tau);
-  out         = (fftw_complex*) fftw_malloc(
-                 sizeof(fftw_complex) * p->tau);
+  eigvals     = (double *)calloc(p->N, sizeof(double));
+  gamma       = (double *)calloc(p->N, sizeof(double));
+  rates       = (double *)calloc(p->N, sizeof(double));
+  musq        = (double *)calloc(p->N, sizeof(double));
+  lambda      = (double *)calloc(p->N, sizeof(double));
+  line_params = (Parameters *)malloc(p->N * sizeof(Parameters));
+  chiw_ints   = (double *)calloc(p->N, sizeof(double));
+  ww          = (double *)calloc(p->tau, sizeof(double));
+  integral    = (double *)calloc(p->tau, sizeof(double));
+  in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
+  out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
 
   /* malloc 2d stuff */
-  lineshape_files = malloc(p->N * sizeof(char*));
-  mu              = calloc(p->N, sizeof(double*));
-  gi_array        = calloc(p->N, sizeof(complex double*));
-  eig             = calloc(p->N, sizeof(double*));
-  wij             = calloc(p->N, sizeof(double*));
-  kij             = calloc(p->N, sizeof(double*));
-  Jij             = calloc(p->N, sizeof(double*));
-  chiw            = calloc(p->N, sizeof(double*));
-  pump            = calloc(p->N, sizeof(double*));
-
-  for (i = 0; i < p->N; i++) {
-    lineshape_files[i] = malloc(200 * sizeof(char));
-    gi_array[i]        = calloc(p->tau, sizeof(complex double));
-    mu[i]              = calloc(3, sizeof(double));
-    eig[i]             = calloc(p->N, sizeof(double));
-    wij[i]             = calloc(p->N, sizeof(double));
-    kij[i]             = calloc(p->N, sizeof(double));
-    Jij[i]             = calloc(p->N, sizeof(double));
-    chiw[i]            = calloc(p->tau, sizeof(double));
-    pump[i]            = calloc(p->tau, sizeof(double));
+  lineshape_files = (char **)malloc(p->N * sizeof(char*));
+  mu              = (double **)calloc(p->N, sizeof(double*));
+  gi_array        = (fftw_complex**)
+                    fftw_malloc(p->N * sizeof(fftw_complex*));
+  eig             = ( double **)calloc(p->N, sizeof(double*));
+  wij             = ( double **)calloc(p->N, sizeof(double*));
+  kij             = ( double **)calloc(p->N, sizeof(double*));
+  Jij             = ( double **)calloc(p->N, sizeof(double*));
+  chiw            = ( double **)calloc(p->N, sizeof(double*));
+  pump            = (double **)calloc(p->N, sizeof(double*));
+                      
+  for (i = 0; i < p-> N; i++) {
+    lineshape_files[i] = (char *)malloc(200 * sizeof(char));
+    gi_array[i]        = (fftw_complex*)
+                          fftw_malloc(p->N * sizeof(fftw_complex));
+    mu[i]              = (double *)calloc(3, sizeof(double));
+    eig[i]             = (double *)calloc(p->N, sizeof(double));
+    wij[i]             = (double *)calloc(p->N, sizeof(double));
+    kij[i]             = (double *)calloc(p->N, sizeof(double));
+    Jij[i]             = (double *)calloc(p->N, sizeof(double));
+    chiw[i]            = (double *)calloc(p->tau, sizeof(double));
+    pump[i]            = (double *)calloc(p->tau, sizeof(double));
   }
 
   /* read function reads a set of doubles: here we read in
@@ -91,7 +112,7 @@ main(int argc, char** argv)
   ww       = incident(pump_properties, p->tau);
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
-  line = malloc(200 * sizeof(char));
+  line = (char *)malloc(200 * sizeof(char));
   for (i = 0; i < p->N; i++) {
     /* now load in the parameters for each ligand */
     fgets(line, 200, fp);
@@ -136,20 +157,27 @@ main(int argc, char** argv)
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
+  COMPLEX *Atv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   for (i = 0; i < p->N; i++) {
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
     for (unsigned int j = 0; j < p->tau; j++) {
-      in[j] = At(eigvals[i], creal(gi_array[i][j]), cimag(gi_array[i][j]),
+      Atv[j] = At(eigvals[i], gi_array[i][j][0], gi_array[i][j][1],
                  (double)j * TOFS,
                  1. / (1000000. * gamma[i]));
+      in[j][0] = REAL(Atv[j]);
+      in[j][1] = IMAG(Atv[j]);
+      /* in[j][1] = *At(eigvals[i], gi_array[i][j][0], gi_array[i][j][1], */
+      /*            (double)j * TOFS, */
+      /*            1. / (1000000. * gamma[i]))[1]; */
     }
+    free(Atv);
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < p->tau; j++) {
-      chiw[i][j] = creal(out[j]) * musq[i];
-      pump[i][j] = chiw[i][j] * ww[j];
-      integral[j] += creal(out[j]) * musq[i];
+      chiw[i][j]   = out[j][0]  * musq[i];
+      pump[i][j]   = chiw[i][j] * ww[j];
+      integral[j] += out[j][0]  * musq[i];
     }
 
     chi_p = pump[i];
@@ -163,7 +191,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (p->tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        kd * creal(integral[i]) * (1./ sqrt(p->tau)) * 6.4);
+        kd * integral[i] * (1./ sqrt(p->tau)) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -189,7 +217,7 @@ main(int argc, char** argv)
       /* unpack the ordering used by FFTW */
       kd = j * 2. * M_PI / (p->tau);
       fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-          kd * creal(chiw[i][j]) * (1./ sqrt(p->tau)) * 6.4);
+          kd * chiw[i][j] * (1./ sqrt(p->tau)) * 6.4);
     }
     cl = fclose(fp);
     if (cl != 0) {
@@ -224,11 +252,11 @@ main(int argc, char** argv)
   odep.rates = rates;
   odep.chiw = chiw_ints;
   odep.Tij = transfer_matrix(p->N, rates, kij);
-  double *f = calloc(p->N, sizeof(double));
-  double *y = calloc(p->N, sizeof(double));
+  double *f = (double *)calloc(p->N, sizeof(double));
+  double *y = (double *)calloc(p->N, sizeof(double));
   /* check convergence */
-  double *yprev = calloc(p->N, sizeof(double));
-  double *boltz = calloc(p->N, sizeof(double));
+  double *yprev = (double *)calloc(p->N, sizeof(double));
+  double *boltz = (double *)calloc(p->N, sizeof(double));
 
   boltz = bcs(p->N, eigvals, protocol.T);
   fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
@@ -292,19 +320,27 @@ main(int argc, char** argv)
   /* fluorescence spectrum */
   /* need to zero the running integral before FFT! */
   free(integral);
-  integral = calloc(p->tau, sizeof(double));
+  integral = (double *)calloc(p->tau, sizeof(double));
+  COMPLEX *Ftv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   for (i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->tau; j++) {
-      in[j] = p_i_equib[i] * Ft(eigvals[i],
-              creal(gi_array[i][j]), cimag(gi_array[i][j]),
+      Ftv[j] = p_i_equib[i] * Ft(eigvals[i],
+              gi_array[i][j][0], gi_array[i][j][1],
               lambda[i], (double)j * TOFS,
               1. / (1000000. * gamma[i]));
+      in[j][0] = REAL(Ftv[j]);
+      in[j][1] = IMAG(Ftv[j]);
+      /* in[j][1] = p_i_equib[i] * *Ft(eigvals[i], */
+      /*         gi_array[i][j][0], gi_array[i][j][1], */
+      /*         lambda[i], (double)j * TOFS, */
+      /*         1. / (1000000. * gamma[i]))[1]; */
     }
+    free(Ftv);
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < p->tau; j++) {
-      chiw[i][j]   = creal(out[j]) * musq[i];
-      integral[j] += creal(out[j]) * musq[i];
+      chiw[i][j]   = out[j][0] * musq[i];
+      integral[j] += out[j][0] * musq[i];
     }
 
   }
@@ -318,7 +354,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (p->tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        (pow(kd, 3.) * creal(integral[i]) * (1./ sqrt(p->tau))) * 6.4);
+        (pow(kd, 3.) * integral[i] * (1./ sqrt(p->tau))) * 6.4);
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -342,7 +378,7 @@ main(int argc, char** argv)
       /* unpack the ordering used by FFTW */
       kd = j * 2. * M_PI / (p->tau);
       fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-          kd * creal(chiw[i][j]) * (1./ sqrt(p->tau)) * 6.4);
+          kd * chiw[i][j] * (1./ sqrt(p->tau)) * 6.4);
     }
     cl = fclose(fp);
     if (cl != 0) {
@@ -359,13 +395,13 @@ main(int argc, char** argv)
                     "-------------------\n\n");
 
   double **Tij_vr, **Tij_vr_inv, **Tij_wr;
-  Tij_vr = calloc(p->N, sizeof(double*));
-  Tij_vr_inv = calloc(p->N, sizeof(double*));
-  Tij_wr = calloc(p->N, sizeof(double*));
+  Tij_vr = (double **)calloc(p->N, sizeof(double*));
+  Tij_vr_inv = (double **)calloc(p->N, sizeof(double*));
+  Tij_wr = (double **)calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
-    Tij_vr[i] = calloc(p->N, sizeof(double));
-    Tij_vr_inv[i] = calloc(p->N, sizeof(double));
-    Tij_wr[i] = calloc(p->N, sizeof(double));
+    Tij_vr[i]     = (double *)calloc(p->N, sizeof(double));
+    Tij_vr_inv[i] = (double *)calloc(p->N, sizeof(double));
+    Tij_wr[i]     = (double *)calloc(p->N, sizeof(double));
   }
   decompose_transfer_matrix(p->N, odep.Tij, Tij_vr, Tij_vr_inv, Tij_wr);
 
@@ -396,9 +432,9 @@ main(int argc, char** argv)
                     "-------------------\n\n");
 
   double ti = 0.0; double dt = 1.0; double thresh = 1e-10;
-  double *pt = calloc(p->N, sizeof(double));
+  double *pt = (double *)calloc(p->N, sizeof(double));
   /* use previous step to check convergence */
-  double *pt_prev = calloc(p->N, sizeof(double));
+  double *pt_prev = (double *)calloc(p->N, sizeof(double));
   unsigned int MAX_ITER = 20000; /* 20 ns */
   unsigned int print_pop = 0;
   status = 0;

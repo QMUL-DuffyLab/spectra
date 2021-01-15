@@ -1,10 +1,4 @@
-#include <math.h>
-#include <complex.h>
 #include "functions.h"
-
-#ifndef M_PI
-	#define M_PI 3.1415926535897932384626433832795L
-#endif
 
 /** Returns a function pointer to the correct ansatz.
  *
@@ -157,11 +151,16 @@ trig_re(double w, void* params)
     Parameters *p = (Parameters *) params;
     /* (H * C)/KB in cm = 1.439 */
     double hbeta = 1.439 / p->T;
-    return (creal(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
+    return (REAL(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
 	   * (1 - cos(w * p->ti))
 	   * (1. / tanh(0.5 * w * hbeta)))
-           + (cimag(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
+           + (IMAG(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
     	   * (sin(w * p->ti) - w * p->ti));
+    /* return (creal(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.))) */
+	   /* * (1 - cos(w * p->ti)) */
+	   /* * (1. / tanh(0.5 * w * hbeta))) */
+    /*        + (cimag(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.))) */
+    /* 	   * (sin(w * p->ti) - w * p->ti)); */
 }
 
 double
@@ -169,11 +168,16 @@ trig_im(double w, void* params)
 {
     Parameters *p = (Parameters *) params;
     double hbeta = 1.439 / p->T;
-    return (creal(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
+    return (REAL(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
     	   * (sin(w * p->ti) - w * p->ti))
-           + (cimag(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
+           + (IMAG(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.)))
 	   * (1 - cos(w * p->ti))
 	   * (1. / tanh(0.5 * w * hbeta)));
+    /* return (creal(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.))) */
+    /* 	   * (sin(w * p->ti) - w * p->ti)) */
+    /*        + (cimag(p->cw(w, p)) * (1. / (M_PI * pow(w, 2.))) */
+	   /* * (1 - cos(w * p->ti)) */
+	   /* * (1. / tanh(0.5 * w * hbeta))); */
 }
 
 double
@@ -183,23 +187,22 @@ reorg_int(double w, void* params)
     return p->cw(w, p) * (1. / (M_PI * w));
 }
 
-double _Complex
+COMPLEX
 At(double w0, double re, double im, double t,
    double gamma)
 {
     /* double cmtofs = (200.0 * M_PI * CMS * 1E-15); */
-    double complex exponent = -I * ((w0) * t) 
-                            - (re + (I * im))
-                            - (0.5 * gamma * t);
-    return cexp(exponent);
+    COMPLEX exponent = - re - (0.5 * gamma * t) - II * (w0 * t + im);
+    return EXP(exponent);
 }
 
-double complex
+COMPLEX
 Ft(double w0, double re, double im, double reorg,
    double t, double gamma)
 {
     /* double cmtofs = (200.0 * M_PI * CMS * 1E-15); */
-    double complex exponent = -I * ((w0) - (2. * reorg)) * t 
-                            - (re - (I * im) - (0.5 * t * gamma));
-    return cexp(exponent);
+    /* NB: check bracket in final two terms here. comes out as + Gamma t/2 */
+    COMPLEX exponent = -II * ((w0) - (2. * reorg)) * t 
+                       - (re - (II * im) - (0.5 * t * gamma));
+    return EXP(exponent);
 }

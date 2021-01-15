@@ -90,9 +90,9 @@ rate_calc(unsigned int N, double **eig,
   unsigned int i, j, k;
   double **kij;
   void *vptr;
-  kij = calloc(N, sizeof(double*));
+  kij = (double **)calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
-    kij[i] = calloc(N, sizeof(double));
+    kij[i] = (double *)calloc(N, sizeof(double));
   }
 
   double elem = 0.0;
@@ -146,7 +146,7 @@ relaxation_rates
 {
   /* take vector of lifetimes in ns,
    * output relaxation rates in ps^{-1} */
-  double *res = calloc(N, sizeof(double));
+  double *res = (double *)calloc(N, sizeof(double));
   for (unsigned int i = 0; i < N; i++) {
     res[i] = (1. / (1000 * gamma[i]));
   }
@@ -162,9 +162,9 @@ transfer_matrix
   unsigned int i, j, k;
   double **Tij;
   unsigned short print_Tij = 1;
-  Tij = calloc(N, sizeof(double*));
+  Tij = (double **)calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
-    Tij[i] = calloc(N, sizeof(double));
+    Tij[i] = (double *)calloc(N, sizeof(double));
   }
   if (print_Tij) {
     fprintf(stdout, "\n---------------\nTRANSFER MATRIX"
@@ -246,7 +246,7 @@ bcs (unsigned const int N, const double* eigvals, const double T)
   /* calculate t = 0 boltzmannised exciton populations */
   double beta = 1.439 / T;
   double sum = 0.0;
-  double *populations = calloc(N, sizeof(double));
+  double *populations = (double *)calloc(N, sizeof(double));
   short print_weights = 0;
   for (unsigned int i = 0; i < N; i++) {
     if (print_weights) {
@@ -264,7 +264,7 @@ double
 trapezoid(double *f, unsigned int n)
 {
     double dx = 1./n;
-    double complex sum;
+    double sum;
 
     sum = 0.5 * dx * (f[0] + f[n - 1]);
     for (unsigned int i = 1; i < n - 1; i++) {
@@ -291,7 +291,7 @@ decompose_transfer_matrix(unsigned n, double **Tij,
   double *Tij_wr_vec;
   unsigned i;
   int status;
-  Tij_wr_vec = calloc(n, sizeof(double));
+  Tij_wr_vec = (double *)calloc(n, sizeof(double));
 
   status = eig_oop(n, Tij, Tij_vr, Tij_wr_vec);
   if (status != 0) {
@@ -324,11 +324,11 @@ mean_excitation_lifetime(unsigned n, double **Tij_vr,
    * overwrite Tij_wr - we'll need it later */
   double **Tij_wr_inv;
   unsigned i, j;
-  work = calloc(n, sizeof(double));
-  work2 = calloc(n, sizeof(double));
-  Tij_wr_inv = calloc(n, sizeof(double*));
+  work = (double *)calloc(n, sizeof(double));
+  work2 = (double *)calloc(n, sizeof(double));
+  Tij_wr_inv = (double **)calloc(n, sizeof(double*));
   for (i = 0; i < n; i++) {
-    Tij_wr_inv[i] = calloc(n, sizeof(double));
+    Tij_wr_inv[i] = (double *)calloc(n, sizeof(double));
   }
 
   for (i = 0; i < n; i++) {
@@ -367,11 +367,11 @@ population(unsigned n, double t, double *pt, double **Tij_vr,
   double *work, *work2;
   double **exp_wr; /* need e^{λt} for population propagation */
   unsigned i;
-  work = calloc(n, sizeof(double));
-  work2 = calloc(n, sizeof(double));
-  exp_wr = calloc(n, sizeof(double*));
+  work = (double *)calloc(n, sizeof(double));
+  work2 = (double *)calloc(n, sizeof(double));
+  exp_wr = (double **)calloc(n, sizeof(double*));
   for (i = 0; i < n; i++) {
-    exp_wr[i] = calloc(n, sizeof(double));
+    exp_wr[i] = (double *)calloc(n, sizeof(double));
   }
 
   for (i = 0; i < n; i++) {

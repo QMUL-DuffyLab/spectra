@@ -4,13 +4,14 @@ chromophore*
 create_chromophore(unsigned ns)
 {
   chromophore* c = (chromophore *)malloc(sizeof(chromophore)
-                 +   ns * sizeof(double _Complex));
+                 +   ns * sizeof(fftw_complex));
   c->ns     = ns;
   c->w00    = NAN;
   c->lambda = NAN;
   c->rate   = NAN;
   for (unsigned i = 0; i < ns; i++) {
-    c->gi[i] = NAN + I * NAN;
+    c->gi[i][0] = NAN;
+    c->gi[i][1] = NAN;
   }
 
   return c;
@@ -41,7 +42,8 @@ free_chromophore(chromophore* c)
 static double
 forster_overlap(chromophore* A, chromophore* F)
 {
-  fftw_complex *Atime, *Ftime, *Aw, *Fw;
+  COMPLEX *Atime, *Ftime;
+  fftw_complex *Aw, *Fw;
   fftw_plan plan;
 
   if (A->ns != F->ns) {
@@ -52,43 +54,36 @@ forster_overlap(chromophore* A, chromophore* F)
     return NAN;
   }
 
-  Atime = (fftw_complex*) fftw_malloc(
-           sizeof(fftw_complex) * A->ns);
-  Ftime = (fftw_complex*) fftw_malloc(
-           sizeof(fftw_complex) * F->ns);
+  Atime = (COMPLEX*) calloc(A->ns, sizeof(COMPLEX));
+  Ftime = (COMPLEX*) calloc(A->ns, sizeof(COMPLEX));
   Aw    = (fftw_complex*) fftw_malloc(
            sizeof(fftw_complex) * A->ns);
   Fw    = (fftw_complex*) fftw_malloc(
            sizeof(fftw_complex) * F->ns);
 
-  double _Complex elem;
   for (unsigned i = 0; i < A->ns; i++) {
     /* NB: rate or lifetime? also TOFS will be fine once
      * the includes are added. some problem with complex also */
-    elem = At(A->w00,
-               creal(A->gi[i]), cimag(A->gi[i]),
+    Atime[i] = At(A->w00,
+               A->gi[i][0], A->gi[i][1],
                (double)i * TOFS,
                A->rate / (1000.));
-    Atime[i][0] = creal(elem);
-    Atime[i][1] = cimag(elem);
 
-    elem = Ft(F->w00,
-               creal(F->gi[i]), cimag(F->gi[i]),
+    Ftime[i] = Ft(F->w00,
+               F->gi[i][0], F->gi[i][1],
                F->lambda, (double)i * TOFS,
                F->rate / (1000.));
-    Ftime[i][0] = creal(elem);
-    Ftime[i][1] = cimag(elem);
   }
 
   plan = fftw_plan_dft_1d(A->ns, 
-  	 Atime, Aw, FFTW_BACKWARD, FFTW_ESTIMATE);
+  	 (fftw_complex*)Atime, Aw, FFTW_BACKWARD, FFTW_ESTIMATE);
   fftw_execute(plan);
   /* calling fftw_plan_dft_1d again without destroying the plan
    * first seems to lead to a memory leak (so valgrind tells me) */
   fftw_destroy_plan(plan);
 
   plan = fftw_plan_dft_1d(F->ns, 
-  	 Ftime, Fw, FFTW_BACKWARD, FFTW_ESTIMATE);
+  	 (fftw_complex*)Ftime, Fw, FFTW_BACKWARD, FFTW_ESTIMATE);
   fftw_execute(plan);
 
   /* find minima - need to subtract minimum values from the arrays */
@@ -205,14 +200,16 @@ forster_test()
             " line number %d\n", cl, j);
         exit(EXIT_FAILURE);
       }
-      CLA610->gi[j] = (real + I * imag);
+      CLA610->gi[j][0] = real;
+      CLA610->gi[j][1] = imag;
       cl     = fscanf(gp, "   %lf     %lf     %lf", &step, &real, &imag);
       if (cl != 3) {
         fprintf(stdout, "fscanf reading LUT_gt failed with error code %d;"
             " line number %d\n", cl, j);
         exit(EXIT_FAILURE);
       }
-      LUT620->gi[j] = (real + I * imag);
+      LUT620->gi[j][0] = real;
+      LUT620->gi[j][1] = imag;
     }
   }
   fclose(fp);

@@ -14,7 +14,7 @@ main(int argc, char** argv)
     time(&start_time);
     Parameters p;
     double *times;
-    double complex *Atv, *Ftv;
+    COMPLEX *Atv, *Ftv;
     fftw_complex *out, *in;
     fftw_plan plan;
     double (* re)(double, void *);
@@ -35,8 +35,8 @@ main(int argc, char** argv)
     p.T = pr.T;
 
     times = malloc(pr.ns * sizeof(double));
-    Atv   = malloc(pr.ns * sizeof(double complex));
-    Ftv   = malloc(pr.ns * sizeof(double complex));
+    Atv = (COMPLEX*) calloc(pr.ns, sizeof(COMPLEX));
+    Ftv = (COMPLEX*) calloc(pr.ns, sizeof(COMPLEX));
 
     /* choose spectral density based on the ansatz */
     p.cw = choose_ansatz(p.ans);
@@ -112,9 +112,11 @@ main(int argc, char** argv)
     /* this assignment is very ugly but trying to copy Chris's code */
     in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
 
+    /* NB: after getting rid of all the _Complex arrays this
+     * can be removed; just assign At() to in[i] directly above */
     for (unsigned long i = 0; i < pr.ns; i++) {
-	in[i][0] = creal(Atv[i]);
-	in[i][1] = cimag(Atv[i]);
+	in[i][0] = REAL(Atv[i]);
+	in[i][1] = IMAG(Atv[i]);
     }
 
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * pr.ns);
@@ -138,8 +140,8 @@ main(int argc, char** argv)
     fprintf(stdout, "FFT on A(t) performed.\n");
 
     for (unsigned long i = 0; i < pr.ns; i++) {
-	in[i][0] = creal(Ftv[i]);
-	in[i][1] = cimag(Ftv[i]);
+	in[i][0] = REAL(Ftv[i]);
+	in[i][1] = IMAG(Ftv[i]);
     }
     fftw_execute(plan); 
 

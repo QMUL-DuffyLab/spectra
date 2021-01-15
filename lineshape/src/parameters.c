@@ -24,7 +24,7 @@ get_protocol(char *filename)
 	    p.ns = atoi(val);
 	    fprintf(stdout, "tau = %lu\n", p.ns);
 	} else if (strcmp(key, "chl_ansatz") == 0) {
-	    p.chl_ansatz = atoi(val);
+	    p.chl_ansatz = (ansatz)atoi(val);
 	}
     }
 
@@ -43,7 +43,7 @@ get_parameters(char *filename, ansatz chl_ansatz)
     FILE *fp;
     Parameters p;
     char s[4]; /* null char */
-    char pref[3] = "gsw";
+    char pref[4] = "gsw";
     char line[200], key[200], val[200];
     p.s0 = 0.0; p.s1 = 0.0; p.s2 = 0.0;
     p.g0 = 0.0; p.g1 = 0.0; p.g2 = 0.0;

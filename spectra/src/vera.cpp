@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include "helper.h"
 #include "LSODA.h"
-/* #include "forster.h" */
-/* #include "steady_state.h" */
+#include "forster.h"
+#include "steady_state.h"
 
 #ifndef __VERA_H__
 #define __VERA_H__
@@ -18,40 +18,40 @@
  * worry about this stuff later */
 
 #define CVAC 299792458.0
-#define CM_PER_PS (200. * M_PI * CVAC * 1E-12)
-typedef enum pulse_type {
-  FLAT = 0,
-  LORENTZIAN = 1,
-  GAUSSIAN = 2,
-  DELTA = 3,
-} pulse_type;
+/* #define CM_PER_PS (200. * M_PI * CVAC * 1E-12) */
+/* typedef enum pulse_type { */
+/*   FLAT = 0, */
+/*   LORENTZIAN = 1, */
+/*   GAUSSIAN = 2, */
+/*   DELTA = 3, */
+/* } pulse_type; */
 
-typedef struct pulse {
-  pulse_type type;
-  size_t target_state;
-  double amplitude;
-  double centre;
-  double width;
-  double t_peak;
-  double duration;
-} pulse;
+/* typedef struct pulse { */
+/*   pulse_type type; */
+/*   size_t target_state; */
+/*   double amplitude; */
+/*   double centre; */
+/*   double width; */
+/*   double t_peak; */
+/*   double duration; */
+/* } pulse; */
 
-double
-intensity(double w, double t, pulse p)
-{
-  double sigma, f;
-  double gamma = 1./(2. * p.duration)
-               * pow(1./cosh((t - p.t_peak)/p.duration), 2.);
-  if (p.type == GAUSSIAN) {
-    sigma = p.width / (2. * sqrt(2. * log(2.)));
-    f = exp(-1. * pow(w - p.centre, 2.) / (2. * pow(sigma, 2.)))
-      * (1. / (sigma * sqrt(2. * M_PI)));
-    return p.amplitude * f * gamma;
-  } else {
-    /* not done this yet lol */
-    return NAN;
-  }
-}
+/* double */
+/* intensity(double w, double t, pulse p) */
+/* { */
+/*   double sigma, f; */
+/*   double gamma = 1./(2. * p.duration) */
+/*                * pow(1./cosh((t - p.t_peak)/p.duration), 2.); */
+/*   if (p.type == GAUSSIAN) { */
+/*     sigma = p.width / (2. * sqrt(2. * log(2.))); */
+/*     f = exp(-1. * pow(w - p.centre, 2.) / (2. * pow(sigma, 2.))) */
+/*       * (1. / (sigma * sqrt(2. * M_PI))); */
+/*     return p.amplitude * f * gamma; */
+/*   } else { */
+/*     /1* not done this yet lol *1/ */
+/*     return NAN; */
+/*   } */
+/* } */
 
 /* this could be replaced with the existing cw_obo but
  * would require something like (void *) params etc. */
@@ -123,8 +123,8 @@ ind2sub(size_t index, std::vector<size_t> extents)
     for (size_t i = 0; i < subscripts.size(); i++) {
       subscripts[i] = -1;
     }
-  } else if (index < 0) {
-    std::cerr << "ind2sub error: index is < 0" << std::endl;
+  } else if ((int)index < 0) {
+    std::cerr << "ind2sub error: index underflowed" << std::endl;
     for (size_t i = 0; i < subscripts.size(); i++) {
       subscripts[i] = -1;
     }
@@ -206,11 +206,12 @@ class VERA {
     double get_disp(std::vector<size_t> subscripts);
     double get_fc(std::vector<size_t> subscripts);
     void get_k_ivr(double beta, size_t elec, size_t norm);
-
-  private:
     size_t n_elec;
     size_t n_normal;
     size_t n_vib;
+    double beta;
+
+  private:
     std::vector<size_t> extents;
     std::vector<size_t> ivr_extents;
     std::vector<size_t> ic_extents;
@@ -245,7 +246,6 @@ class VERA {
     std::vector<double> fc;
     std::vector<double> k_ivr; /* rates for IVR */
     std::vector<double> k_ic;  /* rates for IC */
-    double beta;
 };
 
 VERA::VERA(size_t elec, size_t norm, size_t vib,
@@ -1209,282 +1209,132 @@ create_VERA_from_file(char *filename)
   VERA result = VERA(n_elec, n_normal, n_vib, beta,
       w_elec, w_normal, l_ic_ij, l_ivr_i, g_ic_ij,
       g_ivr_i, disp);
+  std::complex<double> elem;
   return result;
 }
 
-int
-main(int argc, char** argv)
-{
+/*int*/
+/*main(int argc, char** argv)*/
+/*{*/
 
-  chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+/*  chrono::steady_clock::time_point begin = chrono::steady_clock::now();*/
 
-  /* VERA c = create_VERA_from_file(argv[1]); */
+/*  if (argc != 2) {*/
+/*    fprintf(stdout, "Wrong number of arguments: should have "*/
+/*        "VERA parameter file only\n");*/
+/*    exit(EXIT_FAILURE);*/
+/*  }*/
 
-  size_t n_elec = 3, n_normal = 2, n_vib = 3;
-  double beta = 1./200.; /* temp in wavenumbers i think */
+/*  VERA lutein = create_VERA_from_file(argv[1]);*/
 
-  /* these will need to be calloc'd and filled from a file eventually */
-  double *wi = (double *)calloc(n_elec + 1, sizeof(double));
-  wi[0] = 0.; wi[1] = 10000.0; wi[2] = 20000.0; wi[3] = 30000.0;
+/*  pulse pump = {*/
+/*    .type = GAUSSIAN,*/
+/*    .target_state = 2,*/
+/*    .amplitude = 100.,*/
+/*    .centre = 20000.,*/
+/*    .width = 10.,*/
+/*    .t_peak = 0.1,*/
+/*    .duration = 70.0E-3,*/
+/*  };*/
 
-  double *wnorm = (double *)calloc(n_normal, sizeof(double));
-  wnorm[0] = 1100.; wnorm[1] = 1500.0;
+/*  /1* this should be available via c.get_n_extents() or something *1/ */ 
+/*  /1* NB: this whole thing should be a method - calculate initial*/
+/*   * populations; only parameter is beta *1/ */ 
+/*  std::vector<size_t> pop_extents = {lutein.n_elec};*/
+/*  std::vector<size_t> vib_extents;*/
 
-  double **licij = (double **)calloc(n_elec, sizeof(double**));
-  if (licij == NULL) {
-    std::cout << "licij array calloc didn't work" << std::endl;
-  } else {
-    for (size_t i = 0; i < n_elec; i++) {
-      licij[i] = (double *)calloc(n_elec, sizeof(double*));
-      if (licij[i] == NULL) {
-        std::cout << "licij[" << i <<"] calloc didn't work" << std::endl;
-      }
-    }
-  }
-  licij[0][1] = 200.;
-  licij[1][2] = 1000.;
+/*  size_t pop_total = lutein.n_elec;*/
+/*  size_t vib_total = 1;*/
+/*  for (size_t i = 0; i < lutein.n_normal; i++) {*/
+/*    pop_extents.push_back(lutein.n_vib + 1);*/
+/*    vib_extents.push_back(lutein.n_vib + 1);*/
+/*    pop_total *= lutein.n_vib + 1;*/
+/*    vib_total *= lutein.n_vib + 1;*/
+/*  }*/
+/*  double *pop = (double *)calloc(pop_total, sizeof(double));*/
+/*  std::vector<double> n0(pop_total, 0.);*/
+/*  /1* vec is because LSODA requires vector argument*/
+/*   * - this could maybe be fixed somehow with vector.data()? *1/ */ 
+/*  std::vector<double> y(pop_total, 0.);*/
 
-  double *livri = (double *)calloc(n_elec, sizeof(double));
-  if (livri == NULL) {
-    std::cout << "livri array calloc didn't work" << std::endl;
-  } else {
-    livri[0] = 50.0; livri[1] = 100.0; livri[2] = 300.0;
-  }
+/*  for (size_t i = 0; i < vib_total; i++) {*/
+/*    std::vector<size_t> tot_subs(pop_extents.size(), 0);*/
+/*    std::vector<size_t> vib_subs(vib_extents.size(), 0);*/
+/*    vib_subs = ind2sub(i, vib_extents);*/
+/*    for (size_t j = 0; j < vib_subs.size(); j++) {*/
+/*      tot_subs[j + 1] = vib_subs[j];*/
+/*    }*/
+/*    size_t index = sub2ind(tot_subs, pop_extents);*/
+/*    /1**/  
+/*     * NB: careful with lutein.beta here - feels like there should*/
+/*     * just be one place the temperature's defined rather than copying*/
+/*     * it to every single struct, class etc. but fine if we're careful*/
+/*     *1/ */ 
+/*    n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), lutein.beta);*/
+/*    pop[index] = n0[index];*/
+/*    y[index] = pop[index];*/
+/*  }*/
 
-  /* these need to be converted from fs to cm^-1 */
-  double **gicij = (double **)calloc(n_elec, sizeof(double**));
-  if (gicij == NULL) {
-    std::cout << "gicij array calloc didn't work" << std::endl;
-  } else {
-    for (size_t i = 0; i < n_elec; i++) {
-      gicij[i] = (double *)calloc(n_elec, sizeof(double*));
-      if (licij[i] == NULL) {
-        std::cout << "gicij[" << i <<"] calloc didn't work" << std::endl;
-      }
-    }
-  }
-  gicij[0][1] = 163.6;
-  gicij[1][2] = 163.6;
+/*  vera_lsoda_data *vls = (vera_lsoda_data *)malloc(sizeof(vera_lsoda_data));*/
+/*  vls->chromo = &lutein;*/
+/*  vls->pump = &pump;*/
+/*  void *data = (void *)vls;*/
 
-  double *givri = (double *)calloc(n_elec, sizeof(double));
-  if (givri == NULL) {
-    std::cout << "livri array calloc didn't work" << std::endl;
-  } else {
-    givri[0] = 163.6; givri[1] = 163.6; givri[2] = 163.6;
-  }
-  for (size_t i = 0; i < n_elec; i++) {
-    /* the damping times were given in femtoseconds */
-    givri[i] = 1. / (givri[i] * 1E-3 * CM_PER_PS);
-    for (size_t j = 0; j < n_elec; j++) {
-      if (gicij[i][j] != 0) {
-        gicij[i][j] = 1. / (gicij[i][j] * 1E-3 * CM_PER_PS);
-      }
-    }
-  }
+/*  LSODA lsoda;*/
+/*  std::vector<double> yout;*/
+/*  int istate = 1;*/
 
-  double ***disp = (double ***)calloc(n_normal, sizeof(*disp));
-  if (disp == NULL) {
-    std::cout << "disp array calloc didn't work" << std::endl;
-  } else {
-    for (size_t i = 0; i < n_normal; i++) {
-      disp[i] = (double **)calloc(n_elec + 1, sizeof(*(disp[i])));
-      if (disp[i] == NULL) {
-        std::cout << "disp[" << i <<"] calloc didn't work" << std::endl;
-      } else {
-        for (size_t j = 0; j < n_elec + 1; j++) {
-          disp[i][j] = (double *)calloc(n_elec + 1, sizeof(*(disp[i][j])));
-          if (disp[i][j] == NULL) {
-            std::cout << "disp[" << i <<"][" << j 
-              << "] calloc didn't work" << std::endl;
-          }
-        }
-      }
-    }
-  }
-  disp[0][0][1] = 1.;
-  disp[1][0][1] = 1.;
-  disp[0][1][2] = 1.;
-  disp[1][1][2] = 1.;
-  disp[0][0][2] = 0.7;
-  disp[1][0][2] = 0.7;
-  disp[0][1][3] = 0.4;
-  disp[1][1][3] = 0.4;
+/*  size_t n_steps = 10000;*/
+/*  double ti = 0., tf = 10., dt = (tf - ti) / n_steps;*/
 
-  std::cout << "disp from array:  ";
-  for (size_t i = 0; i < n_normal; i++) {
-    for (size_t j = 0; j < n_elec + 1; j++) {
-      for (size_t k = 0; k < n_elec + 1; k++) {
-        std::cout << disp[i][j][k] << " ";
-      }
-    }
-  }
-  std::cout << std::endl;
-  
-  VERA lutein = VERA(n_elec, n_normal, n_vib,
-      beta, wi, n_elec + 1,
-      wnorm, n_normal,
-      licij, n_elec,
-      livri, n_elec,
-      gicij, n_elec,
-      givri, n_elec,
-      disp, n_normal, n_elec + 1, n_elec + 1
-      );
+/*  double t = ti, tout = dt;*/
+/*  double ysum = 0.;*/
 
-  for (size_t i = 0; i < n_normal; i++) {
-    for (size_t j = 0; j < n_elec + 1; j++) {
-      free(disp[i][j]);
-    }
-  }
-  for (size_t i = 0; i < n_elec; i++) {
-    free(gicij[i]);
-    free(licij[i]);
-    if (i < n_normal) {
-      free(disp[i]);
-    }
-  }
-  free(disp);
-  free(givri);
-  free(gicij);
-  free(livri);
-  free(licij);
-  free(wnorm);
-  free(wi);
+/*  for (size_t i = 0; i < n_steps; i++) {*/
 
-  std::cout << "disp from lutein: ";
-  for (size_t i = 0; i < n_normal; i++) {
-    for (size_t j = 0; j < n_elec + 1; j++) {
-      for (size_t k = 0; k < n_elec + 1; k++) {
-        std::cout << lutein.get_disp({i, j, k}) << " ";
-      }
-    }
-  }
-  std::cout << std::endl;
+/*    std::cout << t << ' ' << setprecision(8) << y[0] << ' '*/ 
+/*              << setprecision(8)*/ 
+/*              << y[sub2ind({1, 0, 0}, pop_extents)] << ' '*/ 
+/*              << setprecision(8)*/ 
+/*              << y[sub2ind({2, 0, 0}, pop_extents)] << ' '*/
+/*              << setprecision(8)*/ 
+/*              << y[sub2ind({0, 0, 1}, pop_extents)] << ' '*/ 
+/*              << setprecision(8)*/ 
+/*              << y[sub2ind({0, 1, 0}, pop_extents)] << ' '*/ 
+/*              << setprecision(8) << ysum*/
+/*              << std::endl;*/
 
-  /* std::cout << "disp from c:      "; */
-  /* for (size_t i = 0; i < n_normal; i++) { */
-  /*   for (size_t j = 0; j < n_elec + 1; j++) { */
-  /*     for (size_t k = 0; k < n_elec + 1; k++) { */
-  /*       std::cout << c.get_disp({i, j, k}) << " "; */
-  /*     } */
-  /*   } */
-  /* } */
-  /* std::cout << std::endl; */
+/*    ysum = 0.;*/
+/*    /1* 1.49e-8 is the default value for rtol and atol*/
+/*     * in scipy odeint (also uses LSODA by default).*/
+/*     * changing the tolerances doesn't make much*/
+/*     * difference though; i've tried up to about 1e-6 */ 
+/*    lsoda.lsoda_update(func, pop_total, y, yout,*/
+/*        &t, tout, &istate, data, 1.49e-8, 1.49e-8);*/
+/*    tout += dt;*/
 
-  /* return 0; */
+/*    for (size_t j = 0; j < pop_total; j++) {*/
+/*      y[j] = yout[j + 1];*/
+/*      ysum += y[j];*/
+/*    }*/
 
-  pulse pump = {
-    .type = GAUSSIAN,
-    .target_state = 2,
-    .amplitude = 100.,
-    .centre = 20000.,
-    .width = 10.,
-    .t_peak = 0.1,
-    .duration = 70.0E-3,
-  };
+/*    if (istate <= 0) {*/
+/*     std::cerr << "error istate = " <<  istate << std::endl;*/
+/*     throw runtime_error( "Failed to compute the solution." );*/
+/*    }*/
 
-  /* this should be available via c.get_n_extents() or something */
-  /* NB: this whole thing should be a method - calculate initial
-   * populations; only parameter is beta */
-  std::vector<size_t> pop_extents = {n_elec};
-  std::vector<size_t> vib_extents;
+/*  }*/
+/*  std::complex<double> elem(1.1, 2.2);*/
+/*  std::cout << elem.real() << " + " << elem.imag() << "i\n" << std::endl;*/
 
-  size_t pop_total = n_elec;
-  size_t vib_total = 1;
-  for (size_t i = 0; i < n_normal; i++) {
-    pop_extents.push_back(n_vib + 1);
-    vib_extents.push_back(n_vib + 1);
-    pop_total *= n_vib + 1;
-    vib_total *= n_vib + 1;
-  }
-  double *pop = (double *)calloc(pop_total, sizeof(double));
-  std::vector<double> n0(pop_total, 0.);
-  /* vec is because LSODA requires vector argument
-   * - this could maybe be fixed somehow with vector.data()? */
-  std::vector<double> y(pop_total, 0.);
+/*  free(pop);*/
+/*  free(vls);*/
 
-  for (size_t i = 0; i < vib_total; i++) {
-    std::vector<size_t> tot_subs(pop_extents.size(), 0);
-    std::vector<size_t> vib_subs(vib_extents.size(), 0);
-    vib_subs = ind2sub(i, vib_extents);
-    for (size_t j = 0; j < vib_subs.size(); j++) {
-      tot_subs[j + 1] = vib_subs[j];
-    }
-    size_t index = sub2ind(tot_subs, pop_extents);
-    n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), beta);
-    pop[index] = n0[index];
-    y[index] = pop[index];
-  }
+/*  chrono::steady_clock::time_point end = chrono::steady_clock::now();*/
+/*  std::cout << "|| Time taken (ms)= " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << std::endl;*/
 
-  /* for (size_t i = 0; i < pop_total; i++) { */
-  /*   fprintf(stdout, "%lu\t%18.10f\n", i, pop[i]); */
-  /* } */
+/*  return 0;*/
 
-  vera_lsoda_data *vls = (vera_lsoda_data *)malloc(sizeof(vera_lsoda_data));
-  vls->chromo = &lutein;
-  vls->pump = &pump;
-  void *data = (void *)vls;
-
-  LSODA lsoda;
-  std::vector<double> yout;
-  int istate = 1;
-
-  size_t n_steps = 10000;
-  double ti = 0., tf = 10., dt = (tf - ti) / n_steps;
-
-  double t = ti, tout = dt;
-  double ysum = 0.;
-
-
-  for (size_t i = 0; i < n_steps; i++) {
-
-    std::cout << t << ' ' << setprecision(8) << y[0] << ' ' 
-              << setprecision(8) 
-              << y[sub2ind({1, 0, 0}, pop_extents)] << ' ' 
-              << setprecision(8) 
-              << y[sub2ind({2, 0, 0}, pop_extents)] << ' '
-              << setprecision(8) 
-              << y[sub2ind({0, 0, 1}, pop_extents)] << ' ' 
-              << setprecision(8) 
-              << y[sub2ind({0, 1, 0}, pop_extents)] << ' ' 
-              << setprecision(8) << ysum
-              << std::endl;
-
-    ysum = 0.;
-    /* 1.49e-8 is the default value for rtol and atol
-     * in the scipy odeint, which also uses lsoda afaik.
-     * i was trying to match the output from that but
-     * the tolerances don't seem to make much difference? */
-    lsoda.lsoda_update(func, pop_total, y, yout,
-        &t, tout, &istate, data, 1.49e-8, 1.49e-8);
-    tout += dt;
-
-    for (size_t j = 0; j < pop_total; j++) {
-      y[j] = yout[j + 1];
-      ysum += y[j];
-    }
-    /* std::cout << "Step " << i << ": " << std::endl; */
-    /* if (fabs(ysum - 1.) > 1E-4) { */
-    /*   fprintf(stdout, "Sum of populations .ne. 1: ysum = %12.8f," */
-    /*       " step number = %5lu\n", ysum, i); */
-    /* } */
-
-    if (istate <= 0)
-    {
-       std::cerr << "error istate = " <<  istate << std::endl;
-       throw runtime_error( "Failed to compute the solution." );
-    }
-
-
-  }
-
-  free(pop);
-  free(vls);
-
-  chrono::steady_clock::time_point end = chrono::steady_clock::now();
-  std::cout << "|| Time taken (ms)= " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << std::endl;
-
-  return 0;
-
-}
+/*}*/
 
 #endif

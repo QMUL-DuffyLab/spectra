@@ -2,6 +2,7 @@ OBJDIR = obj
 EXEC = exec_spectra
 vpath %.o $(OBJDIR)/
 vpath %.c $(SRCDIR)/
+# vpath %.cpp $(SRCDIR)/
 
 UNAME := $(shell uname)
 ifneq ($(shell which git 2> /dev/null),)
@@ -30,10 +31,10 @@ ifeq ($(UNAME), Darwin)
 endif
 ifeq ($(UNAME), Linux)
 	LIBRARIES = -lm -lgsl -lgslcblas -lfftw3 -llapacke -lmpi -L/usr/lib
-	INCLUDES = -I/usr/include
-	CFLAGS = -Wall -Wextra -std=gnu99 $(DEBUGFLAG) $(INCLUDES)
-	LFLAGS = -Wall -Wextra -std=gnu99 $(DEBUGFLAG) $(LIBRARIES)
-	CC = mpicc
+	INCLUDES = -I/usr/include -I/usr/include/c++
+	CFLAGS = -Wall -Wextra -std=c++11 $(DEBUGFLAG) $(INCLUDES)
+	LFLAGS = -Wall -Wextra -std=c++11 $(DEBUGFLAG) $(LIBRARIES)
+	CC = g++
 endif
 
 SOURCES = ./src/input.c \
@@ -42,14 +43,21 @@ SOURCES = ./src/input.c \
 	  ./src/fluorescence.c \
 	  ./src/steady_state.c \
 	  ./src/spectra.c \
+	  ./src/LSODA.cpp \
+	  ./src/vera.cpp \
 	  ../lineshape/src/parameters.c \
 	  ../lineshape/src/functions.c
 
 VPATH := $(sort $(dir $(SOURCES)))
 OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(notdir $(SOURCES)))
+OBJECTS := $(patsubst %.cpp, $(OBJDIR)/%.o, $(OBJECTS))
 
 # the "common" object files
 $(OBJDIR)/%.o : %.c
+	@echo "creating $@ ..."
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/%.o : %.cpp
 	@echo "creating $@ ..."
 	$(CC) $(CFLAGS) -c -o $@ $<
 

@@ -80,10 +80,10 @@ invert_matrix_oop(unsigned n, double** in, double** out)
 {
   lapack_int info, lda;
   lapack_int* ipiv;
-  double *contiguous = calloc(n * n, sizeof(double));
+  double *contiguous = (double *)calloc(n * n, sizeof(double));
   interchange_2d_contiguous('F', n, in, contiguous); 
 
-  ipiv = calloc(n, sizeof(lapack_int));
+  ipiv = (lapack_int*)calloc(n, sizeof(lapack_int));
   lda = n;
 
   info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, contiguous, lda, ipiv);
@@ -116,9 +116,9 @@ invert_matrix_ip(unsigned n, double** inout)
 {
   lapack_int info, lda;
   lapack_int* ipiv;
-  double *contiguous = calloc(n * n, sizeof(double));
+  double *contiguous = (double *)calloc(n * n, sizeof(double));
 
-  ipiv = calloc(n, sizeof(lapack_int));
+  ipiv = (lapack_int *)calloc(n, sizeof(lapack_int));
   lda = n;
   interchange_2d_contiguous('F', n, inout, contiguous);
 
@@ -138,6 +138,8 @@ invert_matrix_ip(unsigned n, double** inout)
   }
   info = LAPACKE_dgetri(LAPACK_ROW_MAJOR, n, contiguous, lda, ipiv);
   interchange_2d_contiguous('B', n, inout, contiguous);
+  free(ipiv);
+  free(contiguous);
   return info;
 }
 
@@ -154,11 +156,11 @@ eig_oop(unsigned n, double** in, double** out, double* eigvals)
   lapack_int info, lda, ldvl, ldvr;
   unsigned i;
   double *wr, *wi, *vl;
-  double *contiguous = calloc(n * n, sizeof(double));
-  double *vr = calloc(n * n, sizeof(double));
-  wr = calloc(n, sizeof(double));
-  wi = calloc(n, sizeof(double));
-  vl = calloc(n * n, sizeof(double));
+  double *contiguous = (double *)calloc(n * n, sizeof(double));
+  double *vr = (double *)calloc(n * n, sizeof(double));
+  wr = (double *)calloc(n, sizeof(double));
+  wi = (double *)calloc(n, sizeof(double));
+  vl = (double *)calloc(n * n, sizeof(double));
   lda = n;
   ldvl = n; ldvr = n;
   interchange_2d_contiguous('F', n, in, contiguous);
@@ -185,11 +187,11 @@ eig_ip(unsigned n, double** inout, double* eigvals)
   lapack_int info, lda, ldvl, ldvr;
   unsigned i;
   double *wr, *wi, *vl;
-  double *contiguous = calloc(n * n, sizeof(double));
-  double *vr = calloc(n * n, sizeof(double));
-  wr = calloc(n, sizeof(double));
-  wi = calloc(n, sizeof(double));
-  vl = calloc(n * n, sizeof(double));
+  double *contiguous = (double *)calloc(n * n, sizeof(double));
+  double *vr = (double *)calloc(n * n, sizeof(double));
+  wr = (double *)calloc(n, sizeof(double));
+  wi = (double *)calloc(n, sizeof(double));
+  vl = (double *)calloc(n * n, sizeof(double));
   lda = n;
   ldvl = n; ldvr = n;
   interchange_2d_contiguous('F', n, inout, contiguous);

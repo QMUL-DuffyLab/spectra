@@ -1,5 +1,12 @@
 #include <string.h>
+#include <cmath>
 #include "input.h"
+#include <complex.h>
+#ifdef __cplusplus
+  typedef std::complex<double> cdouble;
+#else
+  typedef double _Complex cdouble;
+#endif
 
 /** Reads in the output from the fortran code, returns Input struct.
  *
@@ -38,7 +45,7 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     N = atoi(line);
     /* now we know how much space we need for the list of g_is */
-    p = malloc(sizeof(Input) + N * 200 * sizeof(char));
+    p = (Input *)malloc(sizeof(Input) + N * 200 * sizeof(char));
     p->N = N;
     fgets(line, 199, fp);
     p->tau = atoi(line);
@@ -72,7 +79,7 @@ read_input_file(char* filename)
     for (i = 0; i < p->N; i++) {
       fgets(line, 199, fp);
       line[strcspn(line, "\n")] = 0;
-      p->gi_files[i] = strndup(line, 200);
+      memcpy(p->gi_files[i], line, strlen(line) + 1);
     }
   }
   return p;
@@ -90,7 +97,7 @@ read(char *input_file, unsigned int N)
   FILE *fp;
   char line[200];
   unsigned int i;
-  arr = calloc(N, sizeof(double));
+  arr = (double *)calloc(N, sizeof(double));
 
   fp = fopen(input_file, "r");
   if (fp == NULL) {
@@ -124,11 +131,11 @@ read_mu(char *input_file, unsigned int N)
   char *token;
   unsigned int i, token_size;
   token_size = 20;
-  mu = calloc(N, sizeof(double));
-  token = malloc(token_size * sizeof(char));
+  mu    = (double **)calloc(N, sizeof(double));
+  token = (char *)malloc(token_size * sizeof(char));
 
   for (i = 0; i < N; i++) {
-    mu[i] = calloc(3, sizeof(double));
+    mu[i] = (double *)calloc(3, sizeof(double));
   }
 
   fp = fopen(input_file, "r");
@@ -168,12 +175,12 @@ read_eigvecs(char *input_file, unsigned int N)
   FILE *fp;
   unsigned int i, j;
   char *token;
-  eig = calloc(N, sizeof(double*));
+  eig = (double **)calloc(N, sizeof(double*));
   for (unsigned int i = 0; i < N; i++) {
-    eig[i] = calloc(N, sizeof(double));
+    eig[i] = (double *)calloc(N, sizeof(double));
   }
   j = 0;
-  token = malloc(22 * sizeof(char));
+  token = (char *)malloc(22 * sizeof(char));
 
   fp = fopen(input_file, "r");
   if (fp == NULL) {
@@ -210,17 +217,22 @@ read_eigvecs(char *input_file, unsigned int N)
  * it generates gi[i][j], where \f$ i \in 0 \rightarrow N - 1 \f$, 
  * \f$ j \in 0 \rightarrow \tau - 1 \f$ .
  */
-double complex**
+/* double _Complex** */
+fftw_complex**
 read_gi(char *input_files[], 
     unsigned int N, unsigned int tau)
 {
-  double complex **gi;
+  fftw_complex** gi;
   FILE *fp;
   unsigned int i, j;
   double real, imag;
-  gi = calloc(N, sizeof(double complex*));
+  gi = (fftw_complex**) fftw_malloc(
+        sizeof(fftw_complex*) * N);
+  /* gi = (double _Complex**)calloc(N, sizeof(double _Complex*)); */
   for (unsigned int i = 0; i < N; i++) {
-    gi[i] = calloc(tau, sizeof(double complex));
+    /* gi[i] = (double _Complex*)calloc(tau, sizeof(double _Complex)); */
+    gi[i] = (fftw_complex*) fftw_malloc(
+          sizeof(fftw_complex) * tau);
   }
   j = 0;
 
@@ -240,7 +252,21 @@ read_gi(char *input_files[],
               " line number %d\n", cl, j);
           exit(EXIT_FAILURE);
         }
-        gi[i][j] = (real + I * imag);
+        /*
+        * compiling with g++ to get the VERA C++ code to work
+        * with everything else breaks this line because (I guess)
+        * of differences between the C and C++ implementations
+        * of complex numbers? even though they're both supposed to
+        * just be two doubles? fuck sake. why is it like this.
+        * **FORTRAN** is more user friendly than this and it was
+        * pretty much invented on stone tablets!!!
+        */
+        /* std::complex<double> elem(real, imag); */
+        /* gi[i][j] = reinterpret_cast<double(&)[2]>(elem); */
+        gi[i][j][0] = real;
+        gi[i][j][1] = imag;
+        /* fprintf(stdout, "%10.6f\t%10.6f\n", */
+        /*         creal(gi[i][j]), cimag(gi[i][j])); */
       }
     }
     fclose(fp);

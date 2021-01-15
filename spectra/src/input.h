@@ -4,6 +4,7 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <fftw3.h>
 #include "../../lineshape/src/parameters.h"
 #include "../../lineshape/src/functions.h"
 
@@ -51,8 +52,10 @@ Input* read_input_file(char* filename);
 double* read(char *input_file, unsigned int N);
 double** read_mu(char *input_file, unsigned int N);
 double** read_eigvecs(char *input_file, unsigned int N);
-double _Complex** read_gi(char *input_files[], 
+fftw_complex** read_gi(char *input_files[], 
 		 unsigned int N, unsigned int tau);
+/* double _Complex** read_gi(char *input_files[], */ 
+/* 		 unsigned int N, unsigned int tau); */
 int generate_filename(unsigned size, char *src,
                        char *find, char *replace);
 
