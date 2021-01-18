@@ -292,4 +292,88 @@ module aux
 
     end function normalise_dipoles
 
+    function pick_chls(gnt_files, unique_pigments)&
+        result(chl_indices)
+      implicit none
+      ! real(dp), dimension(:,:), intent(in) :: Jij
+      character(100), dimension(:) :: gnt_files
+      character(3), dimension(:) :: unique_pigments
+      integer :: i, n, n_chl, unique_index
+      integer, dimension(:), allocatable :: chl_indices
+      n_chl = 0
+      do i = 1, n
+        unique_index = which_pigment(gnt_files, unique_pigments, i)
+        if (unique_pigments(unique_index).eq."CHL") then
+          n_chl = n_chl + 1
+        else if (unique_pigments(unique_index).eq."CLA") then
+          n_chl = n_chl + 1
+        end if
+      end do
+      allocate(chl_indices(n_chl))
+
+      chl_indices = 0
+      do i = 1, n
+        unique_index = which_pigment(gnt_files, unique_pigments, i)
+        if (unique_pigments(unique_index).eq."CHL") then
+          chl_indices(i) = i
+        else if (unique_pigments(unique_index).eq."CLA") then
+          chl_indices(i) = i
+        end if
+      end do
+
+    end function pick_chls
+
+    ! note - this currently modifies the Jij passed to it.
+    ! alternatively could give it another argument Jij_new
+    ! and keep the pre-Redfield couplings as well.
+    subroutine block_diag(Jij, indices, bloc, eigvals)
+      implicit none
+      real(dp), dimension(:,:) :: Jij
+      integer, dimension(:) :: indices
+      real(dp), dimension(:,:), allocatable :: bloc, redfield_jij
+      real(dp) :: r, elem
+      real(dp), dimension(:), allocatable :: work, eigvals
+      integer :: i, j, k, n, block_size, info
+      n = floor(sqrt(size(Jij)+0.001)) ! prob don't need the 0.001 but
+      block_size = size(indices)
+      allocate(redfield_jij(n, n))
+      ! allocate(bloc(block_size, block_size))
+
+      if (allocated(bloc)) then
+        do i = lbound(bloc, 1), ubound(bloc, 1)
+          do j = lbound(bloc, 2), ubound(bloc, 2)
+            bloc(i, j) = Jij(indices(i), indices(j))
+          end do
+        end do
+        
+        call dsyev('V', 'U', block_size, bloc, block_size,&
+                    eigvals, r, -1, info)
+        allocate(work(int(r)))
+        call dsyev('V', 'U', block_size, bloc, block_size,&
+                    eigvals, work, int(r), info)
+        if (info.ne.0) then
+          write(*, *) "diagonalisation of chl block failed."
+          write(*, *) "Info = ", info
+          do i = 1, block_size
+            do j = 1, block_size
+              bloc(i, j) = 0.0_dp
+            end do
+          end do
+        end if
+
+        do i = 1, block_size
+          do j = 1, block_size
+            elem = 0.0_dp
+            do k = 1, block_size
+              elem = elem + bloc(i, k)**2 * Jij(indices(k), indices(j))
+            end do
+            Jij(indices(i), indices(j)) = elem
+          end do
+        end do
+      else
+        write (*,*) "block array not allocated for block_diag"
+      end if
+
+    end subroutine block_diag
+
 end module aux
