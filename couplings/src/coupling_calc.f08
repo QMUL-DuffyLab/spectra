@@ -15,15 +15,16 @@ program coupling_calc
   character(5) :: atom_code, pigment_code
   character(100), dimension(:), allocatable :: coord_files,&
     gnt_files
-  integer :: i, j, k, coord_stat, control_len, tau,&
+  integer :: i, j, k, control_len, tau,&
     num_unique_pigments, unique_index
-  integer, dimension(:), allocatable :: coord_lengths, pigment_counts
+  integer, dimension(:), allocatable :: coord_lengths, pigment_counts,&
+    block_indices
   real :: start_time, end_time
   real(dp) :: r, e2kb, kc, temperature, d_raw, ratio
-  real(dp), dimension(:), allocatable :: work, eigvals, ei, lambda,&
-    lifetimes, dipoles, raw_osc, norm_osc, osc_check
+  real(dp), dimension(:), allocatable :: eigvals, ei, lambda,&
+    lifetimes, dipoles, raw_osc, norm_osc, osc_check, block_eigvals
   real(dp), dimension(:,:), allocatable :: coords_i, coords_j,&
-    Jij, Jeig, mu, mu_ex, r_charge, kappa, theta
+    Jij, Jeig, mu, mu_ex, r_charge, kappa, theta, bloc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
@@ -255,6 +256,39 @@ program coupling_calc
     end do
   end do
 
+  Jij = Jij * e2kb * kc
+
+  ! can do away with the final part once this works
+  block_indices = pick_chls(gnt_files, unique_pigments, control_len)
+  ! alternatively, could go back to all Redfield approach by doing
+  ! allocate(block_indices(control_len))
+  ! forall(j = 1:control_len) block_indices(j) = j
+
+  allocate(bloc(size(block_indices), size(block_indices)))
+  allocate(block_eigvals(size(block_indices)))
+  call block_diag(Jij, block_indices, bloc, block_eigvals)
+  do i = 1, size(block_indices)
+    write(*, '(14F10.6)') bloc(i, :)
+  end do
+  do i = 1, size(block_indices)
+    write(*, '(I4, F10.3)') i, block_eigvals(i)
+  end do
+
+  ! set Jeig to the identity
+  Jeig = 0.0_dp
+  eigvals = ei
+  forall(j = 1:control_len) Jeig(j, j) = 1.0_dp
+  ! now overwite the Redfield block with the diagonalised bit
+  ! i think the block_indices(i) is correct??
+  do i = 1, size(block_indices)
+    eigvals(block_indices(i)) = block_eigvals(i)
+    do j = 1, size(block_indices)
+      Jeig(block_indices(i), j) = bloc(i, j)
+    end do
+  end do
+  deallocate(bloc)
+  deallocate(block_eigvals)
+  deallocate(block_indices)
 
   norm_osc = normalise_dipoles(raw_osc, pigment_counts)
   allocate(osc_check(num_unique_pigments))
@@ -285,9 +319,6 @@ program coupling_calc
     end do
   end if
 
-  Jij = Jij * e2kb * kc
-  Jeig = Jij
-
   if (print_jij) then
     write(*,*) Jij
   end if
@@ -295,17 +326,17 @@ program coupling_calc
   ! DSYEV does eigendecomposition of a real symmetric matrix
   ! this first one is the query: find optimal size of work array
   ! using lwork = -1 sets r to the optimal work size
-  call dsyev('V', 'U', control_len, Jeig, control_len,&
-              eigvals, r, -1, coord_stat)
-  if (verbose) then
-    write(*,*) "Optimal size of work array = ", int(r)
-  end if
-  allocate(work(int(r)))
-  call dsyev('V', 'U', control_len, Jeig, control_len,&
-              eigvals, work, int(r), coord_stat)
-  if (verbose) then
-    write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
-  end if
+  ! call dsyev('V', 'U', control_len, Jeig, control_len,&
+  !             eigvals, r, -1, coord_stat)
+  ! if (verbose) then
+  !   write(*,*) "Optimal size of work array = ", int(r)
+  ! end if
+  ! allocate(work(int(r)))
+  ! call dsyev('V', 'U', control_len, Jeig, control_len,&
+  !             eigvals, work, int(r), coord_stat)
+  ! if (verbose) then
+  !   write(*,*) "LAPACK INFO (should be 0) = ", coord_stat
+  ! end if
 
   if (print_jij_diag) then
     ! write(*,*) mu
@@ -405,7 +436,6 @@ program coupling_calc
   deallocate(Jeig)
   deallocate(kappa)
   deallocate(theta)
-  deallocate(work)
   deallocate(eigvals)
   deallocate(ei)
   deallocate(mu)

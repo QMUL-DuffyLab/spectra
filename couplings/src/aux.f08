@@ -292,7 +292,7 @@ module aux
 
     end function normalise_dipoles
 
-    function pick_chls(gnt_files, unique_pigments)&
+    function pick_chls(gnt_files, unique_pigments, n)&
         result(chl_indices)
       implicit none
       ! real(dp), dimension(:,:), intent(in) :: Jij
@@ -301,25 +301,31 @@ module aux
       integer :: i, n, n_chl, unique_index
       integer, dimension(:), allocatable :: chl_indices
       n_chl = 0
+
       do i = 1, n
         unique_index = which_pigment(gnt_files, unique_pigments, i)
-        if (unique_pigments(unique_index).eq."CHL") then
+        if (index(unique_pigments(unique_index), "CLA").ne.0) then
           n_chl = n_chl + 1
-        else if (unique_pigments(unique_index).eq."CLA") then
+        else if (index(unique_pigments(unique_index), "CHL").ne.0) then
           n_chl = n_chl + 1
         end if
       end do
+
       allocate(chl_indices(n_chl))
 
-      chl_indices = 0
-      do i = 1, n
-        unique_index = which_pigment(gnt_files, unique_pigments, i)
-        if (unique_pigments(unique_index).eq."CHL") then
-          chl_indices(i) = i
-        else if (unique_pigments(unique_index).eq."CLA") then
-          chl_indices(i) = i
-        end if
-      end do
+      if (allocated(chl_indices)) then
+        chl_indices = 0
+        do i = 1, n
+          unique_index = which_pigment(gnt_files, unique_pigments, i)
+          if (index(unique_pigments(unique_index), "CLA").ne.0) then
+            chl_indices(i) = i
+          else if (index(unique_pigments(unique_index), "CHL").ne.0) then
+            chl_indices(i) = i
+          end if
+        end do
+      else
+        write(*,*) "chl_incides not allocated"
+      end if
 
     end function pick_chls
 
@@ -331,9 +337,9 @@ module aux
       real(dp), dimension(:,:) :: Jij
       integer, dimension(:) :: indices
       real(dp), dimension(:,:), allocatable :: bloc, redfield_jij
-      real(dp) :: r, elem
+      real(dp) :: r
       real(dp), dimension(:), allocatable :: work, eigvals
-      integer :: i, j, k, n, block_size, info
+      integer :: i, j, n, block_size, info
       n = floor(sqrt(size(Jij)+0.001)) ! prob don't need the 0.001 but
       block_size = size(indices)
       allocate(redfield_jij(n, n))
@@ -361,18 +367,21 @@ module aux
           end do
         end if
 
-        do i = 1, block_size
-          do j = 1, block_size
-            elem = 0.0_dp
-            do k = 1, block_size
-              elem = elem + bloc(i, k)**2 * Jij(indices(k), indices(j))
-            end do
-            Jij(indices(i), indices(j)) = elem
-          end do
-        end do
+        ! note - we could modify the couplings here. might be more
+        ! consistent to do do!!
+        ! do i = 1, block_size
+        !   do j = 1, block_size
+        !     elem = 0.0_dp
+        !     do k = 1, block_size
+        !       elem = elem + bloc(i, k)**2 * Jij(indices(k), indices(j))
+        !     end do
+        !     Jij(indices(i), indices(j)) = elem
+        !   end do
+        ! end do
       else
         write (*,*) "block array not allocated for block_diag"
       end if
+      deallocate(work)
 
     end subroutine block_diag
 
