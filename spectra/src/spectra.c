@@ -1,11 +1,12 @@
-#include "input.h"
-#include "steady_state.h"
-#include "forster.h"
 #include <fftw3.h>
 #include <stdio.h>
 #include <cmath>
 #include <complex>
 #include <gsl/gsl_eigen.h>
+#include "input.h"
+#include "steady_state.h"
+#include "forster.h"
+#include "vera.h"
 
 int
 main(int argc, char** argv)
@@ -77,11 +78,11 @@ main(int argc, char** argv)
   mu              = (double **)calloc(p->N, sizeof(double*));
   gi_array        = (fftw_complex**)
                     fftw_malloc(p->N * sizeof(fftw_complex*));
-  eig             = ( double **)calloc(p->N, sizeof(double*));
-  wij             = ( double **)calloc(p->N, sizeof(double*));
-  kij             = ( double **)calloc(p->N, sizeof(double*));
-  Jij             = ( double **)calloc(p->N, sizeof(double*));
-  chiw            = ( double **)calloc(p->N, sizeof(double*));
+  eig             = (double **)calloc(p->N, sizeof(double*));
+  wij             = (double **)calloc(p->N, sizeof(double*));
+  kij             = (double **)calloc(p->N, sizeof(double*));
+  Jij             = (double **)calloc(p->N, sizeof(double*));
+  chiw            = (double **)calloc(p->N, sizeof(double*));
   pump            = (double **)calloc(p->N, sizeof(double*));
                       
   for (i = 0; i < p-> N; i++) {
@@ -171,7 +172,6 @@ main(int argc, char** argv)
       /*            (double)j * TOFS, */
       /*            1. / (1000000. * gamma[i]))[1]; */
     }
-    free(Atv);
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < p->tau; j++) {
@@ -184,6 +184,8 @@ main(int argc, char** argv)
     chiw_ints[i] = trapezoid(chi_p, p->tau);
 
   }
+  free(Atv);
+  free(ww);
 
   fprintf(stdout, "\nWriting A(w) file\n");
   fp = fopen(p->aw_file, "w");
@@ -316,6 +318,7 @@ main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
   }
+  free(boltz); 
 
   /* fluorescence spectrum */
   /* need to zero the running integral before FFT! */
@@ -335,7 +338,6 @@ main(int argc, char** argv)
       /*         lambda[i], (double)j * TOFS, */
       /*         1. / (1000000. * gamma[i]))[1]; */
     }
-    free(Ftv);
 
     fftw_execute(plan); 
     for (unsigned int j = 0; j < p->tau; j++) {
@@ -344,6 +346,7 @@ main(int argc, char** argv)
     }
 
   }
+  free(Ftv);
 
   fftw_free(out); fftw_free(in);
   fftw_destroy_plan(plan);
@@ -492,12 +495,11 @@ main(int argc, char** argv)
   fprintf(stdout, "610-620 Forster rate = %8.6e => %12.8f ps\n",
           k_610_620, 1. / k_610_620);
 
-  fftw_cleanup();
 
   /* deallocations of 2d stuff */
   for (i = 0; i < p->N; i++) {
     free_chromophore(cs[i]);
-    free(gi_array[i]);
+    fftw_free(gi_array[i]);
     free(Tij_vr[i]);
     free(Tij_vr_inv[i]);
     free(Tij_wr[i]);
@@ -509,13 +511,32 @@ main(int argc, char** argv)
     free(Jij[i]);
     free(chiw[i]);
     free(pump[i]);
+    free(odep.Tij[i]);
+  }
+  /* free(gi_array); */
+  free(mu);
+  free(eig);
+  free(wij);
+  free(kij); 
+  free(odep.Tij);
+  free(pt);
+  free(pt_prev);
+
+  fftw_free(gi_array);
+  fftw_cleanup();
+
+  free(p0); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
+  free(line); free(lineshape_files); free(integral);
+  free(eigvals); free(gamma); free(lambda);
+  free(line_params);
+  free(y); free(f); free(yprev); free(rates);
+  free(Jij); free(chiw); free(pump); free(chiw_ints);
+  free(p);
+
+  VERA vera = create_VERA_from_file("in/vera_params.dat");
+  for (unsigned i = 0; i < 4; i++) {
+    fprintf(stdout, "i = %2d, w_i = %10.3f\n", i, vera.get_w_elec(i));
   }
 
-  free(p0); free(pt); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
-  free(line); free(lineshape_files); free(integral);
-  free(gi_array); free(eigvals); free(gamma); free(lambda); free(mu);
-  free(eig); free(wij); free(kij); free(p); free(line_params);
-  free(y); free(f); free(boltz); free(yprev); free(rates);
-  free(ww); free(Jij); free(chiw); free(pump); free(chiw_ints);
   exit(EXIT_SUCCESS);
 }

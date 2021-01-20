@@ -2,11 +2,6 @@
 #include <cmath>
 #include "input.h"
 #include <complex.h>
-#ifdef __cplusplus
-  typedef std::complex<double> cdouble;
-#else
-  typedef double _Complex cdouble;
-#endif
 
 /** Reads in the output from the fortran code, returns Input struct.
  *
@@ -45,7 +40,7 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     N = atoi(line);
     /* now we know how much space we need for the list of g_is */
-    p = (Input *)malloc(sizeof(Input) + N * 200 * sizeof(char));
+    p = (Input *)malloc(sizeof(Input) + N * sizeof(char));
     p->N = N;
     fgets(line, 199, fp);
     p->tau = atoi(line);
@@ -78,10 +73,12 @@ read_input_file(char* filename)
     strcpy(p->pop_file, line);
     for (i = 0; i < p->N; i++) {
       fgets(line, 199, fp);
-      line[strcspn(line, "\n")] = 0;
-      memcpy(p->gi_files[i], line, strlen(line) + 1);
+      int newline = strcspn(line, "\n");
+      line[newline] = 0;
+      memcpy(p->gi_files[i], line, newline + 1);
     }
   }
+  fclose(fp);
   return p;
 }
 
@@ -218,8 +215,9 @@ read_eigvecs(char *input_file, unsigned int N)
  * \f$ j \in 0 \rightarrow \tau - 1 \f$ .
  */
 /* double _Complex** */
+/* this is ugly - the hardcoded [200]. disgusting. i hate C++ */
 fftw_complex**
-read_gi(char *input_files[], 
+read_gi(char input_files[N_MAX][200], 
     unsigned int N, unsigned int tau)
 {
   fftw_complex** gi;

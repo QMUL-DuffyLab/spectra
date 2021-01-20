@@ -138,7 +138,11 @@ c_n(double w, void* params)
    * enters in the Redfield rate equations for k_{ij} */
   Parameters *p = (Parameters *) params;
   double hbeta = 1.439 / p->T;
-  return (1. + (1. / tanh(0.5 * w * hbeta))) * p->cw(w, p);
+  if (w == 0.0) {
+    return 0.0; /* otherwise tanh = 0 and it blows up */
+  } else {
+    return (1. + (1. / tanh(0.5 * w * hbeta))) * p->cw(w, p);
+  }
 }
 
 /* the integral for g(t) includes the spectral density function,

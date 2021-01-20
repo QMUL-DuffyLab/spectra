@@ -1,57 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <vector>
-#include <cmath>
-#include <chrono>
-#include <cstdlib>
-#include <stdlib.h>
-#include "helper.h"
-#include "LSODA.h"
-#include "forster.h"
-#include "steady_state.h"
-
-#ifndef __VERA_H__
-#define __VERA_H__
-
-/* this stuff is from elsewhere - i want this to compile on its own lol
- * worry about this stuff later */
-
-#define CVAC 299792458.0
-/* #define CM_PER_PS (200. * M_PI * CVAC * 1E-12) */
-/* typedef enum pulse_type { */
-/*   FLAT = 0, */
-/*   LORENTZIAN = 1, */
-/*   GAUSSIAN = 2, */
-/*   DELTA = 3, */
-/* } pulse_type; */
-
-/* typedef struct pulse { */
-/*   pulse_type type; */
-/*   size_t target_state; */
-/*   double amplitude; */
-/*   double centre; */
-/*   double width; */
-/*   double t_peak; */
-/*   double duration; */
-/* } pulse; */
-
-/* double */
-/* intensity(double w, double t, pulse p) */
-/* { */
-/*   double sigma, f; */
-/*   double gamma = 1./(2. * p.duration) */
-/*                * pow(1./cosh((t - p.t_peak)/p.duration), 2.); */
-/*   if (p.type == GAUSSIAN) { */
-/*     sigma = p.width / (2. * sqrt(2. * log(2.))); */
-/*     f = exp(-1. * pow(w - p.centre, 2.) / (2. * pow(sigma, 2.))) */
-/*       * (1. / (sigma * sqrt(2. * M_PI))); */
-/*     return p.amplitude * f * gamma; */
-/*   } else { */
-/*     /1* not done this yet lol *1/ */
-/*     return NAN; */
-/*   } */
-/* } */
+#include "vera.h"
 
 /* this could be replaced with the existing cw_obo but
  * would require something like (void *) params etc. */
@@ -64,6 +11,27 @@ C_OBO(double w, double l, double g)
     return 0.0;
   }
 }
+
+double thermal_osc(std::vector<size_t> a,
+                   std::vector<double> w_alpha, double beta)
+{
+  double eps_a = 0.;
+  if (a.size() != w_alpha.size()) {
+    std::cerr << "thermal_osc error: number of quantum numbers a = "
+      << a.size() << ", number of normal modes = " << w_alpha.size()
+      << ", should be identical." << std::endl;
+  }
+  for (size_t i = 0; i < a.size(); i++) {
+    eps_a += w_alpha[i] * (a[i] + 0.5);
+  }
+  double n_a = exp(- beta * eps_a);
+  double Z = 1.;
+  for (size_t i = 0; i < w_alpha.size(); i++) {
+    Z *= exp(-0.5 * beta * w_alpha[i]) / (1 - exp(- beta * w_alpha[i]));
+  }
+  return n_a / Z;
+}
+
 
 /** convert a set of tensor subscripts to a flattened index.
  *
@@ -151,102 +119,220 @@ ind2sub(size_t index, std::vector<size_t> extents)
   return subscripts;
 }
 
-class VERA {
-  public:
-    VERA(size_t elec, size_t norm, size_t vib,
-                double beta,
-                double* wi, size_t n_wi,
-                double* w_mode, size_t n_mode,
-                double** l_ic, size_t side_l,
-                double* l_ivr, size_t n_l,
-                double** g_ic, size_t side_g,
-                double* g_ivr, size_t n_g,
-                double*** di, size_t n_mode_di, size_t e_l, size_t e_u
-                );
-    VERA(size_t elec, size_t norm, size_t vib,
-                double beta,
-                std::vector<double> w_elec,
-                std::vector<double> w_mode,
-                std::vector<double> l_ic,
-                std::vector<double> l_ivr,
-                std::vector<double> g_ic,
-                std::vector<double> g_ivr,
-                std::vector<double> di
-                );
-    /* this needs changing - should the set functions be public? */
-    void set_extents();
-    void set_w_elec(double* wi, size_t n_wi);
-    void set_w_elec(std::vector<double> wi);
-    void set_w_normal(double* w_mode, size_t n_mode);
-    void set_w_normal(std::vector<double> w_mode);
-    void set_l_ic_ij(double** l_ic, size_t size);
-    void set_l_ic_ij(std::vector<double> l_ic);
-    void set_l_ivr_i(double* l_ivr, size_t n);
-    void set_l_ivr_i(std::vector<double> l_ivr);
-    void set_g_ic_ij(double** g_ic, size_t size);
-    void set_g_ic_ij(std::vector<double> g_ic);
-    void set_g_ivr_i(double* g_ivr, size_t n);
-    void set_g_ivr_i(std::vector<double> g_ivr);
-    void set_disp(double*** di, size_t n_mode, size_t e_l, size_t e_u);
-    void set_disp(std::vector<double> di);
-    void fc_calc();
-    void set_k_ivr(double beta);
-    void set_k_ic(double beta);
-    std::vector<double> dndt(double *population,
-                             double t, pulse pump);
-    double get_w_elec(size_t i);
-    double get_w_normal(size_t i);
-    std::vector<double> get_w_normal();
-    double get_w_vib(size_t i);
-    double get_l_ic_ij(size_t i, size_t j);
-    double get_l_ivr_i(size_t i);
-    double get_g_ic_ij(size_t i, size_t j);
-    double get_g_ivr_i(size_t i);
-    /* The indexing is disp[mode][elec_lower][elec_upper] */
-    double get_disp(std::vector<size_t> subscripts);
-    double get_fc(std::vector<size_t> subscripts);
-    void get_k_ivr(double beta, size_t elec, size_t norm);
-    size_t n_elec;
-    size_t n_normal;
-    size_t n_vib;
-    double beta;
+/** Vibrational relaxation rates on the same mode/electronic state. 
+ *
+ * wrapper function because we'll use this multiple times.
+ * Computed by (secular, Markovian) Redfield theory.
+ * w is the frequency (e.g of normal mode or energy gap between states).
+ * lambda and gamma are parameters for the spectral density.
+ *
+ */
+double
+k_calc(double w, double beta, double lambda, double gamma)
+{
+  return C_OBO(w, lambda, gamma) * ((1.0 / tanh(0.5 * beta * w)) + 1);
+}
 
-  private:
-    std::vector<size_t> extents;
-    std::vector<size_t> ivr_extents;
-    std::vector<size_t> ic_extents;
-    std::vector<size_t> disp_extents;
-    std::vector<size_t> fc_extents;
-    std::vector<size_t> population_extents;
-    std::vector<double> w_elec;
-    std::vector<double> w_normal;
-    /* std::vector<double> w_vib; */
-    /** \lambda_ic_ij
-     *
-     * Reorganisation energy for interconversion from electronic state j -> i.
-     * Doesn't need to include transitions from S_n.
-     */
-    std::vector<double> l_ic_ij;
-    /** \lambda_ivr_i
-     *
-     * Reorganisation energy for Intramolecular Vibrational Redistribution
-     * on a single electronic state. This does not need to include Sn
-     */
-    std::vector<double> l_ivr_i;
-    /** G^{IC}_{ij}, G^{IVR}_{i}
-     *
-     * Damping times for IC and IVR (in fs) for IC from electronic state j -> i. 
-     * Convert to wavenumbers later.
-     * They are assumed to be identical for each normal
-     * mode, and again we don't need to include S_n.
-    */
-    std::vector<double> g_ic_ij;
-    std::vector<double> g_ivr_i;
-    std::vector<double> disp;
-    std::vector<double> fc;
-    std::vector<double> k_ivr; /* rates for IVR */
-    std::vector<double> k_ic;  /* rates for IC */
-};
+/** Interconversion rate between vibronic states on different manifolds.
+ *
+ * e_ij and w_e are 2-vectors; e_ij[0] is state i, e_ij[1] is state j.
+ * w_e are their respective energies.
+ * a and b are tuples of vibrational quantum numbers on each normal mode
+ * and w_alpha are the frequencies of the normal modes - these should all
+ * have .size() == n_normal.
+ */
+double 
+k_inter(std::vector<size_t> e_ij,
+    std::vector<size_t> a, std::vector<size_t> b,
+    std::vector<double> w_e, std::vector<double> w_alpha,
+    double beta, double lambda, double gamma)
+{
+  double k;
+  double w_ab = 0.;
+  if ((a.size() != b.size()) || (a.size() != w_alpha.size())) {
+    std::cerr << "size mismatch in k_inter: a.size() = "
+      << a.size() << ", b.size() = " << b.size()
+      << ", w_alpha.size() = " << w_alpha.size() << std::endl;
+  }
+  for (size_t i = 0; i < a.size(); i++) {
+    /* note - casting int here might be a problem if
+     * a[i] or b[i] get very large. but i think we're fine */
+    w_ab += (w_alpha[i] * (int)(a[i] - b[i]));
+  }
+  double w_ij = fabs(w_e[0] - w_e[1]);
+  double delta_ij_ab = w_ij + w_ab;
+  if (e_ij[0] > e_ij[1]) {
+    k = k_calc(-delta_ij_ab, beta, lambda, gamma);
+  } else {
+    k = k_calc(delta_ij_ab, beta, lambda, gamma);
+  }
+  return k;
+}
+
+void
+func(double t, double *y, double *ydot, void *data)
+{
+  vera_lsoda_data *vls = (vera_lsoda_data *)data;
+  VERA *chromo = vls->chromo;
+  std::vector<double> ydot_vec = chromo->dndt(y, t, (*vls->pump));
+  size_t i;
+  for (i = 0; i < ydot_vec.size(); i++) {
+    ydot[i] = ydot_vec[i];
+  }
+}
+ 
+/*
+ * input file stuff
+ */
+
+VERA
+create_VERA_from_file(char *filename)
+{
+  size_t i, n_elec, n_normal, n_vib = 0;
+  double beta = 0.;
+  std::string line, rest;
+  std::string::size_type sz;
+  std::vector<double> w_elec, w_normal,
+    l_ic_ij, l_ivr_i, g_ic_ij, g_ivr_i, disp;
+  std::ifstream param_file;
+  param_file.open(filename);
+  if (param_file.is_open()) {
+    while(param_file.good()) {
+      std::getline(param_file, line);
+      if (line.find("n_elec")!=std::string::npos) {
+        sz = line.find("=") + 1; /* start after the equals! */
+        n_elec = std::stoul(line.substr(sz));
+      }
+      if (line.find("n_normal")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        n_normal = std::stoul(line.substr(sz));
+      }
+      if (line.find("n_vib")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        n_vib = std::stoul(line.substr(sz));
+      }
+      if (line.find("beta")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        beta = std::stod(line.substr(sz));
+      }
+      /* arrays - given as name = space-separated list e.g. 
+       * w_elec = 0.0 10000.0 20000.0 30000.0 */
+      if (line.find("w_elec")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_elec + 1; i++) {
+          w_elec.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("w_normal")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_normal; i++) {
+          w_normal.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("l_ic_ij")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < (pow(n_elec, 2)); i++) {
+          l_ic_ij.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("l_ivr_i")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_elec; i++) {
+          l_ivr_i.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("g_ic_ij")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < (pow(n_elec, 2)); i++) {
+          g_ic_ij.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("g_ivr_i")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < n_elec; i++) {
+          g_ivr_i.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("disp")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        for (i = 0; i < (n_normal * pow(n_elec + 1, 2)); i++) {
+          disp.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+
+    }
+  }
+  for (i = 0; i < g_ic_ij.size(); i++) {
+    if (g_ic_ij[i] != 0.) {
+      g_ic_ij[i] = 1. / (g_ic_ij[i] * 1E-3 * CM_PER_PS);
+    }
+  }
+  for (i = 0; i < g_ivr_i.size(); i++) {
+    if (g_ivr_i[i] != 0.) {
+      g_ivr_i[i] = 1. / (g_ivr_i[i] * 1E-3 * CM_PER_PS);
+    }
+  }
+
+  /* could add pumping parameters here if necessary */
+  std::cout << "n_elec = " << n_elec << std::endl;
+  std::cout << "n_normal = " << n_normal << std::endl;
+  std::cout << "n_vib = " << n_vib << std::endl;
+  std::cout << "beta = " << beta << std::endl;
+  std::cout << "w_elec = ";
+  for (i = 0; i < w_elec.size(); i++ ) {
+    std::cout << w_elec[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "w_normal = ";
+  for (i = 0; i < w_normal.size(); i++ ) {
+    std::cout << w_normal[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "l_ic_ij = ";
+  for (i = 0; i < l_ic_ij.size(); i++ ) {
+    std::cout << l_ic_ij[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "l_ivr_i = ";
+  for (i = 0; i < l_ivr_i.size(); i++ ) {
+    std::cout << l_ivr_i[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "g_ic_ij = ";
+  for (i = 0; i < g_ic_ij.size(); i++ ) {
+    std::cout << g_ic_ij[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "g_ivr_i = ";
+  for (i = 0; i < g_ivr_i.size(); i++ ) {
+    std::cout << g_ivr_i[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "disp =            ";
+  for (i = 0; i < disp.size(); i++ ) {
+    std::cout << disp[i] << " ";
+  }
+  std::cout << std::endl;
+  VERA result = VERA(n_elec, n_normal, n_vib, beta,
+      w_elec, w_normal, l_ic_ij, l_ivr_i, g_ic_ij,
+      g_ivr_i, disp);
+  std::complex<double> elem;
+  return result;
+}
 
 VERA::VERA(size_t elec, size_t norm, size_t vib,
     double bet,
@@ -504,26 +590,6 @@ void
 VERA::fc_calc()
 {
   size_t index;
-  /* NB: this assumes all modes have the same number of
-   * vibrational levels, but we assume that everywhere else too */
-  /* also for some reason this didn't work with c-style casts */
-  /* double **fc_array = static_cast<double**>(malloc(n_vib + 1 * sizeof(double*))); */
-  /* if (fc_array == NULL) { */
-  /*   std::cout << "fc_array couldn't be allocated? top level" */
-  /*     << std::endl; */
-  /* } else { */
-  /*   for (size_t row = 0; row < n_vib + 1; row++) { */
-  /*     fc_array[row]   = static_cast<double *>(calloc(n_vib + 1, sizeof(double))); */
-  /*     if (fc_array[row] == NULL) { */
-  /*       std::cout << "fc_array couldn't be allocated? bottom level." */
-  /*         << " row = " << row << std::endl; */
-  /*     } */
-  /*   } */
-  /* } */
-  /* double **fc_array = new double*[n_vib + 1]; */
-  /* for (size_t row = 0; row < n_vib + 1; row++) { */
-  /*   fc_array[row] = new double[n_vib + 1]; */
-  /* } */
   std::vector<std::vector<double>> fc_array(n_vib + 1,
               std::vector<double>(n_vib + 1, 0.));
 
@@ -548,8 +614,10 @@ VERA::fc_calc()
             for (size_t b = a; b < n_vib + 1; b++) {
               fc_array[a][b] = ((-1. * displacement) /  
                 (sqrt((double)b)) * fc_array[a][b - 1])
-              + (sqrt((double)a)/sqrt((double)b)) * fc_array[a - 1][b - 1];
-              fc_array[b][a] = (double)(pow(-1., (double)(b - a))) * fc_array[a][b];
+              + (sqrt((double)a)/sqrt((double)b))
+              * fc_array[a - 1][b - 1];
+              fc_array[b][a] = (double)(pow(-1., (double)(b - a))) 
+                             * fc_array[a][b];
             }
           }
 
@@ -567,12 +635,6 @@ VERA::fc_calc()
       }
     }
   }
-  /* free(fc_array); */
-  /* for (size_t row = 0; row < n_vib + 1; row++) { */
-  /*   delete [] fc_array[row]; */
-  /* } */
-  /* delete [] fc_array; */
-
 }
 
 void
@@ -684,76 +746,6 @@ double
 VERA::get_fc(std::vector<size_t> subscripts)
 {
   return fc[sub2ind(subscripts, fc_extents)];
-}
-
-/** Vibrational relaxation rates on the same mode/electronic state. 
- *
- * wrapper function because we'll use this multiple times.
- * Computed by (secular, Markovian) Redfield theory.
- * w is the frequency (e.g of normal mode or energy gap between states).
- * lambda and gamma are parameters for the spectral density.
- *
- */
-double
-k_calc(double w, double beta, double lambda, double gamma)
-{
-  return C_OBO(w, lambda, gamma) * ((1.0 / tanh(0.5 * beta * w)) + 1);
-}
-
-/** Interconversion rate between vibronic states on different manifolds.
- *
- * e_ij and w_e are 2-vectors; e_ij[0] is state i, e_ij[1] is state j.
- * w_e are their respective energies.
- * a and b are tuples of vibrational quantum numbers on each normal mode
- * and w_alpha are the frequencies of the normal modes - these should all
- * have .size() == n_normal.
- */
-double 
-k_inter(std::vector<size_t> e_ij,
-    std::vector<size_t> a, std::vector<size_t> b,
-    std::vector<double> w_e, std::vector<double> w_alpha,
-    double beta, double lambda, double gamma)
-{
-  double k;
-  double w_ab = 0.;
-  if ((a.size() != b.size()) || (a.size() != w_alpha.size())) {
-    std::cerr << "size mismatch in k_inter: a.size() = "
-      << a.size() << ", b.size() = " << b.size()
-      << ", w_alpha.size() = " << w_alpha.size() << std::endl;
-  }
-  for (size_t i = 0; i < a.size(); i++) {
-    /* note - casting int here might be a problem if
-     * a[i] or b[i] get very large. but i think we're fine */
-    w_ab += (w_alpha[i] * (int)(a[i] - b[i]));
-  }
-  double w_ij = fabs(w_e[0] - w_e[1]);
-  double delta_ij_ab = w_ij + w_ab;
-  if (e_ij[0] > e_ij[1]) {
-    k = k_calc(-delta_ij_ab, beta, lambda, gamma);
-  } else {
-    k = k_calc(delta_ij_ab, beta, lambda, gamma);
-  }
-  return k;
-}
-
-double thermal_osc(std::vector<size_t> a,
-                   std::vector<double> w_alpha, double beta)
-{
-  double eps_a = 0.;
-  if (a.size() != w_alpha.size()) {
-    std::cerr << "thermal_osc error: number of quantum numbers a = "
-      << a.size() << ", number of normal modes = " << w_alpha.size()
-      << ", should be identical." << std::endl;
-  }
-  for (size_t i = 0; i < a.size(); i++) {
-    eps_a += w_alpha[i] * (a[i] + 0.5);
-  }
-  double n_a = exp(- beta * eps_a);
-  double Z = 1.;
-  for (size_t i = 0; i < w_alpha.size(); i++) {
-    Z *= exp(-0.5 * beta * w_alpha[i]) / (1 - exp(- beta * w_alpha[i]));
-  }
-  return n_a / Z;
 }
 
 void
@@ -1037,304 +1029,3 @@ VERA::dndt(double *population, double t, pulse pump)
   /* fprintf(stdout, "%18.10f  %18.10f  %18.10f\n", ivr_sum, ic_sum, pump_sum); */ 
   return dndt;
 }
-
-/*
- * LSODA struct and function
- */
-
-typedef struct vera_lsoda_data {
-  VERA *chromo;
-  pulse *pump;
-} vera_lsoda_data;
-
-
-void
-func(double t, double *y, double *ydot, void *data)
-{
-  vera_lsoda_data *vls = (vera_lsoda_data *)data;
-  VERA *chromo = vls->chromo;
-  std::vector<double> ydot_vec = chromo->dndt(y, t, (*vls->pump));
-  size_t i;
-  for (i = 0; i < ydot_vec.size(); i++) {
-    ydot[i] = ydot_vec[i];
-  }
-}
- 
-/*
- * input file stuff
- */
-
-VERA
-create_VERA_from_file(char *filename)
-{
-  size_t i, n_elec, n_normal, n_vib = 0;
-  double beta = 0.;
-  std::string line, rest;
-  std::string::size_type sz;
-  std::vector<double> w_elec, w_normal,
-    l_ic_ij, l_ivr_i, g_ic_ij, g_ivr_i, disp;
-  std::ifstream param_file;
-  param_file.open(filename);
-  if (param_file.is_open()) {
-    while(param_file.good()) {
-      std::getline(param_file, line);
-      if (line.find("n_elec")!=std::string::npos) {
-        sz = line.find("=") + 1; /* start after the equals! */
-        n_elec = std::stoul(line.substr(sz));
-      }
-      if (line.find("n_normal")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        n_normal = std::stoul(line.substr(sz));
-      }
-      if (line.find("n_vib")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        n_vib = std::stoul(line.substr(sz));
-      }
-      if (line.find("beta")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        beta = std::stod(line.substr(sz));
-      }
-      /* arrays - given as name = space-separated list e.g. 
-       * w_elec = 0.0 10000.0 20000.0 30000.0 */
-      if (line.find("w_elec")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < n_elec + 1; i++) {
-          w_elec.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-      if (line.find("w_normal")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < n_normal; i++) {
-          w_normal.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-      if (line.find("l_ic_ij")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < (pow(n_elec, 2)); i++) {
-          l_ic_ij.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-      if (line.find("l_ivr_i")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < n_elec; i++) {
-          l_ivr_i.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-      if (line.find("g_ic_ij")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < (pow(n_elec, 2)); i++) {
-          g_ic_ij.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-      if (line.find("g_ivr_i")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < n_elec; i++) {
-          g_ivr_i.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-      if (line.find("disp")!=std::string::npos) {
-        sz = line.find("=") + 1;
-        rest = line.substr(sz);
-        for (i = 0; i < (n_normal * pow(n_elec + 1, 2)); i++) {
-          disp.push_back(std::stod(rest, &sz));
-          rest = rest.substr(sz);
-        }
-      }
-
-    }
-  }
-  for (i = 0; i < g_ic_ij.size(); i++) {
-    if (g_ic_ij[i] != 0.) {
-      g_ic_ij[i] = 1. / (g_ic_ij[i] * 1E-3 * CM_PER_PS);
-    }
-  }
-  for (i = 0; i < g_ivr_i.size(); i++) {
-    if (g_ivr_i[i] != 0.) {
-      g_ivr_i[i] = 1. / (g_ivr_i[i] * 1E-3 * CM_PER_PS);
-    }
-  }
-
-  /* could add pumping parameters here if necessary */
-  std::cout << "n_elec = " << n_elec << std::endl;
-  std::cout << "n_normal = " << n_normal << std::endl;
-  std::cout << "n_vib = " << n_vib << std::endl;
-  std::cout << "beta = " << beta << std::endl;
-  std::cout << "w_elec = ";
-  for (i = 0; i < w_elec.size(); i++ ) {
-    std::cout << w_elec[i] << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "w_normal = ";
-  for (i = 0; i < w_normal.size(); i++ ) {
-    std::cout << w_normal[i] << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "l_ic_ij = ";
-  for (i = 0; i < l_ic_ij.size(); i++ ) {
-    std::cout << l_ic_ij[i] << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "l_ivr_i = ";
-  for (i = 0; i < l_ivr_i.size(); i++ ) {
-    std::cout << l_ivr_i[i] << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "g_ic_ij = ";
-  for (i = 0; i < g_ic_ij.size(); i++ ) {
-    std::cout << g_ic_ij[i] << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "g_ivr_i = ";
-  for (i = 0; i < g_ivr_i.size(); i++ ) {
-    std::cout << g_ivr_i[i] << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "disp =            ";
-  for (i = 0; i < disp.size(); i++ ) {
-    std::cout << disp[i] << " ";
-  }
-  std::cout << std::endl;
-  VERA result = VERA(n_elec, n_normal, n_vib, beta,
-      w_elec, w_normal, l_ic_ij, l_ivr_i, g_ic_ij,
-      g_ivr_i, disp);
-  std::complex<double> elem;
-  return result;
-}
-
-/*int*/
-/*main(int argc, char** argv)*/
-/*{*/
-
-/*  chrono::steady_clock::time_point begin = chrono::steady_clock::now();*/
-
-/*  if (argc != 2) {*/
-/*    fprintf(stdout, "Wrong number of arguments: should have "*/
-/*        "VERA parameter file only\n");*/
-/*    exit(EXIT_FAILURE);*/
-/*  }*/
-
-/*  VERA lutein = create_VERA_from_file(argv[1]);*/
-
-/*  pulse pump = {*/
-/*    .type = GAUSSIAN,*/
-/*    .target_state = 2,*/
-/*    .amplitude = 100.,*/
-/*    .centre = 20000.,*/
-/*    .width = 10.,*/
-/*    .t_peak = 0.1,*/
-/*    .duration = 70.0E-3,*/
-/*  };*/
-
-/*  /1* this should be available via c.get_n_extents() or something *1/ */ 
-/*  /1* NB: this whole thing should be a method - calculate initial*/
-/*   * populations; only parameter is beta *1/ */ 
-/*  std::vector<size_t> pop_extents = {lutein.n_elec};*/
-/*  std::vector<size_t> vib_extents;*/
-
-/*  size_t pop_total = lutein.n_elec;*/
-/*  size_t vib_total = 1;*/
-/*  for (size_t i = 0; i < lutein.n_normal; i++) {*/
-/*    pop_extents.push_back(lutein.n_vib + 1);*/
-/*    vib_extents.push_back(lutein.n_vib + 1);*/
-/*    pop_total *= lutein.n_vib + 1;*/
-/*    vib_total *= lutein.n_vib + 1;*/
-/*  }*/
-/*  double *pop = (double *)calloc(pop_total, sizeof(double));*/
-/*  std::vector<double> n0(pop_total, 0.);*/
-/*  /1* vec is because LSODA requires vector argument*/
-/*   * - this could maybe be fixed somehow with vector.data()? *1/ */ 
-/*  std::vector<double> y(pop_total, 0.);*/
-
-/*  for (size_t i = 0; i < vib_total; i++) {*/
-/*    std::vector<size_t> tot_subs(pop_extents.size(), 0);*/
-/*    std::vector<size_t> vib_subs(vib_extents.size(), 0);*/
-/*    vib_subs = ind2sub(i, vib_extents);*/
-/*    for (size_t j = 0; j < vib_subs.size(); j++) {*/
-/*      tot_subs[j + 1] = vib_subs[j];*/
-/*    }*/
-/*    size_t index = sub2ind(tot_subs, pop_extents);*/
-/*    /1**/  
-/*     * NB: careful with lutein.beta here - feels like there should*/
-/*     * just be one place the temperature's defined rather than copying*/
-/*     * it to every single struct, class etc. but fine if we're careful*/
-/*     *1/ */ 
-/*    n0[index] = thermal_osc(vib_subs, lutein.get_w_normal(), lutein.beta);*/
-/*    pop[index] = n0[index];*/
-/*    y[index] = pop[index];*/
-/*  }*/
-
-/*  vera_lsoda_data *vls = (vera_lsoda_data *)malloc(sizeof(vera_lsoda_data));*/
-/*  vls->chromo = &lutein;*/
-/*  vls->pump = &pump;*/
-/*  void *data = (void *)vls;*/
-
-/*  LSODA lsoda;*/
-/*  std::vector<double> yout;*/
-/*  int istate = 1;*/
-
-/*  size_t n_steps = 10000;*/
-/*  double ti = 0., tf = 10., dt = (tf - ti) / n_steps;*/
-
-/*  double t = ti, tout = dt;*/
-/*  double ysum = 0.;*/
-
-/*  for (size_t i = 0; i < n_steps; i++) {*/
-
-/*    std::cout << t << ' ' << setprecision(8) << y[0] << ' '*/ 
-/*              << setprecision(8)*/ 
-/*              << y[sub2ind({1, 0, 0}, pop_extents)] << ' '*/ 
-/*              << setprecision(8)*/ 
-/*              << y[sub2ind({2, 0, 0}, pop_extents)] << ' '*/
-/*              << setprecision(8)*/ 
-/*              << y[sub2ind({0, 0, 1}, pop_extents)] << ' '*/ 
-/*              << setprecision(8)*/ 
-/*              << y[sub2ind({0, 1, 0}, pop_extents)] << ' '*/ 
-/*              << setprecision(8) << ysum*/
-/*              << std::endl;*/
-
-/*    ysum = 0.;*/
-/*    /1* 1.49e-8 is the default value for rtol and atol*/
-/*     * in scipy odeint (also uses LSODA by default).*/
-/*     * changing the tolerances doesn't make much*/
-/*     * difference though; i've tried up to about 1e-6 */ 
-/*    lsoda.lsoda_update(func, pop_total, y, yout,*/
-/*        &t, tout, &istate, data, 1.49e-8, 1.49e-8);*/
-/*    tout += dt;*/
-
-/*    for (size_t j = 0; j < pop_total; j++) {*/
-/*      y[j] = yout[j + 1];*/
-/*      ysum += y[j];*/
-/*    }*/
-
-/*    if (istate <= 0) {*/
-/*     std::cerr << "error istate = " <<  istate << std::endl;*/
-/*     throw runtime_error( "Failed to compute the solution." );*/
-/*    }*/
-
-/*  }*/
-/*  std::complex<double> elem(1.1, 2.2);*/
-/*  std::cout << elem.real() << " + " << elem.imag() << "i\n" << std::endl;*/
-
-/*  free(pop);*/
-/*  free(vls);*/
-
-/*  chrono::steady_clock::time_point end = chrono::steady_clock::now();*/
-/*  std::cout << "|| Time taken (ms)= " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << std::endl;*/
-
-/*  return 0;*/
-
-/*}*/
-
-#endif

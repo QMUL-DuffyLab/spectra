@@ -27,6 +27,7 @@
 #define CM_PER_PS 200.0 * PI * CVAC * 1E-12
 #define PS_PER_CM 1.0 / (200.0 * PI * CVAC * 1E-12)
 #define EV_TO_INV_CM 1.0 / (200.0 * PI * CVAC * HBAR)
+#define N_MAX 20
 
 /** Input struct for important parameters and filenames where
  * the exciton-basis data is to be read in from.
@@ -37,6 +38,11 @@
  * Also holds a few parameters that aren't specific
  *  to any particular pigment or exciton.
  */
+
+/* in C++ you can't have a variable length array in the end
+ * of a struct, so I'm defining an N_MAX and making
+ * gi_files[N_MAX][200]. really annoying. in future this could
+ * be a class or something instead */
 typedef struct {
   unsigned int N; /**< Number of pigments/excitons */
   double T; /**< Temperature */
@@ -45,14 +51,14 @@ typedef struct {
   char eigvecs_file[200], eigvals_file[200], mu_file[200],
   lambda_file[200], gamma_file[200], aw_file[200], fw_file[200],
   pop_file[200];
-  char *gi_files[];
+  char gi_files[N_MAX][200];
 } Input;
 
 Input* read_input_file(char* filename);
 double* read(char *input_file, unsigned int N);
 double** read_mu(char *input_file, unsigned int N);
 double** read_eigvecs(char *input_file, unsigned int N);
-fftw_complex** read_gi(char *input_files[], 
+fftw_complex** read_gi(char input_files[N_MAX][200], 
 		 unsigned int N, unsigned int tau);
 /* double _Complex** read_gi(char *input_files[], */ 
 /* 		 unsigned int N, unsigned int tau); */
