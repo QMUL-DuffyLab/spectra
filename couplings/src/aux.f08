@@ -18,6 +18,7 @@ module aux
       implicit none
       logical :: file_check
       character(len=*), intent(in) :: buffer
+      character(99) :: line
       integer :: n, res, stat
 
       inquire(file=trim(adjustl(buffer)),exist=file_check)
@@ -31,8 +32,11 @@ module aux
 
       n = 0
       do
-        read(99, *, iostat=stat)
+        read(99, *, iostat=stat) line
         if (stat == iostat_end) then
+          exit
+        ! now check for the TER line; after that is connection info
+        else if (index(line,"TER").ne.0) then
           exit
         else
           n = n + 1

@@ -59,6 +59,8 @@ class VERA {
                              double t, pulse pump);
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
+    std::vector<size_t> get_extents();
+    std::vector<size_t> get_pop_extents();
     std::vector<double> get_w_normal();
     double get_w_vib(size_t i);
     double get_l_ic_ij(size_t i, size_t j);

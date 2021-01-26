@@ -17,7 +17,8 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double kd;
   fftw_complex **gi_array;
-  double *eigvals, *gamma, *rates, *musq, *chi_p,
+  fftw_complex *gn;
+  double *eigvals, *ei, *gamma, *rates, *musq, *chi_p,
          *lambda, *integral, *chiw_ints, *ww,
          **wij, **kij, **Jij, **mu, **eig, **chiw, **pump;
   Parameters *line_params;
@@ -57,11 +58,22 @@ main(int argc, char** argv)
     .duration = 70.0E-3,
   };
 
+  pulse VERA_absorption = {
+    .type = LORENTZIAN,
+    .target_state = 0,
+    .amplitude = 0.,
+    .centre = 0.,
+    .width = 0.,
+    .t_peak = 0.1,
+    .duration = 70.0E-3,
+  };
+
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MUSQ;
 
   /* malloc 1d stuff, read them in */
   eigvals     = (double *)calloc(p->N, sizeof(double));
+  ei          = (double *)calloc(p->N, sizeof(double));
   gamma       = (double *)calloc(p->N, sizeof(double));
   rates       = (double *)calloc(p->N, sizeof(double));
   musq        = (double *)calloc(p->N, sizeof(double));
@@ -72,6 +84,7 @@ main(int argc, char** argv)
   integral    = (double *)calloc(p->tau, sizeof(double));
   in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
   out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
+  gn          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
 
   /* malloc 2d stuff */
   lineshape_files = (char **)malloc(p->N * sizeof(char*));
@@ -105,12 +118,16 @@ main(int argc, char** argv)
   gamma   = read(p->gamma_file, p->N);
   lambda  = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
+  ei      = read(p->ei_file, p->N);
 
   /* read 2d stuff */
   gi_array = read_gi(p->gi_files, p->N, p->tau);
   eig      = read_eigvecs(p->eigvecs_file, p->N);
   mu       = read_mu(p->mu_file, p->N);
   ww       = incident(pump_properties, p->tau);
+
+  /* NOTE: hardcoded!!!! also, might need CHL one too */
+  gn = read_gi("lineshape/out/CLA_gt.dat", 1, p->tau);
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = (char *)malloc(200 * sizeof(char));
@@ -121,6 +138,9 @@ main(int argc, char** argv)
     strcpy(lineshape_files[i], line);
     line_params[i] = get_parameters(lineshape_files[i],
                      protocol.chl_ansatz);
+    if (line_params[i].ans == 3) {
+      VERA vera = create_VERA_from_file("in/vera_params.dat");
+    }
     line_params[i].cw = choose_ansatz(line_params[i].ans);
     line_params[i].cn = &c_n;
     /* this is also kinda ugly - the temperature's a global parameter
@@ -158,6 +178,11 @@ main(int argc, char** argv)
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
+  double **fucksake = (double **)calloc(p->N, sizeof(double*));
+  for (i = 0; i < p->N; i++) {
+    fucksake[i]  = (double *)calloc(p->tau, sizeof(double));
+  }
+
   COMPLEX *Atv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   for (i = 0; i < p->N; i++) {
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
@@ -168,9 +193,6 @@ main(int argc, char** argv)
                  1. / (1000000. * gamma[i]));
       in[j][0] = REAL(Atv[j]);
       in[j][1] = IMAG(Atv[j]);
-      /* in[j][1] = *At(eigvals[i], gi_array[i][j][0], gi_array[i][j][1], */
-      /*            (double)j * TOFS, */
-      /*            1. / (1000000. * gamma[i]))[1]; */
     }
 
     fftw_execute(plan); 
@@ -182,6 +204,15 @@ main(int argc, char** argv)
 
     chi_p = pump[i];
     chiw_ints[i] = trapezoid(chi_p, p->tau);
+
+    /* this won't work lol - g(t) functions */
+    for (unsigned int j = 0; j < p->tau; j++) {
+      Atv[j] = At(ei[i], gn[j][0], gn[j][1],
+                 (double)j * TOFS,
+                 1. / (1000000. * gamma[i]));
+      in[j][0] = REAL(Atv[j]);
+      in[j][1] = IMAG(Atv[j]);
+    }
 
   }
   free(Atv);
@@ -521,6 +552,7 @@ main(int argc, char** argv)
   free(odep.Tij);
   free(pt);
   free(pt_prev);
+  free(ei);
 
   fftw_free(gi_array);
   fftw_cleanup();

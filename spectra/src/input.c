@@ -55,6 +55,9 @@ read_input_file(char* filename)
     strcpy(p->eigvals_file, line);
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;
+    strcpy(p->ei_file, line);
+    fgets(line, 199, fp);
+    line[strcspn(line, "\n")] = 0;
     strcpy(p->mu_file, line);
     fgets(line, 199, fp);
     line[strcspn(line, "\n")] = 0;

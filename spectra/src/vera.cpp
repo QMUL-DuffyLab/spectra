@@ -748,6 +748,18 @@ VERA::get_fc(std::vector<size_t> subscripts)
   return fc[sub2ind(subscripts, fc_extents)];
 }
 
+std::vector<size_t>
+VERA::get_extents()
+{
+  return extents;
+}
+
+std::vector<size_t>
+VERA::get_pop_extents()
+{
+  return population_extents;
+}
+
 void
 VERA::set_k_ivr(double beta)
 {
@@ -988,9 +1000,9 @@ VERA::dndt(double *population, double t, pulse pump)
   }
 
   /* pumping. again this seems to be duplication of above loops */
-  for (size_t j = 0; j < (n_normal * (n_vib + 1)); j++) {
+  for (size_t j = 0; j < (pow(n_vib + 1, n_normal)); j++) {
     std::vector<size_t> a = ind2sub(j, vib_extents);
-    for (size_t k = 0; k < (n_normal * (n_vib + 1)); k++) {
+    for (size_t k = 0; k < (pow(n_vib + 1, n_normal)); k++) {
       std::vector<size_t> b = ind2sub(k, vib_extents);
 
       double delta_x0_ba = w_elec[pump.target_state] - w_elec[0];
