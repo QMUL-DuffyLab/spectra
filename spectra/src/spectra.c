@@ -73,7 +73,6 @@ main(int argc, char** argv)
 
   /* malloc 1d stuff, read them in */
   eigvals     = (double *)calloc(p->N, sizeof(double));
-  ei          = (double *)calloc(p->N, sizeof(double));
   gamma       = (double *)calloc(p->N, sizeof(double));
   rates       = (double *)calloc(p->N, sizeof(double));
   musq        = (double *)calloc(p->N, sizeof(double));
@@ -84,7 +83,6 @@ main(int argc, char** argv)
   integral    = (double *)calloc(p->tau, sizeof(double));
   in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
   out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
-  gn          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
 
   /* malloc 2d stuff */
   lineshape_files = (char **)malloc(p->N * sizeof(char*));
@@ -118,16 +116,15 @@ main(int argc, char** argv)
   gamma   = read(p->gamma_file, p->N);
   lambda  = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
-  ei      = read(p->ei_file, p->N);
+  /* this'll need adding to the input struct */
+  char jij_file[200] = "out/7_PROD_1/1000/J_ij.out";
 
   /* read 2d stuff */
   gi_array = read_gi(p->gi_files, p->N, p->tau);
   eig      = read_eigvecs(p->eigvecs_file, p->N);
+  Jij      = read_eigvecs(jij_file, p->N);
   mu       = read_mu(p->mu_file, p->N);
   ww       = incident(pump_properties, p->tau);
-
-  /* NOTE: hardcoded!!!! also, might need CHL one too */
-  gn = read_gi("lineshape/out/CLA_gt.dat", 1, p->tau);
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = (char *)malloc(200 * sizeof(char));
@@ -139,7 +136,8 @@ main(int argc, char** argv)
     line_params[i] = get_parameters(lineshape_files[i],
                      protocol.chl_ansatz);
     if (line_params[i].ans == 3) {
-      VERA vera = create_VERA_from_file("in/vera_params.dat");
+      /* this'll have to be changed somehow */
+      /* vera = create_VERA_from_file("in/vera_params.dat"); */
     }
     line_params[i].cw = choose_ansatz(line_params[i].ans);
     line_params[i].cn = &c_n;
@@ -178,11 +176,6 @@ main(int argc, char** argv)
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  double **fucksake = (double **)calloc(p->N, sizeof(double*));
-  for (i = 0; i < p->N; i++) {
-    fucksake[i]  = (double *)calloc(p->tau, sizeof(double));
-  }
-
   COMPLEX *Atv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   for (i = 0; i < p->N; i++) {
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
@@ -204,15 +197,6 @@ main(int argc, char** argv)
 
     chi_p = pump[i];
     chiw_ints[i] = trapezoid(chi_p, p->tau);
-
-    /* this won't work lol - g(t) functions */
-    for (unsigned int j = 0; j < p->tau; j++) {
-      Atv[j] = At(ei[i], gn[j][0], gn[j][1],
-                 (double)j * TOFS,
-                 1. / (1000000. * gamma[i]));
-      in[j][0] = REAL(Atv[j]);
-      in[j][1] = IMAG(Atv[j]);
-    }
 
   }
   free(Atv);
@@ -424,6 +408,25 @@ main(int argc, char** argv)
 
   free(p_i_equib);
 
+  fprintf(stdout, "\n----------\n"
+                    "VERA RATES\n"
+                    "----------\n\n");
+
+  VERA vera = create_VERA_from_file("in/vera_params.dat");
+  for (unsigned i = 0; i < 4; i++) {
+    fprintf(stdout, "i = %2d, w_i = %10.3f\n", i, vera.get_w_elec(i));
+  }
+
+  size_t n_chl  = 14; /* number of chlorophylls */
+  size_t chl_14 = 13; /* index of the final one */
+  size_t lut    = 14; /* index of the first lutein */
+  std::vector<double> k_14_vera = ki_delta_x0_ba(vera, n_chl,
+      chl_14, lut, p->tau, eig, musq, Jij, chiw, VERA_absorption);
+  for (unsigned i = 0; i < k_14_vera.size(); i++) {
+    fprintf(stdout, "%4lu   %12.8f\n", i, k_14_vera[i]);
+  }
+
+
   fprintf(stdout, "\n-------------------\n"
                     "EXCITATION LIFETIME\n"
                     "-------------------\n\n");
@@ -552,7 +555,7 @@ main(int argc, char** argv)
   free(odep.Tij);
   free(pt);
   free(pt_prev);
-  free(ei);
+  /* free(ei); */
 
   fftw_free(gi_array);
   fftw_cleanup();
@@ -564,11 +567,6 @@ main(int argc, char** argv)
   free(y); free(f); free(yprev); free(rates);
   free(Jij); free(chiw); free(pump); free(chiw_ints);
   free(p);
-
-  VERA vera = create_VERA_from_file("in/vera_params.dat");
-  for (unsigned i = 0; i < 4; i++) {
-    fprintf(stdout, "i = %2d, w_i = %10.3f\n", i, vera.get_w_elec(i));
-  }
 
   exit(EXIT_SUCCESS);
 }

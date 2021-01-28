@@ -116,13 +116,19 @@ lut_dict = dict(zip(lut_tresp[0], lut_tresp[1]))
 
 for item in filelist:
     # same deal - load in the PDB file
-    if (args.protein == 'VANGELIS'):
-        arr = np.genfromtxt(item, encoding='utf-8', dtype=None)
-    else:
-        arr = np.genfromtxt(item, encoding='utf-8', dtype=None, skip_footer=2)
+    # arr = np.genfromtxt(item, encoding='utf-8', dtype=None)
+    f = open(item, mode='r')
+    text = f.read()
+    f.close()
+    # the final newline will create an empty list at the end
+    # so we do [:-1]
+    arr = [x.split() for x in text.split("\n")[:-1]]
+    # if (args.protein == 'VANGELIS'):
+    #     arr = np.genfromtxt(item, encoding='utf-8', dtype=None)
 
     # we'll append each row of x, y, z, partial charge as we go
     temp_list = []
+    footer_list = []
     # PDB file contains ligand code - use
     # that to check which tresp data to use
     output_dir = args.input_dir + '/' + pigments[str(arr[0][4])]
@@ -145,20 +151,26 @@ for item in filelist:
         # raise ValueError("Invalid ligand code: {}".format(ligand_code))
 
     for pdb_line in arr:
-        atom_code = pdb_line[2]
-        # could create a lookup table for this
-        # but i doubt it's worth the effort
-        if atom_code in tresp_dict.keys():
-            # the 0.001 is because the values are reported as e * 10^3
-            temp_list.append([pdb_line[2], pdb_line[5], pdb_line[6], pdb_line[7],
-                              0.001 * float(tresp_dict[atom_code])])
+        if pdb_line[0] != "ATOM":
+            footer_list.append(pdb_line)
         else:
-            # any atom not reported in tresp file has zero charge
-            temp_list.append([pdb_line[2], pdb_line[5], pdb_line[6], pdb_line[7], 0.0])
+            atom_code = pdb_line[2]
+            # could create a lookup table for this
+            # but i doubt it's worth the effort
+            if atom_code in tresp_dict.keys():
+                # the 0.001 is because the values are reported as e * 10^3
+                temp_list.append([pdb_line[2], pdb_line[5], pdb_line[6], pdb_line[7],
+                                  0.001 * float(tresp_dict[atom_code])])
+            else:
+                # any atom not reported in tresp file has zero charge
+                temp_list.append([pdb_line[2], pdb_line[5], pdb_line[6], pdb_line[7], 0.0])
 
     # i was using numpy for this but it really doesn't like assigning the
     # structured array and keeping the correct dtypes, for some reason, and
     # i can't be bothered to figure out why, so do this the old-fashioned way
     with open(output_file, 'w') as f:
         for line in temp_list:
-            f.write("{:5s} {:016.8e} {:016.8e} {:016.8e} {:016.8e}\n".format(line[0], line[1], line[2], line[3], line[4]))
+            f.write("{:5s} {:016.8e} {:016.8e} {:016.8e} {:016.8e}\n".format(line[0], float(line[1]), float(line[2]), float(line[3]), float(line[4])))
+
+        for line in footer_list:
+            f.write("{}\n".format(" ".join(line)))

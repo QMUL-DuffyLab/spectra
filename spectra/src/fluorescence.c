@@ -1,6 +1,75 @@
 #include "fluorescence.h"
 #include "vera.h"
 
+double*
+incident(pulse p, unsigned int tau)
+{
+  /* returns W(\omega), the (normalised) spectrum of incident light */
+  double wn, diff, min;
+  unsigned int min_arg;
+  double *ww = (double *)calloc(tau, sizeof(double));
+  double sum = 0.0; /* lorentzian / gaussian won't be normalised */
+  for (unsigned int i = 0; i < tau; i++) {
+    wn = (i * 2. * M_PI / tau) * (1. / TOFS);
+    if (p.type == FLAT) {
+      ww[i] = 1. / tau;
+    }
+    else if (p.type == LORENTZIAN) {
+      ww[i] = (1. / (M_PI * p.width)) * pow(p.width, 2.) / 
+              (pow(wn - p.centre, 2.) + pow(p.width, 2.));
+      sum += ww[i];
+    }
+    else if (p.type == GAUSSIAN) {
+      ww[i] = (1. / (p.width * sqrt(2. * M_PI))) *
+              exp(-0.5 * pow(fabs(wn - p.centre) / p.width, 2.));
+      sum += ww[i];
+    }
+    else if (p.type == DELTA) {
+      /* the centre of the delta function probably
+       * won't coincide exactly with any wn; hence put
+       * the pulse at min(centre - wn) */
+      diff = fabs(p.centre - wn);
+      if (i == 0) {
+        min = diff;
+        min_arg = i;
+      }
+      if (diff <= min) {
+        min = diff;
+        min_arg = i;
+      }
+    }
+  }
+  if (p.type == DELTA) {
+    /* if p.type is DELTA we haven't changed any element of
+     * ww, so they're still all 0. hence we can just set the
+     * closest bin to the centre of the delta function to 1
+     * and be sure it's still normalised. */
+    ww[min_arg] = 1.;
+  }
+  if (sum != 0.0) {
+    for (unsigned int i = 0; i < tau; i++) {
+      ww[i] /= sum;
+    }
+  }
+  return ww;
+}
+
+double
+intensity(double w, double t, pulse p)
+{
+  double sigma, f;
+  double gamma = 1./(2. * p.duration)
+               * pow(1./cosh((t - p.t_peak)/p.duration), 2.);
+  if (p.type == GAUSSIAN) {
+    sigma = p.width / (2. * sqrt(2. * log(2.)));
+    f = exp(pow(w - p.centre, 2.) / (2. * pow(sigma, 2.)))
+      * (1. / (sigma * sqrt(2. * PI)));
+    return p.amplitude * f * gamma;
+  } else {
+    /* not done this yet lol */
+    return NAN;
+  }
+}
 
 gsl_matrix*
 array_to_gsl_matrix(unsigned int n1, unsigned int n2, double** mat)
@@ -81,51 +150,6 @@ redfield_rate(unsigned int N, double **eig,
     fprintf(stdout, "%8.3e\n", rate);
   }
   return rate;
-}
-
-std::vector<double>
-ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned vera_index, 
-               double *delta_x0_ba, double **eig, double *eigvals,
-               double *musq, double *J0nx, double **chiw, pulse v_abs)
-{
-  size_t n_total = x.get_pop_extents()[0];
-  double *lorentzian = (double *)calloc(ns, sizeof(double));
-  double *fi = (double *)calloc(ns, sizeof(double));
-  std::vector<double> ki_delta_xy_ba;
-
-  for (unsigned ii = 1; ii < x.get_pop_extents().size(); ii++) {
-    n_total *= x.get_pop_extents()[ii];
-  }
-  for (unsigned ii = 0; ii < n_total; ii++) {
-    std::vector<size_t> a = ind2sub(ii, x.get_pop_extents());
-    for (unsigned kk = 0; kk < n_total; kk++) {
-      std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
-      double delta_xy_ba = x.get_elec(a[0]) - x.get_elec(b[0]);
-      v_abs.width = x.get_elec(a[0]) - x.get_elec(b[0]);
-      double fc_sq = 1.
-      for (unsigned alpha = 1; alpha < x.get_pop_extents().size(); alpha++) {
-        delta_xy_ba += x.get_w_normal(alpha) * (int)(a[alpha] - b[alpha]);
-        fc_sq *= x.get_fc(sub2ind({a[0], b[0], alpha,
-              a[alpha], b[alpha]}, x.get_pop_extents()));
-      }
-      /* now we have to calculate the rate between every delta_xy_ba */
-      v_abs.centre = delta_xy_ba;
-      if (delta_xy_ba != 0.) {
-        lorentzian = incident(v_abs, tau);
-      }
-      for (unsigned chl_index = 0, chl_index < n_chl; chl_index++) {
-        for (unsigned n = 0; n < tau; n++) {
-          /* nope - chiw are exciton, J0 are pigment */
-          fi[n] = chiw[chl_index][n] * lorentzian[n] * pow(J0nx[chl_index], 2.)
-            / musq[chl_index];
-        }
-        
-        ki_delta_xy_ba.push_back((2 * PI / HBAR) *
-            pow(J0nx[n], 2.) * trapezoid(fi, tau);
-      }
-    }
-  }
-  return ki_delta_xy_ba;
 }
 
 double**

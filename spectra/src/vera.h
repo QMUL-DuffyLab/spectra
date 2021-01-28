@@ -9,7 +9,7 @@
 #include "helper.h"
 #include "LSODA.h"
 #include "forster.h"
-#include "steady_state.h"
+#include "fluorescence.h"
 
 #ifndef __VERA_H__
 #define __VERA_H__
@@ -137,5 +137,11 @@ k_inter(std::vector<size_t> e_ij,
     double beta, double lambda, double gamma);
 
 double k_calc(double w, double beta, double lambda, double gamma);
+
+std::vector<double> ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index, 
+               unsigned carotenoid, unsigned tau,
+               double **eig, double *musq, double **Jij,
+               double **chiw, pulse v_abs);
+
 
 #endif

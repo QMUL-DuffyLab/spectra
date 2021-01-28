@@ -58,6 +58,17 @@ sub2ind(std::vector<size_t> subscripts, std::vector<size_t> extents)
         std::cerr << "sub2ind error: subscripts[" << i
           << "] > extents[" << i << "]" << std::endl;
         index = -1;
+        std::cerr << "subscripts = ";
+        for (unsigned j = 0; j < subscripts.size(); j++) {
+          std::cerr << subscripts[i];
+        }
+        std::cerr << std::endl;
+
+        std::cerr << "extents = ";
+        for (unsigned j = 0; j < subscripts.size(); j++) {
+          std::cerr << extents[i];
+        }
+        std::cerr << std::endl;
       } else {
         size_t prod = 1;
         for (size_t j = i + 1; j < subscripts.size(); j++) {
@@ -686,7 +697,7 @@ VERA::set_extents()
 double
 VERA::get_w_elec(size_t elec_i)
 {
-  if (elec_i > n_elec) {
+  if (elec_i > n_elec + 1) {
     std::cout << "invalid index passed to get_w_elec: "
     << elec_i << " - max is " << n_elec + 1 << std::endl;
     return NAN;
@@ -704,7 +715,7 @@ double
 VERA::get_w_normal(size_t norm)
 {
   if (norm >= n_normal) {
-    std::cout << "invalid index passed to get_w_elec: "
+    std::cout << "invalid index passed to get_w_normal: "
     << norm << " - max is " << n_normal << std::endl;
     return NAN;
   }
@@ -1041,3 +1052,93 @@ VERA::dndt(double *population, double t, pulse pump)
   /* fprintf(stdout, "%18.10f  %18.10f  %18.10f\n", ivr_sum, ic_sum, pump_sum); */ 
   return dndt;
 }
+
+std::vector<double>
+ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index, 
+               unsigned carotenoid, unsigned tau,
+               double **eig, double *musq, double **Jij,
+               double **chiw, pulse v_abs)
+{
+  size_t n_total = x.get_pop_extents()[0];
+  double ji = 0.;
+  double *abs = (double *)calloc(tau, sizeof(double));
+  double *fi  = (double *)calloc(tau, sizeof(double));
+  std::vector<double> ki_delta_xy_ba;
+
+  for (unsigned ii = 1; ii < x.get_pop_extents().size(); ii++) {
+    n_total *= x.get_pop_extents()[ii];
+  }
+  ji = 0.;
+  for (unsigned n = 0; n < n_chl; n++) {
+    for (unsigned m = 0; m < n_chl; m++) {
+      ji += eig[m][chl_index] * eig[n][chl_index]
+         * Jij[m][carotenoid] * Jij[n][carotenoid];
+    }
+  }
+  double f_sum = 0.;
+  fprintf(stdout, "fi:\n");
+  for (unsigned step = 0; step < tau; step++) {
+    fi[step] = chiw[chl_index][step] / musq[chl_index];
+    fprintf(stdout, "%5u %12.8e\n", step, fi[step]);
+    f_sum += fi[step];
+  }
+
+  for (unsigned ii = 0; ii < n_total; ii++) {
+    std::vector<size_t> a = ind2sub(ii, x.get_pop_extents());
+
+    for (unsigned kk = 0; kk < n_total; kk++) {
+      std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
+      if (a[0] == b[0]) {
+        ki_delta_xy_ba.push_back(0.);
+        continue;
+      } else {
+        double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
+        v_abs.width = delta_xy_ba;
+        double fc_sq = 1.;
+
+        for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
+          delta_xy_ba += x.get_w_normal(alpha)
+                       * (int)(a[alpha + 1] - b[alpha + 1]);
+          fc_sq *= x.get_fc({a[0], b[0], alpha,
+                a[alpha + 1], b[alpha + 1]});
+        }
+
+        /* now we have to calculate the rate between every delta_xy_ba */
+        v_abs.centre = delta_xy_ba;
+        if (v_abs.width != 0 && delta_xy_ba != 0.) {
+          abs = incident(v_abs, tau);
+        }
+
+        /* for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) { */
+        ji *= fc_sq;
+        if (ii == 1 && kk == 17) {
+          fprintf(stdout, "centre = %12.8f, width = %12.8f\n",
+              v_abs.centre, v_abs.width);
+          fprintf(stdout, "f_sum = %12.8f\n", f_sum);
+        }
+
+        for (unsigned step = 0; step < tau; step++) {
+          /* nope - chiw are exciton, J0 are pigment */
+          if (ii == 17 && kk == 1) {
+            fprintf(stdout, "%5u %12.8e %12.8e ", step,
+                abs[step], fi[step]);
+          }
+
+          fi[step] = chiw[chl_index][step] * abs[step]
+                   / (musq[chl_index] * f_sum);
+
+          if (ii == 17 && kk == 1) {
+            fprintf(stdout, "%12.8e\n", fi[step]);
+          }
+        }
+        
+        /* hbar? */
+        ki_delta_xy_ba.push_back((2 * PI) *
+            pow(ji, 2.) * trapezoid(fi, tau));
+      /* } */
+      }
+    } // kk
+  }
+  return ki_delta_xy_ba;
+}
+
