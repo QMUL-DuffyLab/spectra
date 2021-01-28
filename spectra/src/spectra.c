@@ -418,12 +418,12 @@ main(int argc, char** argv)
   }
 
   size_t n_chl  = 14; /* number of chlorophylls */
-  size_t chl_14 = 13; /* index of the final one */
+  size_t chl_test = 0; /* this exciton's ~95% 612 */
   size_t lut    = 14; /* index of the first lutein */
   std::vector<double> k_14_vera = ki_delta_x0_ba(vera, n_chl,
-      chl_14, lut, p->tau, eig, musq, Jij, chiw, VERA_absorption);
+      chl_test, lut, p->tau, eig, musq, Jij, chiw, VERA_absorption);
   for (unsigned i = 0; i < k_14_vera.size(); i++) {
-    fprintf(stdout, "%4lu   %12.8f\n", i, k_14_vera[i]);
+    fprintf(stdout, "%4lu   %12.8e\n", i, k_14_vera[i]);
   }
 
 

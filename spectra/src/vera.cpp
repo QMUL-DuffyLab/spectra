@@ -1060,7 +1060,7 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
                double **chiw, pulse v_abs)
 {
   size_t n_total = x.get_pop_extents()[0];
-  double ji = 0.;
+  double ji = 0., ji_work = 0.;
   double *abs = (double *)calloc(tau, sizeof(double));
   double *fi  = (double *)calloc(tau, sizeof(double));
   std::vector<double> ki_delta_xy_ba;
@@ -1075,11 +1075,11 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
          * Jij[m][carotenoid] * Jij[n][carotenoid];
     }
   }
+  fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
+
   double f_sum = 0.;
-  fprintf(stdout, "fi:\n");
   for (unsigned step = 0; step < tau; step++) {
     fi[step] = chiw[chl_index][step] / musq[chl_index];
-    fprintf(stdout, "%5u %12.8e\n", step, fi[step]);
     f_sum += fi[step];
   }
 
@@ -1099,8 +1099,8 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
         for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
           delta_xy_ba += x.get_w_normal(alpha)
                        * (int)(a[alpha + 1] - b[alpha + 1]);
-          fc_sq *= x.get_fc({a[0], b[0], alpha,
-                a[alpha + 1], b[alpha + 1]});
+          fc_sq *= pow(x.get_fc({a[0], b[0], alpha,
+                b[alpha + 1], a[alpha + 1]}), 2.);
         }
 
         /* now we have to calculate the rate between every delta_xy_ba */
@@ -1110,31 +1110,21 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
         }
 
         /* for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) { */
-        ji *= fc_sq;
-        if (ii == 1 && kk == 17) {
-          fprintf(stdout, "centre = %12.8f, width = %12.8f\n",
-              v_abs.centre, v_abs.width);
-          fprintf(stdout, "f_sum = %12.8f\n", f_sum);
-        }
+        ji_work = ji * fc_sq;
 
         for (unsigned step = 0; step < tau; step++) {
-          /* nope - chiw are exciton, J0 are pigment */
-          if (ii == 17 && kk == 1) {
-            fprintf(stdout, "%5u %12.8e %12.8e ", step,
-                abs[step], fi[step]);
-          }
-
+          /* for some reason i have to explicitly add the
+           * chiw bit here - if i just do it outside the
+           * ii/kk loops, it's zero again in here??? */
           fi[step] = chiw[chl_index][step] * abs[step]
                    / (musq[chl_index] * f_sum);
-
-          if (ii == 17 && kk == 1) {
-            fprintf(stdout, "%12.8e\n", fi[step]);
-          }
         }
         
         /* hbar? */
+        fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
+            delta_xy_ba, fc_sq, ji_work);
         ki_delta_xy_ba.push_back((2 * PI) *
-            pow(ji, 2.) * trapezoid(fi, tau));
+            pow(ji_work, 2.) * trapezoid(fi, tau));
       /* } */
       }
     } // kk
