@@ -17,13 +17,12 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double kd;
   fftw_complex **gi_array;
-  fftw_complex *gn;
   double *eigvals, *ei, *gamma, *rates, *musq, *chi_p,
          *lambda, *integral, *chiw_ints, *ww,
          **wij, **kij, **Jij, **mu, **eig, **chiw, **pump;
   Parameters *line_params;
-  fftw_complex *out, *in;
-  fftw_plan plan;
+  fftw_complex *in, *ft_in, *out, *ft_out;
+  fftw_plan plan, ft_plan;
 
   fprintf(stdout, "== Spectra calculation code ==\n");
 
@@ -83,6 +82,8 @@ main(int argc, char** argv)
   integral    = (double *)calloc(p->tau, sizeof(double));
   in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
   out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
+  ft_in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
+  ft_out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
 
   /* malloc 2d stuff */
   lineshape_files = (char **)malloc(p->N * sizeof(char*));
@@ -175,25 +176,52 @@ main(int argc, char** argv)
 
   plan = fftw_plan_dft_1d(p->tau, 
   	 in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
+  ft_plan = fftw_plan_dft_1d(p->tau, 
+  	 ft_in, ft_out, FFTW_BACKWARD, FFTW_ESTIMATE);
+
+  double **normed_ai = (double **)calloc(p->N, sizeof(double*));
+  double **normed_fi = (double **)calloc(p->N, sizeof(double*));
+  double ai_sum = 0., fi_sum = 0.;
+  for (unsigned i = 0; i < p->N; i++) {
+    normed_ai[i] = (double *)calloc(p->tau, sizeof(double));
+    normed_fi[i] = (double *)calloc(p->tau, sizeof(double));
+  }
 
   COMPLEX *Atv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
+  COMPLEX *Ftv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   for (i = 0; i < p->N; i++) {
+    ai_sum = 0.; fi_sum = 0;
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
     for (unsigned int j = 0; j < p->tau; j++) {
       Atv[j] = At(eigvals[i], gi_array[i][j][0], gi_array[i][j][1],
                  (double)j * TOFS,
                  1. / (1000000. * gamma[i]));
+      Ftv[j] = Ft(eigvals[i],
+                  gi_array[i][j][0], gi_array[i][j][1],
+                  lambda[i], (double)j * TOFS,
+                  1. / (1000000. * gamma[i]));
+
       in[j][0] = REAL(Atv[j]);
       in[j][1] = IMAG(Atv[j]);
+      ft_in[j][0] = REAL(Ftv[j]);
+      ft_in[j][1] = IMAG(Ftv[j]);
     }
 
     fftw_execute(plan); 
+    fftw_execute(ft_plan); 
     for (unsigned int j = 0; j < p->tau; j++) {
       chiw[i][j]   = out[j][0]  * musq[i];
       pump[i][j]   = chiw[i][j] * ww[j];
       integral[j] += out[j][0]  * musq[i];
+      ai_sum += out[j][0];
+      fi_sum += ft_out[j][0];
     }
+    for (unsigned int j = 0; j < p->tau; j++) {
+      normed_ai[i][j] = out[j][0] / ai_sum;
+      normed_fi[i][j] = ft_out[j][0] / fi_sum;
+    }
+
 
     chi_p = pump[i];
     chiw_ints[i] = trapezoid(chi_p, p->tau);
@@ -339,7 +367,6 @@ main(int argc, char** argv)
   /* need to zero the running integral before FFT! */
   free(integral);
   integral = (double *)calloc(p->tau, sizeof(double));
-  COMPLEX *Ftv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   for (i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->tau; j++) {
       Ftv[j] = p_i_equib[i] * Ft(eigvals[i],
@@ -365,6 +392,8 @@ main(int argc, char** argv)
 
   fftw_free(out); fftw_free(in);
   fftw_destroy_plan(plan);
+  fftw_free(ft_out); fftw_free(ft_in);
+  fftw_destroy_plan(ft_plan);
 
   fprintf(stdout, "\nWriting F(w) file\n");
   fp = fopen(p->fw_file, "w");
@@ -413,18 +442,28 @@ main(int argc, char** argv)
                     "----------\n\n");
 
   VERA vera = create_VERA_from_file("in/vera_params.dat");
-  for (unsigned i = 0; i < 4; i++) {
-    fprintf(stdout, "i = %2d, w_i = %10.3f\n", i, vera.get_w_elec(i));
-  }
 
   size_t n_chl  = 14; /* number of chlorophylls */
   size_t chl_test = 0; /* this exciton's ~95% 612 */
   size_t lut    = 14; /* index of the first lutein */
   std::vector<double> k_14_vera = ki_delta_x0_ba(vera, n_chl,
-      chl_test, lut, p->tau, eig, musq, Jij, chiw, VERA_absorption);
-  for (unsigned i = 0; i < k_14_vera.size(); i++) {
-    fprintf(stdout, "%4lu   %12.8e\n", i, k_14_vera[i]);
+      chl_test, lut, p->tau, eig, Jij, normed_ai, normed_fi,
+      VERA_absorption);
+  double k_sum = 0.;
+
+  for (unsigned i = 0; i < k_14_vera.size() / 2; i++) {
+    std::vector<size_t> xa = ind2sub(i / (int)sqrt(k_14_vera.size() / 2),
+        vera.get_pop_extents());
+    std::vector<size_t> yb = ind2sub(i % (int)sqrt(k_14_vera.size() / 2),
+        vera.get_pop_extents());
+    fprintf(stdout, "%4lu - (%2u %2u %2u) <-> (%2u %2u %2u):"
+        " %10.6e, %10.6e\n", 
+        i, xa[0], xa[1], xa[2], yb[0], yb[1], yb[2],
+        k_14_vera[2 * i], k_14_vera[2 * i + 1]);
+    k_sum += k_14_vera[i];
+
   }
+  fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
 
 
   fprintf(stdout, "\n-------------------\n"
@@ -546,6 +585,8 @@ main(int argc, char** argv)
     free(chiw[i]);
     free(pump[i]);
     free(odep.Tij[i]);
+    free(normed_ai[i]);
+    free(normed_fi[i]);
   }
   /* free(gi_array); */
   free(mu);
@@ -555,6 +596,8 @@ main(int argc, char** argv)
   free(odep.Tij);
   free(pt);
   free(pt_prev);
+  free(normed_ai);
+  free(normed_fi);
   /* free(ei); */
 
   fftw_free(gi_array);

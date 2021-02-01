@@ -1055,15 +1055,19 @@ VERA::dndt(double *population, double t, pulse pump)
 
 std::vector<double>
 ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index, 
-               unsigned carotenoid, unsigned tau,
-               double **eig, double *musq, double **Jij,
-               double **chiw, pulse v_abs)
+               unsigned carotenoid, unsigned tau, double **eig,
+               double **Jij, double **normed_ai, double **normed_fi,
+               pulse v_abs)
 {
   size_t n_total = x.get_pop_extents()[0];
   double ji = 0., ji_work = 0.;
   double *abs = (double *)calloc(tau, sizeof(double));
-  double *fi  = (double *)calloc(tau, sizeof(double));
+  double *flu = (double *)calloc(tau, sizeof(double));
+  double *fi_ad  = (double *)calloc(tau, sizeof(double));
+  double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<double> ki_delta_xy_ba;
+  unsigned short print_ji = 0;
+  unsigned short print_delta_fc = 0;
 
   for (unsigned ii = 1; ii < x.get_pop_extents().size(); ii++) {
     n_total *= x.get_pop_extents()[ii];
@@ -1075,12 +1079,9 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
          * Jij[m][carotenoid] * Jij[n][carotenoid];
     }
   }
-  fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
 
-  double f_sum = 0.;
-  for (unsigned step = 0; step < tau; step++) {
-    fi[step] = chiw[chl_index][step] / musq[chl_index];
-    f_sum += fi[step];
+  if (print_ji) {
+    fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
   }
 
   for (unsigned ii = 0; ii < n_total; ii++) {
@@ -1089,6 +1090,7 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
     for (unsigned kk = 0; kk < n_total; kk++) {
       std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
       if (a[0] == b[0]) {
+        ki_delta_xy_ba.push_back(0.);
         ki_delta_xy_ba.push_back(0.);
         continue;
       } else {
@@ -1107,6 +1109,12 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
         v_abs.centre = delta_xy_ba;
         if (v_abs.width != 0 && delta_xy_ba != 0.) {
           abs = incident(v_abs, tau);
+
+          /* this is probably not right - placeholder!!
+           * need to know what the reorganisation is for
+           * each transition and then do the reverse rate */
+          v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]);
+          flu = incident(v_abs, tau);
         }
 
         /* for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) { */
@@ -1116,15 +1124,20 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
           /* for some reason i have to explicitly add the
            * chiw bit here - if i just do it outside the
            * ii/kk loops, it's zero again in here??? */
-          fi[step] = chiw[chl_index][step] * abs[step]
-                   / (musq[chl_index] * f_sum);
+          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
+          ai_fd[step] = normed_ai[chl_index][step] * flu[step];
         }
         
         /* hbar? */
-        fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
-            delta_xy_ba, fc_sq, ji_work);
-        ki_delta_xy_ba.push_back((2 * PI) *
-            pow(ji_work, 2.) * trapezoid(fi, tau));
+        if (print_delta_fc) {
+          fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
+              delta_xy_ba, fc_sq, ji_work);
+        }
+
+        ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
+            pow(ji_work, 2.) * trapezoid(fi_ad, tau));
+        ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
+            pow(ji_work, 2.) * trapezoid(ai_fd, tau));
       /* } */
       }
     } // kk

@@ -1,5 +1,4 @@
 #include "fluorescence.h"
-#include "vera.h"
 
 double*
 incident(pulse p, unsigned int tau)
