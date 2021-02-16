@@ -1054,8 +1054,8 @@ VERA::dndt(double *population, double t, pulse pump)
 }
 
 std::vector<double>
-ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index, 
-               unsigned carotenoid, unsigned tau, double **eig,
+ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
+               unsigned tau, double **eig,
                double **Jij, double **normed_ai, double **normed_fi,
                pulse v_abs)
 {
@@ -1072,76 +1072,274 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index,
   for (unsigned ii = 1; ii < x.get_pop_extents().size(); ii++) {
     n_total *= x.get_pop_extents()[ii];
   }
-  ji = 0.;
-  for (unsigned n = 0; n < n_chl; n++) {
-    for (unsigned m = 0; m < n_chl; m++) {
-      ji += eig[m][chl_index] * eig[n][chl_index]
-         * Jij[m][carotenoid] * Jij[n][carotenoid];
+
+  /* note - the 48 * 48 rate things are the same for every chlorophyll
+   * and in our case the same for both carotenoids, since we use the
+   * same parameters for both. so we could define a 48 * 48 array
+   * of those and look them up; would probably be faster overall. */
+
+  for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
+    for (unsigned carotenoid = n_chl;
+        carotenoid < n_chl + n_car; carotenoid++) {
+      /* assumes the carotenoids are at the end of the arrays;
+       * fortran code puts them there so shouldn't be an issue */
+
+      ji = 0.;
+      for (unsigned n = 0; n < n_chl; n++) {
+        for (unsigned m = 0; m < n_chl; m++) {
+          ji += eig[m][chl_index] * eig[n][chl_index]
+             * Jij[m][carotenoid] * Jij[n][carotenoid];
+        }
+      }
+
+      if (print_ji) {
+        fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
+      }
+
+      for (unsigned ii = 0; ii < n_total; ii++) {
+        std::vector<size_t> a = ind2sub(ii, x.get_pop_extents());
+
+        for (unsigned kk = 0; kk < n_total; kk++) {
+          std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
+          if (a[0] == b[0]) {
+            ki_delta_xy_ba.push_back(0.);
+            ki_delta_xy_ba.push_back(0.);
+            continue;
+          } else {
+            double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
+            v_abs.width = delta_xy_ba;
+            double fc_sq = 1.;
+
+            for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
+              delta_xy_ba += x.get_w_normal(alpha)
+                           * (int)(a[alpha + 1] - b[alpha + 1]);
+              fc_sq *= pow(x.get_fc({a[0], b[0], alpha,
+                    b[alpha + 1], a[alpha + 1]}), 2.);
+            }
+
+            /* now we have to calculate the rate between every delta_xy_ba */
+            v_abs.centre = delta_xy_ba;
+            if (v_abs.width != 0 && delta_xy_ba != 0.) {
+              abs = incident(v_abs, tau);
+
+              /* this is probably not right - placeholder!!
+               * need to know what the reorganisation is for
+               * each transition and then do the reverse rate */
+              v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]);
+              flu = incident(v_abs, tau);
+            }
+
+            ji_work = ji * fc_sq;
+
+            for (unsigned step = 0; step < tau; step++) {
+              fi_ad[step] = normed_fi[chl_index][step] * abs[step];
+              ai_fd[step] = normed_ai[chl_index][step] * flu[step];
+            }
+            
+            if (print_delta_fc) {
+              fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
+                  delta_xy_ba, fc_sq, ji_work);
+            }
+
+            ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
+                pow(ji_work, 2.) * trapezoid(fi_ad, tau));
+            ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
+                pow(ji_work, 2.) * trapezoid(ai_fd, tau));
+          /* } */
+          }
+        } // kk
+      }
+    }
+  } // chl_index
+
+  return ki_delta_xy_ba;
+}
+
+double **total_rates(unsigned n_chl, VERA car, unsigned n_car,
+unsigned n_s_car, double *gamma, double **Jij, double *k_i_delta,
+double **redfield_rates)
+{
+  unsigned n_tot = n_chl + 1 + (n_car * n_s_car);
+  double **k_tot = (double **)calloc(n_tot, sizeof(double*));
+  for (unsigned i = 0; i < n_tot; i++) {
+    k_tot[i] = (double *)calloc(n_tot, sizeof(double));
+  }
+
+  std::vector<size_t> extents = {n_chl, n_car, n_s_car, n_s_car, 2};
+
+  /* note - might not need 0 < j < n_tot; might just be
+   * i < j < n_tot and then fill in the rest with detailed balance etc.
+   * but i need to think about that - redfield rates have it built in,
+   * i think we have to do it manually here when summing over the
+   * chl-car rates? */
+  for (unsigned i = 0; i < n_tot; i++) {
+    for (unsigned j = 0; j < n_tot; j++) {
+      bool i_rgs = (i == 0);
+      bool j_rgs = (j == 0);
+      bool i_chls = (i > 0 && i <= n_chl);
+      bool j_chls = (j > 0 && j <= n_chl);
+      bool i_620 = (i > n_chl && i < n_chl + 1 + n_car);
+      bool j_620 = (j > n_chl && j < n_chl + 1 + n_car);
+      bool i_621 = (i >= n_chl + 1 + n_car);
+      bool j_621 = (j >= n_chl + 1 + n_car);
+
+      if (i_rgs) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          k_tot[i][j] += gamma[j];
+        }
+        if (j_620) {
+          continue;
+        }
+        if (j_621) {
+          continue;
+        }
+      }
+
+      if (j_rgs) {
+        /* nothing comes out of Redfield ground state */
+        continue;
+      }
+
+      if (i_chls) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          /* redfield rate: i/j - 1 because of ground state */
+          k_tot[i][j] = redfield_rates[i - 1][j - 1];
+        }
+        if (j_620) {
+          double rate = 0.;
+          for (unsigned k = 0; k < n_s_car; k++) {
+            /* sum over all other 620 vibronic states other
+             * than g/s; the trouble here is gonna be indexing.
+             * now: j corresponds to some vibronic state on 620.
+             * find every transition rate k_i_delta which ends on
+             * that state and sum them to get the total incoming
+             * rate for that state.
+             * do we count the electronic ground state? not sure. */
+
+            rate = 0.;
+            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
+                                            n_s_car, 2};
+            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1),
+            car.get_pop_extents());
+            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1),
+            car.get_pop_extents());
+
+            /* NB: don't think we actually need this check, since
+             * the rate will have been filled in as 0 if j = k in
+             * the delta_i_xyab function. but can't hurt? */
+            if (j_subs != k_subs) {
+              /* so glad we can just do j_subs == k_subs, wasn't
+               * sure it would actually work but */
+              rate += k_i_delta[sub2ind({i, 0, j, k, 0}, k_i_d_ex)];
+            }
+          }
+          k_tot[i][j] = rate;
+        }
+        if (j_621) {
+          double rate = 0.;
+          for (unsigned k = 0; k < n_s_car; k++) {
+            /* sum over 621 vibronic states */
+            rate = 0.;
+            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
+                                            n_s_car, 2};
+            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1 + n_s_car),
+            car.get_pop_extents());
+            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1 + n_s_car),
+            car.get_pop_extents());
+
+            if (j_subs != k_subs) {
+              /* so glad we can just do j_subs == k_subs, wasn't
+               * sure it would actually work but */
+              rate += k_i_delta[sub2ind({i, 1, j, k, 0}, k_i_d_ex)];
+            }
+          }
+          k_tot[i][j] = rate;
+        }
+      }
+
+      if (i_620) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          /* this is the fiddly bit: where exactly is detailed balance
+           * imposed, and how? I think we take the reverse rates as
+           * I've done here, then add a Boltzmann factor to the
+           * summed rate (this requires knowing the energy of each
+           * vibronic state on the carotenoid!) */
+          double rate = 0.;
+          for (unsigned k = 0; k < n_s_car; k++) {
+            rate = 0.;
+            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
+                                            n_s_car, 2};
+            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1),
+            car.get_pop_extents());
+            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1),
+            car.get_pop_extents());
+
+            if (j_subs != k_subs) {
+              /* reverse rate - 1 in the final index */
+              rate += k_i_delta[sub2ind({i, 0, j, k, 1}, k_i_d_ex)];
+            }
+          }
+          k_tot[i][j] = rate;
+        }
+        if (j_620) {
+          /* here we need a sum over the IVR / IC rates
+           * - no pumping term here obviously */
+        }
+        if (j_621) {
+          continue; /* inter-car rates assumed to be zero */
+        }
+      }
+
+      if (i_621) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          /* this is the fiddly bit: where exactly is detailed balance
+           * imposed, and how? I think we take the reverse rates as
+           * I've done here, then add a Boltzmann factor to the
+           * summed rate (this requires knowing the energy of each
+           * vibronic state on the carotenoid!) */
+          double rate = 0.;
+          for (unsigned k = 0; k < n_s_car; k++) {
+            rate = 0.;
+            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
+                                            n_s_car, 2};
+            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1 + n_s_car),
+            car.get_pop_extents());
+            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1 + n_s_car),
+            car.get_pop_extents());
+
+            if (j_subs != k_subs) {
+              /* reverse rate - 1 in the final index */
+              rate += k_i_delta[sub2ind({i, 1, j, k, 1}, k_i_d_ex)];
+            }
+          }
+          /* something like: need to check (e_chl > e_car) or w/e */
+          /* rate *= exp(- beta * (e_chl - e_car)); */
+          k_tot[i][j] = rate;
+        }
+        if (j_620) {
+          continue;
+        }
+        if (j_621) {
+          /* sum over IVR/IC rates */
+        }
+      }
+
     }
   }
 
-  if (print_ji) {
-    fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
-  }
 
-  for (unsigned ii = 0; ii < n_total; ii++) {
-    std::vector<size_t> a = ind2sub(ii, x.get_pop_extents());
-
-    for (unsigned kk = 0; kk < n_total; kk++) {
-      std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
-      if (a[0] == b[0]) {
-        ki_delta_xy_ba.push_back(0.);
-        ki_delta_xy_ba.push_back(0.);
-        continue;
-      } else {
-        double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
-        v_abs.width = delta_xy_ba;
-        double fc_sq = 1.;
-
-        for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
-          delta_xy_ba += x.get_w_normal(alpha)
-                       * (int)(a[alpha + 1] - b[alpha + 1]);
-          fc_sq *= pow(x.get_fc({a[0], b[0], alpha,
-                b[alpha + 1], a[alpha + 1]}), 2.);
-        }
-
-        /* now we have to calculate the rate between every delta_xy_ba */
-        v_abs.centre = delta_xy_ba;
-        if (v_abs.width != 0 && delta_xy_ba != 0.) {
-          abs = incident(v_abs, tau);
-
-          /* this is probably not right - placeholder!!
-           * need to know what the reorganisation is for
-           * each transition and then do the reverse rate */
-          v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]);
-          flu = incident(v_abs, tau);
-        }
-
-        /* for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) { */
-        ji_work = ji * fc_sq;
-
-        for (unsigned step = 0; step < tau; step++) {
-          /* for some reason i have to explicitly add the
-           * chiw bit here - if i just do it outside the
-           * ii/kk loops, it's zero again in here??? */
-          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
-          ai_fd[step] = normed_ai[chl_index][step] * flu[step];
-        }
-        
-        /* hbar? */
-        if (print_delta_fc) {
-          fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
-              delta_xy_ba, fc_sq, ji_work);
-        }
-
-        ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
-            pow(ji_work, 2.) * trapezoid(fi_ad, tau));
-        ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
-            pow(ji_work, 2.) * trapezoid(ai_fd, tau));
-      /* } */
-      }
-    } // kk
-  }
-  return ki_delta_xy_ba;
+  return k_tot;
 }
 
