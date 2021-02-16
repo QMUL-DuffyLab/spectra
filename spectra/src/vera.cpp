@@ -1055,9 +1055,9 @@ VERA::dndt(double *population, double t, pulse pump)
 
 std::vector<double>
 ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
-               unsigned tau, double **eig,
+               unsigned tau, double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
-               pulse v_abs)
+               pulse v_abs, double beta)
 {
   size_t n_total = x.get_pop_extents()[0];
   double ji = 0., ji_work = 0.;
@@ -1098,57 +1098,94 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
 
       for (unsigned ii = 0; ii < n_total; ii++) {
         std::vector<size_t> a = ind2sub(ii, x.get_pop_extents());
+        double e_xa = 0.;
+        double chl_car = 0.;
+        double car_chl = 0.;
 
-        for (unsigned kk = 0; kk < n_total; kk++) {
-          std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
-          if (a[0] == b[0]) {
-            ki_delta_xy_ba.push_back(0.);
-            ki_delta_xy_ba.push_back(0.);
-            continue;
-          } else {
-            double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
-            v_abs.width = delta_xy_ba;
-            double fc_sq = 1.;
+        if (a[0] == 0) {
+          ki_delta_xy_ba.push_back(0.);
+          ki_delta_xy_ba.push_back(0.);
+          continue; /* excitons cannot couple to g/s */
+        } else {
+          for (unsigned kk = 0; kk < n_total; kk++) {
+            if (ii == kk) continue;
 
-            for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
-              delta_xy_ba += x.get_w_normal(alpha)
-                           * (int)(a[alpha + 1] - b[alpha + 1]);
-              fc_sq *= pow(x.get_fc({a[0], b[0], alpha,
-                    b[alpha + 1], a[alpha + 1]}), 2.);
+            std::vector<size_t> b = ind2sub(kk, x.get_pop_extents());
+            if (a[0] == b[0]) {
+              continue;
+            } else {
+              double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
+              e_xa = x.get_w_elec(a[0]);
+              v_abs.width = delta_xy_ba;
+              double fc_sq = 1.;
+
+              for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
+                delta_xy_ba += x.get_w_normal(alpha)
+                             * (int)(a[alpha + 1] - b[alpha + 1]);
+                e_xa += x.get_w_normal(alpha) * a[alpha + 1];
+                fc_sq *= pow(x.get_fc({a[0], b[0], alpha,
+                      b[alpha + 1], a[alpha + 1]}), 2.);
+              }
+
+              /* now we have to calculate the rate between every delta_xy_ba */
+              v_abs.centre = delta_xy_ba;
+              if (v_abs.width != 0 && delta_xy_ba != 0.) {
+                abs = incident(v_abs, tau);
+
+                /* this is probably not right - placeholder!!
+                 * need to know what the reorganisation is for
+                 * each transition and then do the reverse rate */
+                v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]);
+                flu = incident(v_abs, tau);
+              }
+
+              ji_work = ji * fc_sq;
+
+              for (unsigned step = 0; step < tau; step++) {
+                fi_ad[step] = normed_fi[chl_index][step] * abs[step];
+                ai_fd[step] = normed_ai[chl_index][step] * flu[step];
+              }
+              
+              if (print_delta_fc) {
+                fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
+                    delta_xy_ba, fc_sq, ji_work);
+              }
+
+              chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
+              car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
+
+              /* ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) * */
+              /*     pow(ji_work, 2.) * trapezoid(fi_ad, tau)); */
+              /* ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) * */
+              /*     pow(ji_work, 2.) * trapezoid(ai_fd, tau)); */
+            /* } */
             }
+          } // kk
+        }
 
-            /* now we have to calculate the rate between every delta_xy_ba */
-            v_abs.centre = delta_xy_ba;
-            if (v_abs.width != 0 && delta_xy_ba != 0.) {
-              abs = incident(v_abs, tau);
+        /* here we can do the detailed balance check - the push back
+         * will be here once the sum is sorted out */
+        chl_car *= CM_PER_PS * 2 * PI;
+        car_chl *= CM_PER_PS * 2 * PI;
+        /* penalise the upward rate - detailed balance */
+        if (eigvals[chl_index] > e_xa) {
+          car_chl *= exp(-beta * (eigvals[chl_index] - e_xa));
+        } else {
+          chl_car *= exp(-beta * (e_xa - eigvals[chl_index]));
+        }
+        ki_delta_xy_ba.push_back(chl_car);
+        ki_delta_xy_ba.push_back(car_chl);
 
-              /* this is probably not right - placeholder!!
-               * need to know what the reorganisation is for
-               * each transition and then do the reverse rate */
-              v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]);
-              flu = incident(v_abs, tau);
-            }
+        bool print_details = false;
+        if (print_details) {
+          fprintf(stdout, "chl = %2u, car = %2u,"
+          " state = (%2lu, %2lu, %2lu): e_chl = %10.6e,"
+          " e_car = %10.6e, forward rate = %10.6e,"
+          " backward_rate = %10.6e\n", chl_index, carotenoid,
+          a[0], a[1], a[2], eigvals[chl_index], e_xa, chl_car, car_chl);
+        }
 
-            ji_work = ji * fc_sq;
-
-            for (unsigned step = 0; step < tau; step++) {
-              fi_ad[step] = normed_fi[chl_index][step] * abs[step];
-              ai_fd[step] = normed_ai[chl_index][step] * flu[step];
-            }
-            
-            if (print_delta_fc) {
-              fprintf(stdout, "%5u %5u %12.8e %12.8e %12.8e\n", ii, kk, 
-                  delta_xy_ba, fc_sq, ji_work);
-            }
-
-            ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
-                pow(ji_work, 2.) * trapezoid(fi_ad, tau));
-            ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) *
-                pow(ji_work, 2.) * trapezoid(ai_fd, tau));
-          /* } */
-          }
-        } // kk
-      }
+      } // ii
     }
   } // chl_index
 

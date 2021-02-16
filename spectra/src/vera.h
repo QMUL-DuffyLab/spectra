@@ -139,10 +139,10 @@ k_inter(std::vector<size_t> e_ij,
 double k_calc(double w, double beta, double lambda, double gamma);
 
 std::vector<double>
-ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned chl_index, 
-               unsigned carotenoid, unsigned tau, double **eig,
+ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
+               unsigned tau, double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
-               pulse v_abs);
+               pulse v_abs, double beta);
 
 
 #endif

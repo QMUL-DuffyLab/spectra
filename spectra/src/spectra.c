@@ -443,23 +443,23 @@ main(int argc, char** argv)
 
   VERA vera = create_VERA_from_file("in/vera_params.dat");
 
-  size_t n_chl  = 14; /* number of chlorophylls */
+  size_t n_chl    = 14; /* number of chlorophylls */
   size_t chl_test = 0; /* this exciton's ~95% 612 */
-  size_t lut    = 14; /* index of the first lutein */
+  size_t n_car    = 2;
+  double beta     = 1. / protocol.T;
   std::vector<double> k_14_vera = ki_delta_x0_ba(vera, n_chl,
-      chl_test, lut, p->tau, eig, Jij, normed_ai, normed_fi,
-      VERA_absorption);
+      n_car, p->tau, eig, eigvals, Jij, normed_ai, normed_fi,
+      VERA_absorption, beta);
   double k_sum = 0.;
 
-  for (unsigned i = 0; i < k_14_vera.size() / 2; i++) {
-    std::vector<size_t> xa = ind2sub(i / (int)sqrt(k_14_vera.size() / 2),
+  for (unsigned i = 0; i < k_14_vera.size(); i = i + 2) {
+    std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});
+    std::vector<size_t> xa = ind2sub(subs[2],
         vera.get_pop_extents());
-    std::vector<size_t> yb = ind2sub(i % (int)sqrt(k_14_vera.size() / 2),
-        vera.get_pop_extents());
-    fprintf(stdout, "%4lu - (%2u %2u %2u) <-> (%2u %2u %2u):"
+    fprintf(stdout, "%4u - (%2u) <-> (%2u %2u %2u):"
         " %10.6e, %10.6e\n", 
-        i, xa[0], xa[1], xa[2], yb[0], yb[1], yb[2],
-        k_14_vera[2 * i], k_14_vera[2 * i + 1]);
+        i, subs[0], xa[0], xa[1], xa[2],
+        k_14_vera[i], k_14_vera[i + 1]);
     k_sum += k_14_vera[i];
 
   }
