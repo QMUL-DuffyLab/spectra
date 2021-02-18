@@ -1054,7 +1054,7 @@ VERA::dndt(double *population, double t, pulse pump)
 }
 
 std::vector<double>
-ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
+k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
                unsigned tau, double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
                pulse v_abs, double beta)
@@ -1062,10 +1062,9 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
   size_t n_total = x.get_pop_extents()[0];
   double ji = 0., ji_work = 0.;
   double *abs = (double *)calloc(tau, sizeof(double));
-  double *flu = (double *)calloc(tau, sizeof(double));
   double *fi_ad  = (double *)calloc(tau, sizeof(double));
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
-  std::vector<double> ki_delta_xy_ba;
+  std::vector<double> k_i_xa;
   unsigned short print_ji = 0;
   unsigned short print_delta_fc = 0;
 
@@ -1103,8 +1102,8 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
         double car_chl = 0.;
 
         if (a[0] == 0) {
-          ki_delta_xy_ba.push_back(0.);
-          ki_delta_xy_ba.push_back(0.);
+          k_i_xa.push_back(0.);
+          k_i_xa.push_back(0.);
           continue; /* excitons cannot couple to g/s */
         } else {
           for (unsigned kk = 0; kk < n_total; kk++) {
@@ -1116,7 +1115,8 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
             } else {
               double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
               e_xa = x.get_w_elec(a[0]);
-              v_abs.width = delta_xy_ba;
+              /* NB: this shouldn't be hardcoded!!! */
+              v_abs.width = 1200.0;
               double fc_sq = 1.;
 
               for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
@@ -1135,15 +1135,25 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
                 /* this is probably not right - placeholder!!
                  * need to know what the reorganisation is for
                  * each transition and then do the reverse rate */
-                v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]);
-                flu = incident(v_abs, tau);
+                /* v_abs.centre += 2.* x.get_l_ic_ij(a[0], b[0]); */
+                /* flu = incident(v_abs, tau); */
               }
 
               ji_work = ji * fc_sq;
+              /* the coupling is actually to S1!! */
+              /* i've done this this way because it's possible that
+               * we might want couplings to other electronic states
+               * as well; in that case, we'd keep the sums like this.
+               * if we never want that we could limit the ii sum to
+               * a[0] == 1 only */
+              if (a[0] != 1) {
+                ji_work = 0.;
+              }
 
               for (unsigned step = 0; step < tau; step++) {
                 fi_ad[step] = normed_fi[chl_index][step] * abs[step];
-                ai_fd[step] = normed_ai[chl_index][step] * flu[step];
+                /* abs in the next line was flu!! */
+                ai_fd[step] = normed_ai[chl_index][step] * abs[step];
               }
               
               if (print_delta_fc) {
@@ -1173,8 +1183,8 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
         } else {
           chl_car *= exp(-beta * (e_xa - eigvals[chl_index]));
         }
-        ki_delta_xy_ba.push_back(chl_car);
-        ki_delta_xy_ba.push_back(car_chl);
+        k_i_xa.push_back(chl_car);
+        k_i_xa.push_back(car_chl);
 
         bool print_details = false;
         if (print_details) {
@@ -1188,8 +1198,192 @@ ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
       } // ii
     }
   } // chl_index
+  free(abs);
+  free(fi_ad);
+  free(ai_fd);
 
-  return ki_delta_xy_ba;
+  return k_i_xa;
+}
+
+std::vector<double>
+VERA::intra_rates()
+{
+  std::vector<size_t> n_extents;
+  std::vector<size_t> vib_extents;
+  n_extents.push_back(n_elec);
+  size_t n_total = n_elec;
+  for (size_t i = 0; i < n_normal; i++) {
+    n_extents.push_back(n_vib + 1);
+    vib_extents.push_back(n_vib + 1);
+    n_total *= (n_vib + 1);
+  }
+  
+  std::vector<double> rates(pow(n_total, 2), 0.);
+
+  std::vector<size_t> subscripts(n_extents.size(), 0);
+  std::vector<size_t> sub_lower(n_extents.size(), 0),
+                      sub_upper(n_extents.size(), 0);
+  size_t i_lower = 0, i_upper = 0;
+  for (size_t i = 0; i < n_total; i++) {
+    subscripts = ind2sub(i, n_extents);  
+     
+    /* IVR. can probably be optimised */
+    for (size_t alpha = 0; alpha < n_normal; alpha++) {
+      if (subscripts[alpha + 1] > 0) {
+
+        sub_lower = subscripts;
+        sub_lower[alpha + 1]--;
+        i_lower = sub2ind(sub_lower, n_extents);
+
+        /* loss of population to lower vibronic state */
+        rates[sub2ind({i, i_lower}, {n_total, n_total})] +=
+          subscripts[alpha + 1]
+        * k_ivr[sub2ind({subscripts[0], alpha, 0},
+          {n_elec, n_normal, 2})];
+
+        /* gain of population from level below */
+        rates[sub2ind({i_lower, i}, {n_total, n_total})] +=
+          subscripts[alpha + 1]
+        * k_ivr[sub2ind({subscripts[0], alpha, 1},
+          {n_elec, n_normal, 2})];
+      }
+
+      if (subscripts[alpha + 1] < n_vib) {
+        sub_upper = subscripts;
+        sub_upper[alpha + 1]++;
+        i_upper = sub2ind(sub_upper, n_extents);
+
+        /* loss of population to upper state */
+        rates[sub2ind({i, i_upper}, {n_total, n_total})] +=
+          (subscripts[alpha + 1] + 1.)
+        * k_ivr[sub2ind({subscripts[0], alpha, 1},
+          {n_elec, n_normal, 2})];
+        /* gain from the upper state */
+        rates[sub2ind({i_upper, i}, {n_total, n_total})] +=
+          (subscripts[alpha + 1] + 1.)
+        * k_ivr[sub2ind({subscripts[0], alpha, 0},
+          {n_elec, n_normal, 2})];
+      }
+    }
+
+  }
+
+  /* interconversion */
+  /* can probably be folded into above loop but
+   * i haven't figured out how yet exactly */
+
+  for (size_t i = 0; i < n_elec; i++) {
+    for (size_t j = 0; j < (pow((n_vib + 1), n_normal)); j++) {
+      std::vector<size_t> a = ind2sub(j, vib_extents);
+      for (size_t k = 0; k < (pow((n_vib + 1), n_normal)); k++) {
+        std::vector<size_t> b = ind2sub(k, vib_extents);
+
+        /* indices */
+        std::vector<size_t> n_i, n_i_plus, n_i_minus;
+        std::vector<size_t> k_ba_ji, k_ba_ij, k_ab_ji, k_ab_ij;
+        k_ba_ji = {i + 1, i};
+        k_ba_ij = {i, i + 1};
+        k_ab_ji = {i - 1, i};
+        k_ab_ij = {i, i - 1};
+        n_i.push_back(i); 
+        n_i_plus.push_back(i + 1); 
+        n_i_minus.push_back(i - 1); 
+        for (size_t ai = 0; ai < a.size(); ai++) {
+          n_i.push_back(a[ai]);
+          k_ab_ji.push_back(a[ai]);
+          k_ab_ij.push_back(a[ai]);
+        }
+        for (size_t bi = 0; bi < b.size(); bi++) {
+          n_i_plus.push_back(b[bi]);
+          n_i_minus.push_back(b[bi]);
+          k_ba_ji.push_back(b[bi]);
+          k_ba_ij.push_back(b[bi]);
+        }
+        size_t n_i_ind = sub2ind(n_i, n_extents);
+        size_t n_i_plus_ind = sub2ind(n_i_plus, n_extents);
+        size_t n_i_minus_ind = sub2ind(n_i_minus, n_extents);
+
+        /* two sets of vibrational indices to worry about */
+        for (size_t ai = 0; ai < a.size(); ai++) {
+          k_ba_ji.push_back(a[ai]);
+          k_ba_ij.push_back(a[ai]);
+        }
+        for (size_t bi = 0; bi < b.size(); bi++) {
+          k_ab_ji.push_back(b[bi]);
+          k_ab_ij.push_back(b[bi]);
+        }
+
+        if (i == 0) { /* electronic ground state */
+          double fc_i_plus = 1.;
+          for (size_t alpha = 0; alpha < n_normal; alpha++) {
+            fc_i_plus *= pow(fc[sub2ind({i, i + 1, alpha, 
+                      a[alpha], b[alpha]}, fc_extents)], 2.);
+          }
+
+          rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
+            fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
+
+          rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] +=
+            fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)];
+
+        } else if (i == n_elec - 1) { /* highest electronic state */
+          double fc_i_minus = 1.;
+          for (size_t alpha = 0; alpha < n_normal; alpha++) {
+            fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
+                      b[alpha], a[alpha]}, fc_extents)], 2.);
+          }
+
+          rates[sub2ind({n_i_ind, n_i_minus_ind}, {n_total, n_total})] +=
+            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
+          rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] +=
+            fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)];
+
+        } else { /* intermediate */
+          double fc_i_plus = 1.; double fc_i_minus = 1.;
+          for (size_t alpha = 0; alpha < n_normal; alpha++) {
+            fc_i_plus *= pow(fc[sub2ind({i, i + 1, alpha, 
+                      a[alpha], b[alpha]}, fc_extents)], 2.);
+            fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
+                      b[alpha], a[alpha]}, fc_extents)], 2.);
+          }
+
+          rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
+            fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
+
+          rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] +=
+            fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)];
+
+          rates[sub2ind({n_i_ind, n_i_minus_ind}, {n_total, n_total})] +=
+            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
+          rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] +=
+            fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)];
+
+        } /* end of electronic state if/else */
+
+      }
+    }
+  }
+
+  /* no pumping here - could add a switch for it i guess */
+
+  return rates;
+}
+
+void
+intra_rate_test(double *population, std::vector<double> rates,
+size_t n_total, double *res)
+{
+  double **rate_matrix = (double **)calloc(n_total, sizeof(double*));
+  for (unsigned i = 0; i < n_total; i++) {
+    rate_matrix[i] = (double *)calloc(n_total, sizeof(double));
+  }
+  for (unsigned i = 0; i < n_total; i++) {
+    for (unsigned j = 0; j < n_total; j++) {
+      rate_matrix[i][j] = rates[sub2ind({i, j}, {n_total, n_total})];
+    }
+  }
+
+  matvec(n_total, rate_matrix, population, res);
 }
 
 double **total_rates(unsigned n_chl, VERA car, unsigned n_car,
@@ -1202,7 +1396,7 @@ double **redfield_rates)
     k_tot[i] = (double *)calloc(n_tot, sizeof(double));
   }
 
-  std::vector<size_t> extents = {n_chl, n_car, n_s_car, n_s_car, 2};
+  std::vector<size_t> extents = {n_chl, n_car, n_s_car, 2};
 
   /* note - might not need 0 < j < n_tot; might just be
    * i < j < n_tot and then fill in the rest with detailed balance etc.
@@ -1249,54 +1443,12 @@ double **redfield_rates)
           k_tot[i][j] = redfield_rates[i - 1][j - 1];
         }
         if (j_620) {
-          double rate = 0.;
-          for (unsigned k = 0; k < n_s_car; k++) {
-            /* sum over all other 620 vibronic states other
-             * than g/s; the trouble here is gonna be indexing.
-             * now: j corresponds to some vibronic state on 620.
-             * find every transition rate k_i_delta which ends on
-             * that state and sum them to get the total incoming
-             * rate for that state.
-             * do we count the electronic ground state? not sure. */
-
-            rate = 0.;
-            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
-                                            n_s_car, 2};
-            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1),
-            car.get_pop_extents());
-            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1),
-            car.get_pop_extents());
-
-            /* NB: don't think we actually need this check, since
-             * the rate will have been filled in as 0 if j = k in
-             * the delta_i_xyab function. but can't hurt? */
-            if (j_subs != k_subs) {
-              /* so glad we can just do j_subs == k_subs, wasn't
-               * sure it would actually work but */
-              rate += k_i_delta[sub2ind({i, 0, j, k, 0}, k_i_d_ex)];
-            }
-          }
-          k_tot[i][j] = rate;
+          k_tot[i][j] = k_i_delta[sub2ind({i, 0, j - (n_chl + 1), 0},
+                        extents)];
         }
         if (j_621) {
-          double rate = 0.;
-          for (unsigned k = 0; k < n_s_car; k++) {
-            /* sum over 621 vibronic states */
-            rate = 0.;
-            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
-                                            n_s_car, 2};
-            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1 + n_s_car),
-            car.get_pop_extents());
-            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1 + n_s_car),
-            car.get_pop_extents());
-
-            if (j_subs != k_subs) {
-              /* so glad we can just do j_subs == k_subs, wasn't
-               * sure it would actually work but */
-              rate += k_i_delta[sub2ind({i, 1, j, k, 0}, k_i_d_ex)];
-            }
-          }
-          k_tot[i][j] = rate;
+          k_tot[i][j] = k_i_delta[sub2ind({i, 1, j - (n_car + n_chl + 1), 0},
+                        extents)];
         }
       }
 
@@ -1305,27 +1457,8 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          /* this is the fiddly bit: where exactly is detailed balance
-           * imposed, and how? I think we take the reverse rates as
-           * I've done here, then add a Boltzmann factor to the
-           * summed rate (this requires knowing the energy of each
-           * vibronic state on the carotenoid!) */
-          double rate = 0.;
-          for (unsigned k = 0; k < n_s_car; k++) {
-            rate = 0.;
-            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
-                                            n_s_car, 2};
-            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1),
-            car.get_pop_extents());
-            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1),
-            car.get_pop_extents());
-
-            if (j_subs != k_subs) {
-              /* reverse rate - 1 in the final index */
-              rate += k_i_delta[sub2ind({i, 0, j, k, 1}, k_i_d_ex)];
-            }
-          }
-          k_tot[i][j] = rate;
+          k_tot[i][j] = k_i_delta[sub2ind({i, 0, j - (n_car + n_chl + 1), 1},
+                        extents)];
         }
         if (j_620) {
           /* here we need a sum over the IVR / IC rates
@@ -1341,29 +1474,8 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          /* this is the fiddly bit: where exactly is detailed balance
-           * imposed, and how? I think we take the reverse rates as
-           * I've done here, then add a Boltzmann factor to the
-           * summed rate (this requires knowing the energy of each
-           * vibronic state on the carotenoid!) */
-          double rate = 0.;
-          for (unsigned k = 0; k < n_s_car; k++) {
-            rate = 0.;
-            std::vector<size_t> k_i_d_ex = {n_chl, n_car, n_s_car,
-                                            n_s_car, 2};
-            std::vector<size_t> j_subs = ind2sub(j - (n_chl + 1 + n_s_car),
-            car.get_pop_extents());
-            std::vector<size_t> k_subs = ind2sub(k - (n_chl + 1 + n_s_car),
-            car.get_pop_extents());
-
-            if (j_subs != k_subs) {
-              /* reverse rate - 1 in the final index */
-              rate += k_i_delta[sub2ind({i, 1, j, k, 1}, k_i_d_ex)];
-            }
-          }
-          /* something like: need to check (e_chl > e_car) or w/e */
-          /* rate *= exp(- beta * (e_chl - e_car)); */
-          k_tot[i][j] = rate;
+          k_tot[i][j] = k_i_delta[sub2ind({i, 1, j - (n_car + n_chl + 1), 1},
+                        extents)];
         }
         if (j_620) {
           continue;

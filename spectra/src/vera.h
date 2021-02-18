@@ -57,6 +57,7 @@ class VERA {
     void set_k_ic(double beta);
     std::vector<double> dndt(double *population,
                              double t, pulse pump);
+    std::vector<double> intra_rates();
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
     std::vector<size_t> get_extents();
@@ -139,7 +140,7 @@ k_inter(std::vector<size_t> e_ij,
 double k_calc(double w, double beta, double lambda, double gamma);
 
 std::vector<double>
-ki_delta_x0_ba(VERA x, unsigned n_chl, unsigned n_car,
+k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
                unsigned tau, double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
                pulse v_abs, double beta);
