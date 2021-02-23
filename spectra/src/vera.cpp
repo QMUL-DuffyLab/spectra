@@ -200,10 +200,10 @@ VERA
 create_VERA_from_file(char *filename)
 {
   size_t i, n_elec, n_normal, n_vib = 0;
-  double beta = 0.;
+  double beta = 0.; double mu_ratio = 0.; double s2_stokes = 0.;
   std::string line, rest;
   std::string::size_type sz;
-  std::vector<double> w_elec, w_normal,
+  std::vector<double> w_elec, w_normal, widths,
     l_ic_ij, l_ivr_i, g_ic_ij, g_ivr_i, disp;
   std::ifstream param_file;
   param_file.open(filename);
@@ -226,6 +226,14 @@ create_VERA_from_file(char *filename)
         sz = line.find("=") + 1;
         beta = std::stod(line.substr(sz));
       }
+      if (line.find("mu_ratio")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        mu_ratio = std::stod(line.substr(sz));
+      }
+      if (line.find("s2_stokes")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        s2_stokes = std::stod(line.substr(sz));
+      }
       /* arrays - given as name = space-separated list e.g. 
        * w_elec = 0.0 10000.0 20000.0 30000.0 */
       if (line.find("w_elec")!=std::string::npos) {
@@ -241,6 +249,14 @@ create_VERA_from_file(char *filename)
         rest = line.substr(sz);
         for (i = 0; i < n_normal; i++) {
           w_normal.push_back(std::stod(rest, &sz));
+          rest = rest.substr(sz);
+        }
+      }
+      if (line.find("widths")!=std::string::npos) {
+        sz = line.find("=") + 1;
+        rest = line.substr(sz);
+        while (!rest.empty()) {
+          widths.push_back(std::stod(rest, &sz));
           rest = rest.substr(sz);
         }
       }
@@ -299,10 +315,12 @@ create_VERA_from_file(char *filename)
   }
 
   /* could add pumping parameters here if necessary */
-  std::cout << "n_elec = " << n_elec << std::endl;
-  std::cout << "n_normal = " << n_normal << std::endl;
-  std::cout << "n_vib = " << n_vib << std::endl;
-  std::cout << "beta = " << beta << std::endl;
+  std::cout << "n_elec = "    << n_elec     << std::endl;
+  std::cout << "n_normal = "  << n_normal   << std::endl;
+  std::cout << "n_vib = "     << n_vib      << std::endl;
+  std::cout << "beta = "      << beta       << std::endl;
+  std::cout << "mu_ratio = "  << mu_ratio   << std::endl;
+  std::cout << "s2_stokes = " << s2_stokes  << std::endl;
   std::cout << "w_elec = ";
   for (i = 0; i < w_elec.size(); i++ ) {
     std::cout << w_elec[i] << " ";
@@ -311,6 +329,11 @@ create_VERA_from_file(char *filename)
   std::cout << "w_normal = ";
   for (i = 0; i < w_normal.size(); i++ ) {
     std::cout << w_normal[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "widths = ";
+  for (i = 0; i < widths.size(); i++ ) {
+    std::cout << widths[i] << " ";
   }
   std::cout << std::endl;
   std::cout << "l_ic_ij = ";
@@ -339,16 +362,16 @@ create_VERA_from_file(char *filename)
   }
   std::cout << std::endl;
   VERA result = VERA(n_elec, n_normal, n_vib, beta,
-      w_elec, w_normal, l_ic_ij, l_ivr_i, g_ic_ij,
-      g_ivr_i, disp);
-  std::complex<double> elem;
+      mu_ratio, s2_stokes, w_elec, w_normal, widths,
+      l_ic_ij, l_ivr_i, g_ic_ij, g_ivr_i, disp);
   return result;
 }
 
 VERA::VERA(size_t elec, size_t norm, size_t vib,
-    double bet,
+    double bet, double mu_r, double s2_s,
     double* wi, size_t n_wi,
     double* w_mode, size_t n_mode,
+    double* wid, size_t n_wid,
     double** l_ic, size_t side_l,
     double* l_ivr, size_t n_l,
     double** g_ic, size_t side_g,
@@ -358,11 +381,14 @@ VERA::VERA(size_t elec, size_t norm, size_t vib,
   : n_elec(elec),
     n_normal(norm),
     n_vib(vib),
-    beta(bet)
+    beta(bet),
+    mu_ratio(mu_r),
+    s2_stokes(s2_s)
 {
   set_extents();
   set_w_elec(wi, n_wi);
   set_w_normal(w_mode, n_mode);
+  set_widths(wid, n_wid);
   set_l_ic_ij(l_ic, side_l);
   set_l_ivr_i(l_ivr, n_l);
   set_g_ic_ij(g_ic, side_g);
@@ -374,9 +400,10 @@ VERA::VERA(size_t elec, size_t norm, size_t vib,
 }
 
 VERA::VERA(size_t elec, size_t norm, size_t vib,
-    double bet,
+    double bet, double mu_r, double s2_s,
     std::vector<double> wi,
     std::vector<double> w_mode,
+    std::vector<double> wid,
     std::vector<double> l_ic,
     std::vector<double> l_ivr,
     std::vector<double> g_ic,
@@ -386,11 +413,14 @@ VERA::VERA(size_t elec, size_t norm, size_t vib,
   : n_elec(elec),
     n_normal(norm),
     n_vib(vib),
-    beta(bet)
+    beta(bet),
+    mu_ratio(mu_r),
+    s2_stokes(s2_s)
 {
   set_extents();
   set_w_elec(wi);
   set_w_normal(w_mode);
+  set_widths(wid);
   set_l_ic_ij(l_ic);
   set_l_ivr_i(l_ivr);
   set_g_ic_ij(g_ic);
@@ -450,6 +480,24 @@ VERA::set_w_normal(std::vector<double> w_mode)
   }
   for (size_t i = 0; i < w_mode.size(); i++) {
     w_normal.push_back(w_mode[i]);
+  }
+}
+
+void
+VERA::set_widths(double* wid, size_t n_widths)
+{
+  /* note - could specify the wi as a vector too. HMMM */
+  for (size_t i = 0; i < n_widths; i++) {
+    widths.push_back(wid[i]);
+  }
+}
+
+void
+VERA::set_widths(std::vector<double> wid)
+{
+  /* note - could specify the wi as a vector too. HMMM */
+  for (size_t i = 0; i < wid.size(); i++) {
+    widths.push_back(wid[i]);
   }
 }
 
@@ -1045,7 +1093,8 @@ VERA::dndt(double *population, double t, pulse pump)
     ivr_sum  += dndt_ivr[i];
     ic_sum   += dndt_ic[i];
     pump_sum += dndt_pump[i];
-    dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i];
+    dndt[i] = dndt_ivr[i] + dndt_ic[i];
+    /* dndt[i] = dndt_ivr[i] + dndt_ic[i] + dndt_pump[i]; */
     /* fprintf(stdout, "%5lu  %18.10f  %18.10f  %18.10f  %18.10f\n", */
     /*     i, dndt_ivr[i], dndt_ic[i], dndt_pump[i], dndt[i]); */ 
   }
@@ -1224,6 +1273,8 @@ VERA::intra_rates()
   std::vector<size_t> sub_lower(n_extents.size(), 0),
                       sub_upper(n_extents.size(), 0);
   size_t i_lower = 0, i_upper = 0;
+
+  fprintf(stdout, "IVR total rates:\n");
   for (size_t i = 0; i < n_total; i++) {
     subscripts = ind2sub(i, n_extents);  
      
@@ -1236,7 +1287,7 @@ VERA::intra_rates()
         i_lower = sub2ind(sub_lower, n_extents);
 
         /* loss of population to lower vibronic state */
-        rates[sub2ind({i, i_lower}, {n_total, n_total})] +=
+        rates[sub2ind({i, i}, {n_total, n_total})] -=
           subscripts[alpha + 1]
         * k_ivr[sub2ind({subscripts[0], alpha, 0},
           {n_elec, n_normal, 2})];
@@ -1254,7 +1305,7 @@ VERA::intra_rates()
         i_upper = sub2ind(sub_upper, n_extents);
 
         /* loss of population to upper state */
-        rates[sub2ind({i, i_upper}, {n_total, n_total})] +=
+        rates[sub2ind({i, i}, {n_total, n_total})] -=
           (subscripts[alpha + 1] + 1.)
         * k_ivr[sub2ind({subscripts[0], alpha, 1},
           {n_elec, n_normal, 2})];
@@ -1272,6 +1323,7 @@ VERA::intra_rates()
   /* can probably be folded into above loop but
    * i haven't figured out how yet exactly */
 
+  fprintf(stdout, "IC total rates:\n");
   for (size_t i = 0; i < n_elec; i++) {
     for (size_t j = 0; j < (pow((n_vib + 1), n_normal)); j++) {
       std::vector<size_t> a = ind2sub(j, vib_extents);
@@ -1280,6 +1332,8 @@ VERA::intra_rates()
 
         /* indices */
         std::vector<size_t> n_i, n_i_plus, n_i_minus;
+        std::vector<size_t> k_ab_ip, k_ab_pi, k_ba_ip, k_ba_pi;
+        std::vector<size_t> k_ab_im, k_ab_mi, k_ba_im, k_ba_mi;
         std::vector<size_t> k_ba_ji, k_ba_ij, k_ab_ji, k_ab_ij;
         k_ba_ji = {i + 1, i};
         k_ba_ij = {i, i + 1};
@@ -1300,8 +1354,6 @@ VERA::intra_rates()
           k_ba_ij.push_back(b[bi]);
         }
         size_t n_i_ind = sub2ind(n_i, n_extents);
-        size_t n_i_plus_ind = sub2ind(n_i_plus, n_extents);
-        size_t n_i_minus_ind = sub2ind(n_i_minus, n_extents);
 
         /* two sets of vibrational indices to worry about */
         for (size_t ai = 0; ai < a.size(); ai++) {
@@ -1320,10 +1372,13 @@ VERA::intra_rates()
                       a[alpha], b[alpha]}, fc_extents)], 2.);
           }
 
-          rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
+          size_t n_i_plus_ind = sub2ind(n_i_plus, n_extents);
+          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
             fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
 
-          rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] +=
+          /* rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] += */
+          /*   fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)]; */
+          rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
             fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)];
 
         } else if (i == n_elec - 1) { /* highest electronic state */
@@ -1333,10 +1388,14 @@ VERA::intra_rates()
                       b[alpha], a[alpha]}, fc_extents)], 2.);
           }
 
+          size_t n_i_minus_ind = sub2ind(n_i_minus, n_extents);
+          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
+            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
+
+          /* rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] += */
+          /*   fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)]; */
           rates[sub2ind({n_i_ind, n_i_minus_ind}, {n_total, n_total})] +=
             fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
-          rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] +=
-            fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)];
 
         } else { /* intermediate */
           double fc_i_plus = 1.; double fc_i_minus = 1.;
@@ -1347,16 +1406,24 @@ VERA::intra_rates()
                       b[alpha], a[alpha]}, fc_extents)], 2.);
           }
 
+          size_t n_i_plus_ind = sub2ind(n_i_plus, n_extents);
+          size_t n_i_minus_ind = sub2ind(n_i_minus, n_extents);
+
+          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
+            fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
+
+          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
+            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
+
+          /* rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] += */
+          /*   fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)]; */
           rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
             fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
 
-          rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] +=
-            fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)];
-
+          /* rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] += */
+          /*   fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)]; */
           rates[sub2ind({n_i_ind, n_i_minus_ind}, {n_total, n_total})] +=
             fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
-          rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] +=
-            fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)];
 
         } /* end of electronic state if/else */
 
@@ -1384,6 +1451,11 @@ size_t n_total, double *res)
   }
 
   matvec(n_total, rate_matrix, population, res);
+
+  for (unsigned i = 0; i < n_total; i++) {
+    free(rate_matrix[i]);
+  }
+  free(rate_matrix);
 }
 
 double **total_rates(unsigned n_chl, VERA car, unsigned n_car,

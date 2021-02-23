@@ -223,6 +223,7 @@ matvec(unsigned n, double **mat, double *vec, double *res)
 
     for (j = 0; j < n; j++) {
       sum += mat[i][j] * vec[j];
+      /* fprintf(stdout, "%2u %2u %10.6e %10.6e %10.6e\n", i, j, mat[i][j], vec[i], sum); */
     }
     res[i] = sum;
 

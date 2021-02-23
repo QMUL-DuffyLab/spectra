@@ -17,9 +17,10 @@
 class VERA {
   public:
     VERA(size_t elec, size_t norm, size_t vib,
-                double beta,
+                double beta, double mu_ratio, double s2_stokes,
                 double* wi, size_t n_wi,
                 double* w_mode, size_t n_mode,
+                double* widths, size_t n_widths,
                 double** l_ic, size_t side_l,
                 double* l_ivr, size_t n_l,
                 double** g_ic, size_t side_g,
@@ -27,9 +28,10 @@ class VERA {
                 double*** di, size_t n_mode_di, size_t e_l, size_t e_u
                 );
     VERA(size_t elec, size_t norm, size_t vib,
-                double beta,
+                double beta, double mu_ratio, double s2_stokes,
                 std::vector<double> w_elec,
                 std::vector<double> w_mode,
+                std::vector<double> widths,
                 std::vector<double> l_ic,
                 std::vector<double> l_ivr,
                 std::vector<double> g_ic,
@@ -42,6 +44,8 @@ class VERA {
     void set_w_elec(std::vector<double> wi);
     void set_w_normal(double* w_mode, size_t n_mode);
     void set_w_normal(std::vector<double> w_mode);
+    void set_widths(double* widths, size_t n_widths);
+    void set_widths(std::vector<double> widths);
     void set_l_ic_ij(double** l_ic, size_t size);
     void set_l_ic_ij(std::vector<double> l_ic);
     void set_l_ivr_i(double* l_ivr, size_t n);
@@ -76,6 +80,8 @@ class VERA {
     size_t n_normal;
     size_t n_vib;
     double beta;
+    double mu_ratio;
+    double s2_stokes;
 
   private:
     std::vector<size_t> extents;
@@ -86,6 +92,7 @@ class VERA {
     std::vector<size_t> population_extents;
     std::vector<double> w_elec;
     std::vector<double> w_normal;
+    std::vector<double> widths;
     /* std::vector<double> w_vib; */
     /** \lambda_ic_ij
      *
@@ -144,6 +151,10 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
                unsigned tau, double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
                pulse v_abs, double beta);
+
+void
+intra_rate_test(double *population, std::vector<double> rates,
+size_t n_total, double *res);
 
 
 #endif
