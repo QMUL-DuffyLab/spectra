@@ -473,7 +473,7 @@ main(int argc, char** argv)
   std::vector<double> ra = vera.intra_rates();
   for (unsigned i = 0; i < ra.size(); i++) {
     std::vector<size_t> ij = ind2sub(i, {48, 48});
-    fprintf(stdout, "%4u, %2u, %2u, %10.6e\n", i, ij[0], ij[1], ra[i]);
+    fprintf(stdout, "%2u %2u %10.6e\n", ij[0], ij[1], ra[i]);
   }
 
   intra_rate_test(test_vera_pop, ra, 48, rate_test);

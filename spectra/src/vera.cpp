@@ -1274,7 +1274,12 @@ VERA::intra_rates()
                       sub_upper(n_extents.size(), 0);
   size_t i_lower = 0, i_upper = 0;
 
-  fprintf(stdout, "IVR total rates:\n");
+  fprintf(stdout, "IVR rates:\n");
+  for (size_t i = 0; i < k_ivr.size(); i++) {
+    fprintf(stdout, "%2lu %10.6e\n", i, k_ivr[i]);
+  }
+
+
   for (size_t i = 0; i < n_total; i++) {
     subscripts = ind2sub(i, n_extents);  
      
@@ -1293,7 +1298,7 @@ VERA::intra_rates()
           {n_elec, n_normal, 2})];
 
         /* gain of population from level below */
-        rates[sub2ind({i_lower, i}, {n_total, n_total})] +=
+        rates[sub2ind({i, i_lower}, {n_total, n_total})] +=
           subscripts[alpha + 1]
         * k_ivr[sub2ind({subscripts[0], alpha, 1},
           {n_elec, n_normal, 2})];
@@ -1310,7 +1315,7 @@ VERA::intra_rates()
         * k_ivr[sub2ind({subscripts[0], alpha, 1},
           {n_elec, n_normal, 2})];
         /* gain from the upper state */
-        rates[sub2ind({i_upper, i}, {n_total, n_total})] +=
+        rates[sub2ind({i, i_upper}, {n_total, n_total})] +=
           (subscripts[alpha + 1] + 1.)
         * k_ivr[sub2ind({subscripts[0], alpha, 0},
           {n_elec, n_normal, 2})];
@@ -1319,119 +1324,84 @@ VERA::intra_rates()
 
   }
 
-  /* interconversion */
-  /* can probably be folded into above loop but
-   * i haven't figured out how yet exactly */
-
-  fprintf(stdout, "IC total rates:\n");
-  for (size_t i = 0; i < n_elec; i++) {
-    for (size_t j = 0; j < (pow((n_vib + 1), n_normal)); j++) {
-      std::vector<size_t> a = ind2sub(j, vib_extents);
-      for (size_t k = 0; k < (pow((n_vib + 1), n_normal)); k++) {
-        std::vector<size_t> b = ind2sub(k, vib_extents);
-
-        /* indices */
-        std::vector<size_t> n_i, n_i_plus, n_i_minus;
-        std::vector<size_t> k_ab_ip, k_ab_pi, k_ba_ip, k_ba_pi;
-        std::vector<size_t> k_ab_im, k_ab_mi, k_ba_im, k_ba_mi;
-        std::vector<size_t> k_ba_ji, k_ba_ij, k_ab_ji, k_ab_ij;
-        k_ba_ji = {i + 1, i};
-        k_ba_ij = {i, i + 1};
-        k_ab_ji = {i - 1, i};
-        k_ab_ij = {i, i - 1};
-        n_i.push_back(i); 
-        n_i_plus.push_back(i + 1); 
-        n_i_minus.push_back(i - 1); 
-        for (size_t ai = 0; ai < a.size(); ai++) {
-          n_i.push_back(a[ai]);
-          k_ab_ji.push_back(a[ai]);
-          k_ab_ij.push_back(a[ai]);
-        }
-        for (size_t bi = 0; bi < b.size(); bi++) {
-          n_i_plus.push_back(b[bi]);
-          n_i_minus.push_back(b[bi]);
-          k_ba_ji.push_back(b[bi]);
-          k_ba_ij.push_back(b[bi]);
-        }
-        size_t n_i_ind = sub2ind(n_i, n_extents);
-
-        /* two sets of vibrational indices to worry about */
-        for (size_t ai = 0; ai < a.size(); ai++) {
-          k_ba_ji.push_back(a[ai]);
-          k_ba_ij.push_back(a[ai]);
-        }
-        for (size_t bi = 0; bi < b.size(); bi++) {
-          k_ab_ji.push_back(b[bi]);
-          k_ab_ij.push_back(b[bi]);
-        }
-
-        if (i == 0) { /* electronic ground state */
-          double fc_i_plus = 1.;
-          for (size_t alpha = 0; alpha < n_normal; alpha++) {
-            fc_i_plus *= pow(fc[sub2ind({i, i + 1, alpha, 
-                      a[alpha], b[alpha]}, fc_extents)], 2.);
-          }
-
-          size_t n_i_plus_ind = sub2ind(n_i_plus, n_extents);
-          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
-            fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
-
-          /* rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] += */
-          /*   fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)]; */
-          rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
-            fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)];
-
-        } else if (i == n_elec - 1) { /* highest electronic state */
-          double fc_i_minus = 1.;
-          for (size_t alpha = 0; alpha < n_normal; alpha++) {
-            fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
-                      b[alpha], a[alpha]}, fc_extents)], 2.);
-          }
-
-          size_t n_i_minus_ind = sub2ind(n_i_minus, n_extents);
-          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
-            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
-
-          /* rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] += */
-          /*   fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)]; */
-          rates[sub2ind({n_i_ind, n_i_minus_ind}, {n_total, n_total})] +=
-            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
-
-        } else { /* intermediate */
-          double fc_i_plus = 1.; double fc_i_minus = 1.;
-          for (size_t alpha = 0; alpha < n_normal; alpha++) {
-            fc_i_plus *= pow(fc[sub2ind({i, i + 1, alpha, 
-                      a[alpha], b[alpha]}, fc_extents)], 2.);
-            fc_i_minus *= pow(fc[sub2ind({i - 1, i, alpha, 
-                      b[alpha], a[alpha]}, fc_extents)], 2.);
-          }
-
-          size_t n_i_plus_ind = sub2ind(n_i_plus, n_extents);
-          size_t n_i_minus_ind = sub2ind(n_i_minus, n_extents);
-
-          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
-            fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
-
-          rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
-            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
-
-          /* rates[sub2ind({n_i_plus_ind, n_i_ind}, {n_total, n_total})] += */
-          /*   fc_i_plus * k_ic[sub2ind(k_ba_ij, ic_extents)]; */
-          rates[sub2ind({n_i_ind, n_i_plus_ind}, {n_total, n_total})] +=
-            fc_i_plus * k_ic[sub2ind(k_ba_ji, ic_extents)];
-
-          /* rates[sub2ind({n_i_minus_ind, n_i_ind}, {n_total, n_total})] += */
-          /*   fc_i_minus * k_ic[sub2ind(k_ab_ij, ic_extents)]; */
-          rates[sub2ind({n_i_ind, n_i_minus_ind}, {n_total, n_total})] +=
-            fc_i_minus * k_ic[sub2ind(k_ab_ji, ic_extents)];
-
-        } /* end of electronic state if/else */
-
-      }
+  fprintf(stdout, "IVR total rates:\n");
+  for (size_t i = 0; i < n_total; i++) {
+    for (size_t j = 0; j < n_total; j++) {
+      fprintf(stdout, "%2lu %2lu %10.6e\n", i, j,
+          rates[sub2ind({i, j}, {n_total, n_total})]);
     }
   }
 
-  /* no pumping here - could add a switch for it i guess */
+  /* interconversion */
+  /* i make the IC vector all zeroes and then just fill in
+   * the non-zero ones, so we can just list them */
+
+  fprintf(stdout, "\nIC rates:\n");
+  for (size_t i = 0; i < n_elec; i++) {
+    for (size_t j = 0; j < n_elec; j++) {
+      if (i != j) {
+        for (size_t k = 0; k < (pow((n_vib + 1), n_normal)); k++) {
+          std::vector<size_t> a = ind2sub(k, vib_extents);
+          for (size_t l = 0; l < (pow((n_vib + 1), n_normal)); l++) {
+            std::vector<size_t> b = ind2sub(l, vib_extents);
+
+            /* indices */
+            std::vector<size_t> n_i, n_j;
+            std::vector<size_t> k_ba_ji, k_ba_ij, k_ab_ji, k_ab_ij;
+
+            n_i.push_back(i);
+            n_j.push_back(j);
+            k_ba_ji = {j, i};
+            k_ab_ij = {i, j};
+            for (size_t ai = 0; ai < a.size(); ai++) {
+              n_i.push_back(a[ai]);
+              k_ab_ij.push_back(a[ai]);
+            }
+            for (size_t bi = 0; bi < b.size(); bi++) {
+              n_j.push_back(b[bi]);
+              k_ba_ji.push_back(b[bi]);
+            }
+
+            /* two sets of vibrational indices to worry about */
+            for (size_t ai = 0; ai < a.size(); ai++) {
+              k_ba_ji.push_back(a[ai]);
+            }
+            for (size_t bi = 0; bi < b.size(); bi++) {
+              k_ab_ij.push_back(b[bi]);
+            }
+
+            size_t n_i_ind = sub2ind(n_i, n_extents);
+            size_t n_j_ind = sub2ind(n_j, n_extents);
+
+            double fc_ij = 1., fc_ji = 1.;
+            for (size_t alpha = 0; alpha < n_normal; alpha++) {
+              fc_ij *= pow(fc[sub2ind({i, j, alpha, 
+                        a[alpha], b[alpha]}, fc_extents)], 2.);
+              fc_ji *= pow(fc[sub2ind({j, i, alpha, 
+                        b[alpha], a[alpha]}, fc_extents)], 2.);
+            }
+
+            fprintf(stdout, "%1lu %1lu %1lu <-> %1lu %1lu %1lu "
+                " %10.6e %10.6e\n",
+                n_i[0], n_i[1], n_i[2], 
+                n_j[0], n_j[1], n_j[2], 
+                /* k_ab_ij[0], k_ab_ij[2], k_ab_ij[3], */ 
+                /* k_ab_ij[1], k_ab_ij[4], k_ab_ij[5], */ 
+                fc_ij * k_ic[sub2ind(k_ab_ij, ic_extents)],
+                fc_ji * k_ic[sub2ind(k_ba_ji, ic_extents)]
+                );
+
+            rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
+              fc_ji * k_ic[sub2ind(k_ba_ji, ic_extents)];
+            rates[sub2ind({n_i_ind, n_j_ind}, {n_total, n_total})] +=
+              fc_ij * k_ic[sub2ind(k_ab_ij, ic_extents)];
+
+          } /* end of electronic state if/else */
+
+        }
+      } /* i != j */
+    }
+  }
 
   return rates;
 }
