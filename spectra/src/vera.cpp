@@ -1352,6 +1352,7 @@ VERA::intra_rates()
             n_i.push_back(i);
             n_j.push_back(j);
             k_ba_ji = {j, i};
+            k_ba_ij = {i, j};
             k_ab_ij = {i, j};
             for (size_t ai = 0; ai < a.size(); ai++) {
               n_i.push_back(a[ai]);
@@ -1360,11 +1361,13 @@ VERA::intra_rates()
             for (size_t bi = 0; bi < b.size(); bi++) {
               n_j.push_back(b[bi]);
               k_ba_ji.push_back(b[bi]);
+              k_ba_ij.push_back(b[bi]);
             }
 
             /* two sets of vibrational indices to worry about */
             for (size_t ai = 0; ai < a.size(); ai++) {
               k_ba_ji.push_back(a[ai]);
+              k_ba_ij.push_back(a[ai]);
             }
             for (size_t bi = 0; bi < b.size(); bi++) {
               k_ab_ij.push_back(b[bi]);
@@ -1385,16 +1388,14 @@ VERA::intra_rates()
                 " %10.6e %10.6e\n",
                 n_i[0], n_i[1], n_i[2], 
                 n_j[0], n_j[1], n_j[2], 
-                /* k_ab_ij[0], k_ab_ij[2], k_ab_ij[3], */ 
-                /* k_ab_ij[1], k_ab_ij[4], k_ab_ij[5], */ 
-                fc_ij * k_ic[sub2ind(k_ab_ij, ic_extents)],
-                fc_ji * k_ic[sub2ind(k_ba_ji, ic_extents)]
+                fc_ji * k_ic[sub2ind(k_ba_ji, ic_extents)],
+                fc_ij * k_ic[sub2ind(k_ab_ij, ic_extents)]
                 );
 
             rates[sub2ind({n_i_ind, n_i_ind}, {n_total, n_total})] -=
-              fc_ji * k_ic[sub2ind(k_ba_ji, ic_extents)];
+              fc_ij * k_ic[sub2ind(k_ba_ji, ic_extents)];
             rates[sub2ind({n_i_ind, n_j_ind}, {n_total, n_total})] +=
-              fc_ij * k_ic[sub2ind(k_ab_ij, ic_extents)];
+              fc_ij * k_ic[sub2ind(k_ba_ij, ic_extents)];
 
           } /* end of electronic state if/else */
 
