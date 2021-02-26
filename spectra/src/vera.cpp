@@ -1274,9 +1274,12 @@ VERA::intra_rates()
                       sub_upper(n_extents.size(), 0);
   size_t i_lower = 0, i_upper = 0;
 
-  fprintf(stdout, "IVR rates:\n");
-  for (size_t i = 0; i < k_ivr.size(); i++) {
-    fprintf(stdout, "%2lu %10.6e\n", i, k_ivr[i]);
+  bool print_ivr = false;
+  if (print_ivr) {
+    fprintf(stdout, "IVR rates:\n");
+    for (size_t i = 0; i < k_ivr.size(); i++) {
+      fprintf(stdout, "%2lu %10.6e\n", i, k_ivr[i]);
+    }
   }
 
 
@@ -1324,11 +1327,13 @@ VERA::intra_rates()
 
   }
 
-  fprintf(stdout, "IVR total rates:\n");
-  for (size_t i = 0; i < n_total; i++) {
-    for (size_t j = 0; j < n_total; j++) {
-      fprintf(stdout, "%2lu %2lu %10.6e\n", i, j,
-          rates[sub2ind({i, j}, {n_total, n_total})]);
+  if (print_ivr) {
+    fprintf(stdout, "IVR total rates:\n");
+    for (size_t i = 0; i < n_total; i++) {
+      for (size_t j = 0; j < n_total; j++) {
+        fprintf(stdout, "%2lu %2lu %10.6e\n", i, j,
+            rates[sub2ind({i, j}, {n_total, n_total})]);
+      }
     }
   }
 
@@ -1336,7 +1341,10 @@ VERA::intra_rates()
   /* i make the IC vector all zeroes and then just fill in
    * the non-zero ones, so we can just list them */
 
-  fprintf(stdout, "\nIC rates:\n");
+  bool print_ic = false;
+  if (print_ic) {
+    fprintf(stdout, "IC rates:\n");
+  }
   for (size_t i = 0; i < n_elec; i++) {
     for (size_t j = 0; j < n_elec; j++) {
       if (i != j) {
@@ -1390,7 +1398,6 @@ VERA::intra_rates()
               }
             }
 
-            bool print_ic = false;
             if (print_ic) {
               fprintf(stdout, "%1lu %1lu %1lu <-> %1lu %1lu %1lu "
                   " %10.6e %10.6e\n",
@@ -1446,7 +1453,7 @@ size_t n_total, double *res)
 }
 
 double **total_rates(unsigned n_chl, VERA car, unsigned n_car,
-unsigned n_s_car, double *gamma, double **Jij, double *k_i_delta,
+unsigned n_s_car, double *gamma, double **Jij, std::vector<double> k_i_delta,
 double **redfield_rates)
 {
   unsigned n_tot = n_chl + 1 + (n_car * n_s_car);
@@ -1456,6 +1463,7 @@ double **redfield_rates)
   }
 
   std::vector<size_t> extents = {n_chl, n_car, n_s_car, 2};
+  std::vector<double> intra_car = car.intra_rates();
 
   /* note - might not need 0 < j < n_tot; might just be
    * i < j < n_tot and then fill in the rest with detailed balance etc.
@@ -1468,10 +1476,10 @@ double **redfield_rates)
       bool j_rgs = (j == 0);
       bool i_chls = (i > 0 && i <= n_chl);
       bool j_chls = (j > 0 && j <= n_chl);
-      bool i_620 = (i > n_chl && i < n_chl + 1 + n_car);
-      bool j_620 = (j > n_chl && j < n_chl + 1 + n_car);
-      bool i_621 = (i >= n_chl + 1 + n_car);
-      bool j_621 = (j >= n_chl + 1 + n_car);
+      bool i_620 = (i > n_chl && i < n_chl + 1 + n_s_car);
+      bool j_620 = (j > n_chl && j < n_chl + 1 + n_s_car);
+      bool i_621 = (i >= n_chl + 1 + n_s_car);
+      bool j_621 = (j >= n_chl + 1 + n_s_car);
 
       if (i_rgs) {
         if (j_rgs) {
@@ -1500,14 +1508,22 @@ double **redfield_rates)
         if (j_chls) {
           /* redfield rate: i/j - 1 because of ground state */
           k_tot[i][j] = redfield_rates[i - 1][j - 1];
+          if (i == j) {
+            /* need to subtract the outward rates to the carotenoids */
+            for (unsigned k = 0; k < n_s_car; k++) {
+              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 0, k, 0},
+                            extents)];
+              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 1, k, 0}, extents)];
+            }
+          }
         }
         if (j_620) {
-          k_tot[i][j] = k_i_delta[sub2ind({i, 0, j - (n_chl + 1), 0},
+          k_tot[i][j] = k_i_delta[sub2ind({i - 1, 0, j - (n_chl + 1), 0},
                         extents)];
         }
         if (j_621) {
-          k_tot[i][j] = k_i_delta[sub2ind({i, 1, j - (n_car + n_chl + 1), 0},
-                        extents)];
+          k_tot[i][j] = k_i_delta[sub2ind({i - 1, 1,
+              j - (n_s_car + n_chl + 1), 0}, extents)];
         }
       }
 
@@ -1516,12 +1532,19 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] = k_i_delta[sub2ind({i, 0, j - (n_car + n_chl + 1), 1},
+          k_tot[i][j] = k_i_delta[sub2ind({j, 0, i - (n_chl + 1), 1},
                         extents)];
         }
         if (j_620) {
-          /* here we need a sum over the IVR / IC rates
-           * - no pumping term here obviously */
+          k_tot[i][j] = intra_car[sub2ind({i - (n_chl + 1),
+              j - (n_chl + 1)}, {n_s_car, n_s_car})];
+          if (i == j) {
+            /* need to subtract the outward rates to the chls */
+            for (unsigned k = 0; k < n_chl; k++) {
+              k_tot[i][j] -= k_i_delta[sub2ind({k, 0, j - (n_chl + 1), 1},
+                            extents)];
+            }
+          }
         }
         if (j_621) {
           continue; /* inter-car rates assumed to be zero */
@@ -1533,7 +1556,7 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] = k_i_delta[sub2ind({i, 1, j - (n_car + n_chl + 1), 1},
+          k_tot[i][j] = k_i_delta[sub2ind({j, 1, i - (n_s_car + n_chl + 1), 1},
                         extents)];
         }
         if (j_620) {
@@ -1541,13 +1564,19 @@ double **redfield_rates)
         }
         if (j_621) {
           /* sum over IVR/IC rates */
+          k_tot[i][j] = intra_car[sub2ind({i - (n_s_car + n_chl + 1),
+              j - (n_s_car + n_chl + 1)}, {n_s_car, n_s_car})];
+          if (i == j) {
+            for (unsigned k = 0; k < n_chl; k++) {
+              k_tot[i][j] -= k_i_delta[sub2ind({k, 1,
+                  j - (n_s_car + n_chl + 1), 1}, extents)];
+            }
+          }
         }
       }
 
     }
   }
-
-
   return k_tot;
 }
 
