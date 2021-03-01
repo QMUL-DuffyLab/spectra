@@ -474,18 +474,12 @@ main(int argc, char** argv)
   k_tot = total_rates(n_chl, vera, n_car, n_s_car, gamma, Jij,
           k_chl_car, odep.Tij);
 
-  for (unsigned i = 0; i < n_total; i++) {
-    for (unsigned j = 0; j < n_total; j++) {
-      fprintf(stdout, "%3u %3u %10.6e\n", i, j, k_tot[i][j]);
-    }
-  }
+  /* for (unsigned i = 0; i < n_total; i++) { */
+  /*   for (unsigned j = 0; j < n_total; j++) { */
+  /*     fprintf(stdout, "%3u %3u %10.6e\n", i, j, k_tot[i][j]); */
+  /*   } */
+  /* } */
   
-
-
-  fprintf(stdout, "\n-------------------\n"
-                    "EXCITATION LIFETIME\n"
-                    "-------------------\n\n");
-
   double **Tij_vr, **Tij_vr_inv, **Tij_wr;
   Tij_vr = (double **)calloc(n_total, sizeof(double*));
   Tij_vr_inv = (double **)calloc(n_total, sizeof(double*));
@@ -498,7 +492,20 @@ main(int argc, char** argv)
   decompose_transfer_matrix(n_total, k_tot, Tij_vr, Tij_vr_inv, Tij_wr);
 
   strcpy(fn, p->fw_file);
-  status = generate_filename(sizeof(fn), fn, "fw", "tij_vr");
+  status = generate_filename(sizeof(fn), fn, "fw", "k_tot");
+  if (status == 0) {
+    fp = fopen(fn, "w");
+    print_matrix(fp, NULL, n_total, k_tot);
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close k_tot "
+            "output file %s, error no. %d.\n", fn, cl);
+        exit(EXIT_FAILURE);
+    }
+  } else {
+    fprintf(stdout, "Filename could not be generated - not writing\n");
+  }
+  status = generate_filename(sizeof(fn), fn, "k_tot", "tij_vr");
   if (status == 0) {
     fp = fopen(fn, "w");
     print_matrix(fp, NULL, n_total, Tij_vr);
@@ -544,29 +551,56 @@ main(int argc, char** argv)
   for (unsigned i = 1; i < n_chl + 1; i++) {
     p0[i] = 1./n_chl;
   }
-  /* print_vector(stdout, "P(0)", n_total, p0); */
 
+  /* fprintf(stdout, "\n-------------------\n" */
+  /*                   "EXCITATION LIFETIME\n" */
+  /*                   "-------------------\n\n"); */
 
-  double excite = mean_excitation_lifetime(n_total, Tij_vr,
-                                           Tij_vr_inv,
-                                           Tij_wr, p0);
+  /* okay - for this we need to delete the ground state lines */
+  /* n_no_gs = n_total - (n_car + 1); */
+  /* double **t_tau = (double **)calloc(n_no_gs, sizeof(double*)); */
+  /* double **t_tau_vr = (double **)calloc(n_no_gs, sizeof(double*)); */
+  /* double **t_tau_vr_inv = (double **)calloc(n_no_gs, sizeof(double*)); */
+  /* double **t_tau_wr = (double **)calloc(n_no_gs, sizeof(double*)); */
+  /* double **k_no_gs = (double **)calloc(n_no_gs, sizeof(double*)); */
+  /* double *p_no_gs = (double *)calloc(n_no_gs, sizeof(double)); */
+  /* for (unsigned i = 0; i < n_no_gs; i++) { */
+  /*   t_tau[i] = (double *)calloc(n_no_gs, sizeof(double)); */
+  /*   t_tau_vr[i] = (double *)calloc(n_no_gs, sizeof(double)); */
+  /*   t_tau_vr_inv[i] = (double *)calloc(n_no_gs, sizeof(double)); */
+  /*   t_tau_wr[i] = (double *)calloc(n_no_gs, sizeof(double)); */
+  /*   k_no_gs[i] = (double *)calloc(n_no_gs, sizeof(double)); */
+  /* } */
 
-  fprintf(stdout, "\n<τ> (ps) = %12.8e\n", excite);
+  /* for (unsigned i = 0; i < n_total; i++) { */
+  /*   if (i != 0 && i != 15 && i != 63) { */
+  /*     for (unsigned j = 0; j < n_no_gs; j++) { */
+  /*       k_no_gs[i][j] */ 
+  /*     } */
+  /*   } */
+  /* } */
+  /* decompose_transfer_matrix(n_total, k_tot, Tij_vr, Tij_vr_inv, Tij_wr); */
 
-  status = generate_filename(sizeof(fn), fn, "tij_vr_inv", "tau");
+  /* double excite = mean_excitation_lifetime(n_total, Tij_vr, */
+  /*                                          Tij_vr_inv, */
+  /*                                          Tij_wr, p0); */
+
+  /* fprintf(stdout, "\n<τ> (ps) = %12.8e\n", excite); */
+
+  /* status = generate_filename(sizeof(fn), fn, "tij_vr_inv", "tau"); */
   /* status = generate_filename(sizeof(fn), fn, "fw", "tau"); */
-  if (status == 0) {
-    fp = fopen(fn, "w");
-    fprintf(fp, "%12.8e", excite);
-    cl = fclose(fp);
-    if (cl != 0) {
-        fprintf(stdout, "Failed to close <τ> "
-            "output file %s, error no. %d.\n", fn, cl);
-        exit(EXIT_FAILURE);
-    }
-  } else {
-    fprintf(stdout, "Filename could not be generated - not writing\n");
-  }
+  /* if (status == 0) { */
+  /*   fp = fopen(fn, "w"); */
+  /*   fprintf(fp, "%12.8e", excite); */
+  /*   cl = fclose(fp); */
+  /*   if (cl != 0) { */
+  /*       fprintf(stdout, "Failed to close <τ> " */
+  /*           "output file %s, error no. %d.\n", fn, cl); */
+  /*       exit(EXIT_FAILURE); */
+  /*   } */
+  /* } else { */
+  /*   fprintf(stdout, "Filename could not be generated - not writing\n"); */
+  /* } */
 
   fprintf(stdout, "\n-------------------\n"
                     "POPULATION DYNAMICS\n"
@@ -576,7 +610,7 @@ main(int argc, char** argv)
   double *pt = (double *)calloc(n_total, sizeof(double));
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
-  unsigned int MAX_ITER = 20000; /* 20 ns */
+  unsigned int MAX_ITER = 4000; /* 5 ns */
   unsigned int print_pop = 0;
   status = 0;
   double sum = 0.;

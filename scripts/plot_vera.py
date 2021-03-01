@@ -53,7 +53,8 @@ for i in range(15):
 ax[0].plot(pop[:, 0], chl_sum, color='C0', label='Total chl population')
 ax[0].axhline(y=1/np.e, ls='--', color='k', label=r'$ 1 / e $')
 print(pop[np.argmin(abs(chl_sum - 1/np.e)), 0])
-print(pop[np.argmin(abs(gs_sum - (1 - 1/np.e))), 0])
+lifetime = pop[np.argmin(abs(gs_sum - (1 - 1/np.e))), 0]
+plt.title("Populations - lifetime = {}".format(lifetime))
 ax[0].legend()
 ax[1].legend(fontsize=16)
 plt.tight_layout()

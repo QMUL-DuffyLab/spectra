@@ -1471,6 +1471,11 @@ double **redfield_rates)
    * but i need to think about that - redfield rates have it built in,
    * i think we have to do it manually here when summing over the
    * chl-car rates? */
+
+  /* also: the intra-carotenoid rates and the redfield rates matrix
+   * are already transfer matrices, so we just fill them in as
+   * k_total[i][j] = blah blah blah. The chlorophyll-carotenoid rates
+   * aren't, so we switch the indices */
   for (unsigned i = 0; i < n_tot; i++) {
     for (unsigned j = 0; j < n_tot; j++) {
       bool i_rgs = (i == 0);
@@ -1487,7 +1492,7 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[j][i] += (1. / (1000 * gamma[j]));
+          k_tot[i][j] += (1. / (1000 * gamma[j - 1]));
         }
         if (j_620) {
           continue;
@@ -1508,6 +1513,7 @@ double **redfield_rates)
         }
         if (j_chls) {
           /* redfield rate: i/j - 1 because of ground state */
+          /* [i][j] not [j][i] because this is already a transfer matrix */
           k_tot[i][j] = redfield_rates[i - 1][j - 1];
           if (i == j) {
             /* need to subtract the outward rates to the carotenoids */

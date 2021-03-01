@@ -14,8 +14,8 @@ incident(pulse p, unsigned int tau)
       ww[i] = 1. / tau;
     }
     else if (p.type == LORENTZIAN) {
-      ww[i] = (1. / (M_PI * p.width)) * pow(p.width, 2.) / 
-              (pow(wn - p.centre, 2.) + pow(p.width, 2.));
+      ww[i] = (1. / (M_PI * p.width)) * 0.5 * pow(p.width, 2.) / 
+              (pow(wn - p.centre, 2.) + pow(0.5 * p.width, 2.));
       sum += ww[i];
     }
     else if (p.type == GAUSSIAN) {
@@ -417,11 +417,33 @@ mean_excitation_lifetime(unsigned n, double **Tij_vr,
   excite = 0.;
   for (i = 0; i < n; i++) {
     sum = 0.;
-    fprintf(stdout, "%3u %10.6e\n", i, work2[i]);
-    for (j = 0; j < n; j++) {
-      sum += Tij_vr[i][j] * work2[j];
-    }
+    if (i == 0) {
+      continue;
+    } else if (i == 15) {
+      continue;
+    } else if (i == 63) {
+      continue;
+    } else if (i == 110) {
+      continue;
+    } else {
+      sum = 0.;
+      for (j = 0; j < n; j++) {
+        if (j == 0) {
+          continue;
+        } else if (j == 15) {
+          continue;
+        } else if (j == 63) {
+          continue;
+        } else if (j == 110) {
+          continue;
+        } else {
+          sum += Tij_vr[i][j] * work2[j];
+          /* fprintf(stdout, "%3u %3u %10.6e %10.6e %10.6e\n", */
+              /* i, j, Tij_vr[i][j], work2[j], sum); */
+        }
+      }
     excite -= sum;
+    }
   }
 
   for (i = 0; i < n; i++) {
