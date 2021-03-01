@@ -573,9 +573,9 @@ main(int argc, char** argv)
                     "-------------------\n\n");
 
   double ti = 0.0; double dt = 1.0; double thresh = 1e-10;
-  double *pt = (double *)calloc(p->N, sizeof(double));
+  double *pt = (double *)calloc(n_total, sizeof(double));
   /* use previous step to check convergence */
-  double *pt_prev = (double *)calloc(p->N, sizeof(double));
+  double *pt_prev = (double *)calloc(n_total, sizeof(double));
   unsigned int MAX_ITER = 20000; /* 20 ns */
   unsigned int print_pop = 0;
   status = 0;
@@ -589,13 +589,13 @@ main(int argc, char** argv)
     pt_prev[j] = pt[j];
 
     ti = (i * dt);
-    population(p->N, ti, pt, Tij_vr, Tij_vr_inv, Tij_wr, p0);
+    population(n_total, ti, pt, Tij_vr, Tij_vr_inv, Tij_wr, p0);
 
     fprintf(fp, "%6.3f ", ti);
     if (print_pop) {
       fprintf(stdout, "ti = %6.3f ", ti);
     }
-    for (j = 0; j < p->N; j++) {
+    for (j = 0; j < n_total; j++) {
       sum += pt[j];
       fprintf(fp, "%+12.8e ", pt[j]);
       if (print_pop) {
@@ -608,7 +608,7 @@ main(int argc, char** argv)
     }
 
     if (i > 0) {
-      unsigned short int converged = pop_converge(pt, pt_prev, p->N, thresh);
+      unsigned short int converged = pop_converge(pt, pt_prev, n_total, thresh);
       if (converged) {
         fprintf(stdout, "all populations converged to within %f; "
             "ending integration at interation %d\n", thresh, i);
@@ -619,26 +619,24 @@ main(int argc, char** argv)
   }
   fclose(fp);
 
-  return 0;
-
-  fprintf(stdout, "\n------------\n"
-                    "FORSTER TEST\n"
-                    "------------\n\n");
+  /* fprintf(stdout, "\n------------\n" */
+  /*                   "FORSTER TEST\n" */
+  /*                   "------------\n\n"); */
 
   /* prototype for an array of them */
-  chromophore *cs[p->N];
-  for (i = 0; i < p->N; i++) {
-    cs[i] = create_chromophore(p->tau);
-  }
+  /* chromophore *cs[p->N]; */
+  /* for (i = 0; i < p->N; i++) { */
+  /*   cs[i] = create_chromophore(p->tau); */
+  /* } */
 
-  double k_610_620 = forster_test();
-  fprintf(stdout, "610-620 Forster rate = %8.6e => %12.8f ps\n",
-          k_610_620, 1. / k_610_620);
+  /* double k_610_620 = forster_test(); */
+  /* fprintf(stdout, "610-620 Forster rate = %8.6e => %12.8f ps\n", */
+  /*         k_610_620, 1. / k_610_620); */
 
 
   /* deallocations of 2d stuff */
   for (i = 0; i < p->N; i++) {
-    free_chromophore(cs[i]);
+    /* free_chromophore(cs[i]); */
     fftw_free(gi_array[i]);
     free(Tij_vr[i]);
     free(Tij_vr_inv[i]);
@@ -648,6 +646,7 @@ main(int argc, char** argv)
     free(mu[i]);
     free(wij[i]);
     free(kij[i]);
+    free(k_tot[i]);
     free(Jij[i]);
     free(chiw[i]);
     free(pump[i]);
@@ -660,6 +659,7 @@ main(int argc, char** argv)
   free(eig);
   free(wij);
   free(kij); 
+  free(k_tot); 
   free(odep.Tij);
   free(pt);
   free(pt_prev);

@@ -1165,6 +1165,7 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
               double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
               e_xa = x.get_w_elec(a[0]);
               /* NB: this shouldn't be hardcoded!!! */
+              /* FWHM should be 1150 or 1200 */
               v_abs.width = 1200.0;
               double fc_sq = 1.;
 
@@ -1486,7 +1487,7 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] += gamma[j];
+          k_tot[j][i] += (1. / (1000 * gamma[j]));
         }
         if (j_620) {
           continue;
@@ -1511,18 +1512,17 @@ double **redfield_rates)
           if (i == j) {
             /* need to subtract the outward rates to the carotenoids */
             for (unsigned k = 0; k < n_s_car; k++) {
-              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 0, k, 0},
-                            extents)];
+              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 0, k, 0}, extents)];
               k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 1, k, 0}, extents)];
             }
           }
         }
         if (j_620) {
-          k_tot[i][j] = k_i_delta[sub2ind({i - 1, 0, j - (n_chl + 1), 0},
+          k_tot[j][i] = k_i_delta[sub2ind({i - 1, 0, j - (n_chl + 1), 0},
                         extents)];
         }
         if (j_621) {
-          k_tot[i][j] = k_i_delta[sub2ind({i - 1, 1,
+          k_tot[j][i] = k_i_delta[sub2ind({i - 1, 1,
               j - (n_s_car + n_chl + 1), 0}, extents)];
         }
       }
@@ -1532,7 +1532,7 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] = k_i_delta[sub2ind({j - 1, 0, i - (n_chl + 1), 1},
+          k_tot[j][i] = k_i_delta[sub2ind({j - 1, 0, i - (n_chl + 1), 1},
                         extents)];
         }
         if (j_620) {
@@ -1556,7 +1556,7 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] = k_i_delta[sub2ind({j - 1, 1,
+          k_tot[j][i] = k_i_delta[sub2ind({j - 1, 1,
               i - (n_s_car + n_chl + 1), 1}, extents)];
         }
         if (j_620) {
