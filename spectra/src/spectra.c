@@ -487,25 +487,74 @@ main(int argc, char** argv)
                     "-------------------\n\n");
 
   double **Tij_vr, **Tij_vr_inv, **Tij_wr;
-  Tij_vr = (double **)calloc(p->N, sizeof(double*));
-  Tij_vr_inv = (double **)calloc(p->N, sizeof(double*));
-  Tij_wr = (double **)calloc(p->N, sizeof(double*));
-  for (i = 0; i < p->N; i++) {
-    Tij_vr[i]     = (double *)calloc(p->N, sizeof(double));
-    Tij_vr_inv[i] = (double *)calloc(p->N, sizeof(double));
-    Tij_wr[i]     = (double *)calloc(p->N, sizeof(double));
+  Tij_vr = (double **)calloc(n_total, sizeof(double*));
+  Tij_vr_inv = (double **)calloc(n_total, sizeof(double*));
+  Tij_wr = (double **)calloc(n_total, sizeof(double*));
+  for (i = 0; i < n_total; i++) {
+    Tij_vr[i]     = (double *)calloc(n_total, sizeof(double));
+    Tij_vr_inv[i] = (double *)calloc(n_total, sizeof(double));
+    Tij_wr[i]     = (double *)calloc(n_total, sizeof(double));
   }
-  decompose_transfer_matrix(p->N, odep.Tij, Tij_vr, Tij_vr_inv, Tij_wr);
-
-  /* p0 is still our guess from earlier */
-  print_vector(stdout, "P(0)", p->N, p0);
-  double excite = mean_excitation_lifetime(p->N, Tij_vr,
-                                           Tij_vr_inv,
-                                           Tij_wr, p0);
-  fprintf(stdout, "\n<τ> (ps) = %12.8e\n", excite);
+  decompose_transfer_matrix(n_total, k_tot, Tij_vr, Tij_vr_inv, Tij_wr);
 
   strcpy(fn, p->fw_file);
-  status = generate_filename(sizeof(fn), fn, "fw", "tau");
+  status = generate_filename(sizeof(fn), fn, "fw", "tij_vr");
+  if (status == 0) {
+    fp = fopen(fn, "w");
+    print_matrix(fp, NULL, n_total, Tij_vr);
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close tij_vr "
+            "output file %s, error no. %d.\n", fn, cl);
+        exit(EXIT_FAILURE);
+    }
+  } else {
+    fprintf(stdout, "Filename could not be generated - not writing\n");
+  }
+  status = generate_filename(sizeof(fn), fn, "tij_vr", "tij_wr");
+  if (status == 0) {
+    fp = fopen(fn, "w");
+    print_matrix(fp, NULL, n_total, Tij_wr);
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close tij_wr "
+            "output file %s, error no. %d.\n", fn, cl);
+        exit(EXIT_FAILURE);
+    }
+  } else {
+    fprintf(stdout, "Filename could not be generated - not writing\n");
+  }
+  status = generate_filename(sizeof(fn), fn, "tij_wr", "tij_vr_inv");
+  if (status == 0) {
+    fp = fopen(fn, "w");
+    print_matrix(fp, NULL, n_total, Tij_vr_inv);
+    cl = fclose(fp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close tij_vr_inv "
+            "output file %s, error no. %d.\n", fn, cl);
+        exit(EXIT_FAILURE);
+    }
+  } else {
+    fprintf(stdout, "Filename could not be generated - not writing\n");
+  }
+
+  /* change P(0) to just be on the chls */
+  free(p0);
+  p0 = (double *)calloc(n_total, sizeof(double));
+  for (unsigned i = 1; i < n_chl + 1; i++) {
+    p0[i] = 1./n_chl;
+  }
+  /* print_vector(stdout, "P(0)", n_total, p0); */
+
+
+  double excite = mean_excitation_lifetime(n_total, Tij_vr,
+                                           Tij_vr_inv,
+                                           Tij_wr, p0);
+
+  fprintf(stdout, "\n<τ> (ps) = %12.8e\n", excite);
+
+  status = generate_filename(sizeof(fn), fn, "tij_vr_inv", "tau");
+  /* status = generate_filename(sizeof(fn), fn, "fw", "tau"); */
   if (status == 0) {
     fp = fopen(fn, "w");
     fprintf(fp, "%12.8e", excite);
@@ -569,6 +618,8 @@ main(int argc, char** argv)
 
   }
   fclose(fp);
+
+  return 0;
 
   fprintf(stdout, "\n------------\n"
                     "FORSTER TEST\n"

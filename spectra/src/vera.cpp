@@ -1532,7 +1532,7 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] = k_i_delta[sub2ind({j, 0, i - (n_chl + 1), 1},
+          k_tot[i][j] = k_i_delta[sub2ind({j - 1, 0, i - (n_chl + 1), 1},
                         extents)];
         }
         if (j_620) {
@@ -1556,8 +1556,8 @@ double **redfield_rates)
           continue;
         }
         if (j_chls) {
-          k_tot[i][j] = k_i_delta[sub2ind({j, 1, i - (n_s_car + n_chl + 1), 1},
-                        extents)];
+          k_tot[i][j] = k_i_delta[sub2ind({j - 1, 1,
+              i - (n_s_car + n_chl + 1), 1}, extents)];
         }
         if (j_620) {
           continue;

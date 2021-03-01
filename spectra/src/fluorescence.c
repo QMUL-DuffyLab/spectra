@@ -365,6 +365,8 @@ decompose_transfer_matrix(unsigned n, double **Tij,
 
   status = eig_oop(n, Tij, Tij_vr, Tij_wr_vec);
   if (status != 0) {
+    fprintf(stdout, "Eigendecomposition of transfer matrix failed."
+        " Error code %d\n", status);
   }
 
   for (i = 0; i < n; i++) {
@@ -373,6 +375,8 @@ decompose_transfer_matrix(unsigned n, double **Tij,
 
   status = invert_matrix_oop(n, Tij_vr, Tij_vr_inv);
   if (status != 0) {
+    fprintf(stdout, "Inversion of transfer matrix failed."
+        " Error code %d\n", status);
   }
 
   free(Tij_wr_vec);
@@ -413,6 +417,7 @@ mean_excitation_lifetime(unsigned n, double **Tij_vr,
   excite = 0.;
   for (i = 0; i < n; i++) {
     sum = 0.;
+    fprintf(stdout, "%3u %10.6e\n", i, work2[i]);
     for (j = 0; j < n; j++) {
       sum += Tij_vr[i][j] * work2[j];
     }
