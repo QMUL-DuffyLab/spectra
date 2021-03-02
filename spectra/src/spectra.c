@@ -615,6 +615,15 @@ main(int argc, char** argv)
   status = 0;
   double sum = 0.;
 
+  FILE *gp;
+  strcpy(fn, p->pop_file);
+  status = generate_filename(sizeof(fn), fn, "pop", "gs_pop");
+  if (status == 0) {
+    gp = fopen(fn, "w");
+  } else {
+    fprintf(stdout, "gs_population file could not be created");
+  }
+
   fprintf(stdout, "\nWriting populations\n");
   fp = fopen(p->pop_file, "w");
 
@@ -626,16 +635,40 @@ main(int argc, char** argv)
     population(n_total, ti, pt, Tij_vr, Tij_vr_inv, Tij_wr, p0);
 
     fprintf(fp, "%6.3f ", ti);
+    fprintf(gp, "%6.3f ", ti);
+
     if (print_pop) {
       fprintf(stdout, "ti = %6.3f ", ti);
     }
+
     for (j = 0; j < n_total; j++) {
-      sum += pt[j];
       fprintf(fp, "%+12.8e ", pt[j]);
+
+      if (j == 0) { // redfield gs
+        sum += pt[j];
+      }
+      if (j > n_chl && j < (n_s_car + n_chl + 1)) { // 620
+        std::vector<size_t> subs = ind2sub(j - (n_chl + 1),
+                                   vera.get_pop_extents());
+        if (subs[0] == 0) {
+          sum += pt[j];
+        }
+      }
+      if (j >= (n_s_car + n_chl + 1)) { // 621
+        std::vector<size_t> subs = ind2sub(j - (n_s_car + n_chl + 1),
+                                   vera.get_pop_extents());
+        if (subs[0] == 0) {
+          sum += pt[j];
+        }
+      }
+
       if (print_pop) {
         fprintf(stdout, "%+12.8e ", pt[j]);
       }
+
     }
+
+    fprintf(gp, "%+12.8e\n", sum);
     fprintf(fp, "\n");
     if(print_pop) {
       fprintf(stdout, ". sum = %12.8e\n", sum);
@@ -652,6 +685,7 @@ main(int argc, char** argv)
 
   }
   fclose(fp);
+  fclose(gp);
 
   /* fprintf(stdout, "\n------------\n" */
   /*                   "FORSTER TEST\n" */
