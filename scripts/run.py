@@ -128,7 +128,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
     return (input_file, output_path)
 
 def run_frame(i, plot_spectra, plot_excitons):
-    protein = args.input_dir.split('/')[-1]
+    protein = args.input_dir.split('structures/')[-1]
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
