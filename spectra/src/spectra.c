@@ -118,12 +118,11 @@ main(int argc, char** argv)
   lambda  = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
   /* this'll need adding to the input struct */
-  char jij_file[200] = "out/7_PROD_1/1000/J_ij.out";
 
   /* read 2d stuff */
   gi_array = read_gi(p->gi_files, p->N, p->tau);
   eig      = read_eigvecs(p->eigvecs_file, p->N);
-  Jij      = read_eigvecs(jij_file, p->N);
+  Jij      = read_eigvecs(p->jij_file, p->N);
   mu       = read_mu(p->mu_file, p->N);
   ww       = incident(pump_properties, p->tau);
 
