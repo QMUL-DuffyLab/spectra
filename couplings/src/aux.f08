@@ -13,6 +13,16 @@ module aux
   end type pigment
 
   contains
+
+    function cross(a, b)
+      real(dp), dimension(3) :: cross
+      real(dp), dimension(3), intent(in) :: a, b
+
+      cross(1) = (a(2) * b(3)) - (a(3) * b(2))
+      cross(2) = (a(3) * b(1)) - (a(1) * b(3))
+      cross(3) = (a(1) * b(2)) - (a(2) * b(1))
+
+    end function cross
     
     function get_file_length(buffer) result(res)
       implicit none

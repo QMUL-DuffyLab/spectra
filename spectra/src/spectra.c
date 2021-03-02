@@ -453,18 +453,21 @@ main(int argc, char** argv)
       VERA_absorption, beta);
   double k_sum = 0.;
 
-  for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
-    std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});
-    std::vector<size_t> xa = ind2sub(subs[2],
-        vera.get_pop_extents());
-    fprintf(stdout, "%4u (%1u)<->(%1u)(%1u %1u %1u)"
-        " %10.6e %10.6e\n", 
-        i, subs[0], subs[1], xa[0], xa[1], xa[2],
-        k_chl_car[i], k_chl_car[i + 1]);
-    k_sum += k_chl_car[i];
+  bool print_i_xa = false;
+  if (print_i_xa) {
+    for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
+      std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});
+      std::vector<size_t> xa = ind2sub(subs[2],
+          vera.get_pop_extents());
+      fprintf(stdout, "%4u (%1u)<->(%1u)(%1u %1u %1u)"
+          " %10.6e %10.6e\n", 
+          i, subs[0], subs[1], xa[0], xa[1], xa[2],
+          k_chl_car[i], k_chl_car[i + 1]);
+      k_sum += k_chl_car[i];
 
+    }
+    fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
   }
-  fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
 
   double **k_tot = (double **)calloc(n_total, sizeof(double *));
   for (unsigned i = 0; i < n_total; i++) {

@@ -10,13 +10,13 @@ program coupling_calc
   character(200) :: input_file, jij_file, pop_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file,&
-    kappa_file, theta_file
+    kappa_file, theta_file, com_file
   character(3), dimension(:), allocatable :: unique_pigments
   character(5) :: atom_code, pigment_code
   character(100), dimension(:), allocatable :: coord_files,&
     gnt_files
   integer :: i, j, k, control_len, tau,&
-    num_unique_pigments, unique_index
+    num_unique_pigments, unique_index, myunit
   integer, dimension(:), allocatable :: coord_lengths, pigment_counts,&
     block_indices
   real :: start_time, end_time
@@ -64,6 +64,7 @@ program coupling_calc
   spectra_input_file = "in/input_spectra.dat"
   kappa_file  = trim(adjustl(input_dir)) // "/kappa.dat"
   theta_file  = trim(adjustl(input_dir)) // "/theta.dat"
+  com_file  = trim(adjustl(input_dir)) // "/c_o_m.dat"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;
@@ -171,6 +172,8 @@ program coupling_calc
   ! in wavenumbers so do that conversion backwards here
   ei = ei / (e2kb * kc)
 
+  open(newunit=myunit, file=trim(adjustl(com_file)))
+
   i_loop: do i = 1, control_len
 
     ! number of atoms per pigment isn't known at
@@ -203,7 +206,7 @@ program coupling_calc
       end if
     end do
     close(10)
-    write(*, *) pigment_code, i, r_charge(i, :)
+    write(myunit, '(F18.10, 1X, F18.10, 1X, F18.10)') r_charge(i, :)
 
     j_loop: do j = i, control_len
 
@@ -241,6 +244,7 @@ program coupling_calc
     end do j_loop
     deallocate(coords_i)
   end do i_loop
+  close(myunit)
 
   do i = 1, control_len
     do j = 1, control_len
@@ -252,7 +256,9 @@ program coupling_calc
         kappa(i, j) = k_factor(mu(i, :), mu(j, :), &
                       r_charge(i, :), r_charge(j, :))
       end if
-      write(*,*) i, j, kappa(i, j), theta(i, j)
+      if (verbose) then
+        write(*,*) i, j, kappa(i, j), theta(i, j)
+      end if
     end do
   end do
 
@@ -267,12 +273,14 @@ program coupling_calc
   allocate(bloc(size(block_indices), size(block_indices)))
   allocate(block_eigvals(size(block_indices)))
   call block_diag(Jij, block_indices, bloc, block_eigvals)
-  do i = 1, size(block_indices)
-    write(*, '(14F10.6)') bloc(i, :)
-  end do
-  do i = 1, size(block_indices)
-    write(*, '(I4, F10.3)') i, block_eigvals(i)
-  end do
+  if (verbose) then
+    do i = 1, size(block_indices)
+      write(*, '(14F10.6)') bloc(i, :)
+    end do
+    do i = 1, size(block_indices)
+      write(*, '(I4, F10.3)') i, block_eigvals(i)
+    end do
+  end if
 
   ! set Jeig to the identity
   Jeig = 0.0_dp
