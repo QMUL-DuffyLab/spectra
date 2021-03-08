@@ -31,7 +31,7 @@ plt.xlabel(r'Time (ps) ')
 ax[0].set_ylabel(r'Population (rel. units)')
 ax[1].set_ylabel(r'Population (rel. units)')
 ax[2].set_ylabel(r'Population (rel. units)')
-ax[0].set_title(r'Ground states')
+ax[0].set_title(r'Excited state population')
 ax[1].set_title(r'Chlorophylls')
 ax[2].set_title(r'Carotenoids')
 
@@ -64,6 +64,7 @@ ax[2].plot(pop[:, 0], pop[:, 81], label=r'621 $S1_{10}$')
 
 # print(pop[np.argmin(abs(chl_sum - 1/np.e)), 0])
 lifetime = pop[np.argmin(abs((gs_pop[:, 1]) - (1 - 1/np.e))), 0]
+print(args.dir.split('/')[-1], lifetime)
 with open("{}/lifetime.dat".format(args.dir), 'w') as f:
     f.write("{:16.8e}".format(lifetime))
 

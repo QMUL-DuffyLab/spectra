@@ -249,7 +249,7 @@ main(int argc, char** argv)
    * NB: assumes 200 is enough bytes for gi filename + a few chars! */
   for (i = 0; i < p->N; i++) {
     strcpy(fn, p->gi_files[i]);
-    status = generate_filename(sizeof(fn), fn, "g_", "chi_bar_");
+    status = generate_filename(sizeof(fn), fn, "g_", "chi_");
     if(status != 0) {
       fprintf(stdout, "Cannot find string 'g_' in "
           "g_i filename no. %d, needed to print out chi_i. "
@@ -613,9 +613,10 @@ main(int argc, char** argv)
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
   unsigned int MAX_ITER = 4000; /* 5 ns */
-  unsigned int print_pop = 0;
+  unsigned int print_pop = 0, life = 0;
   status = 0;
   double sum = 0.;
+  bool life_yet = false;
 
   FILE *gp;
   strcpy(fn, p->pop_file);
@@ -671,6 +672,26 @@ main(int argc, char** argv)
     }
 
     fprintf(gp, "%+12.8e\n", sum);
+
+    if (!life_yet) {
+      if (sum > (1 - exp(-1.))) {
+        status = generate_filename(sizeof(fn), fn, "gs_populations", "tau");
+        if (status == 0) {
+          FILE *hp = fopen(fn, "w");
+          fprintf(hp, "%+12.8e\n", float(i));
+          cl = fclose(hp);
+          if (cl != 0) {
+              fprintf(stdout, "Failed to close tau "
+                  "output file %s, error no. %d.\n", fn, cl);
+              exit(EXIT_FAILURE);
+          }
+        } else {
+          fprintf(stdout, "tau file could not be created");
+        }
+        life_yet = true;
+      }
+    }
+
     fprintf(fp, "\n");
     if(print_pop) {
       fprintf(stdout, ". sum = %12.8e\n", sum);

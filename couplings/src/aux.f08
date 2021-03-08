@@ -23,6 +23,34 @@ module aux
       cross(3) = (a(1) * b(2)) - (a(2) * b(1))
 
     end function cross
+
+    function CD(mu, r, eig, wi, gn)
+      implicit none
+      real(dp), dimension(:),    intent(in) :: wi
+      real(dp), dimension(:, :), intent(in) :: mu, r, eig, gn
+      real(dp), dimension(:), allocatable :: CD, gco
+      real(dp) :: dd, w, pi
+      integer :: Nt, Ns, n, m, k, step
+      pi = 4 * atan(1.0_dp)
+      Nt = size(mu, 2) 
+      Ns = size(gn, 2)
+      allocate(gco(Ns))
+      do n = 1, Nt
+        do m = 1, Nt
+          dd = dot_product(cross(mu(n, :), mu(m, :)), r(n, :) - r(m, :))
+          do k = 1, Nt
+            do step = 1, Ns
+              w = step * 2 * PI / Ns
+              ! not right yet - need to think about the gn part
+              gco(step) = eig(k, n) * eig(k, m) *&
+                  (1 / sqrt(2 * pi)) * exp(-(w - wi(k))**2)
+            end do
+          end do
+        end do
+      end do
+      deallocate(gco)
+
+    end function CD
     
     function get_file_length(buffer) result(res)
       implicit none
