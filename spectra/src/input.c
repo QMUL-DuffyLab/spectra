@@ -279,7 +279,8 @@ read_gi(char input_files[N_MAX][200],
 }
 
 int
-generate_filename(unsigned size, char *src, char *find, char *replace)
+generate_filename(unsigned size, char *src,
+                  const char *find, const char *replace)
 {
   char *pch;
   pch = strstr(src, find);

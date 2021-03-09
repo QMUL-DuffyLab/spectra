@@ -63,6 +63,6 @@ fftw_complex** read_gi(char input_files[N_MAX][200],
 /* double _Complex** read_gi(char *input_files[], */ 
 /* 		 unsigned int N, unsigned int tau); */
 int generate_filename(unsigned size, char *src,
-                       char *find, char *replace);
+                      const char *find, const char *replace);
 
 #endif

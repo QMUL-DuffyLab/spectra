@@ -42,7 +42,13 @@ if args.recalc is 1:
         direc = "{}/{}".format(args.input_dir, number)
         aw_temp = np.loadtxt("{}/aw.dat".format(direc))
         fw_temp = np.loadtxt("{}/fw.dat".format(direc))
-        taus[i] = np.loadtxt("{}/tau.dat".format(direc))
+        if os.path.isfile("{}/lifetime.dat"):
+            taus[i] = np.loadtxt("{}/lifetime.dat".format(direc))
+        elif os.path.isfile("{}/tau.dat"):
+            taus[i] = np.loadtxt("{}/tau.dat".format(direc))
+        else:
+            taus[i] = 0.0
+
         aw_max[i] = aw_temp[np.argmax(aw_temp[:, 1])][0]
         fw_max[i] = fw_temp[np.argmax(fw_temp[:, 1])][0]
         jij = jij + np.loadtxt("{}/J_ij.out".format(direc))

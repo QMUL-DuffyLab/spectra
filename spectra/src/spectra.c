@@ -458,7 +458,7 @@ main(int argc, char** argv)
       std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});
       std::vector<size_t> xa = ind2sub(subs[2],
           vera.get_pop_extents());
-      fprintf(stdout, "%4u (%1u)<->(%1u)(%1u %1u %1u)"
+      fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
           " %10.6e %10.6e\n", 
           i, subs[0], subs[1], xa[0], xa[1], xa[2],
           k_chl_car[i], k_chl_car[i + 1]);
@@ -553,56 +553,6 @@ main(int argc, char** argv)
   for (unsigned i = 1; i < n_chl + 1; i++) {
     p0[i] = 1./n_chl;
   }
-
-  /* fprintf(stdout, "\n-------------------\n" */
-  /*                   "EXCITATION LIFETIME\n" */
-  /*                   "-------------------\n\n"); */
-
-  /* okay - for this we need to delete the ground state lines */
-  /* n_no_gs = n_total - (n_car + 1); */
-  /* double **t_tau = (double **)calloc(n_no_gs, sizeof(double*)); */
-  /* double **t_tau_vr = (double **)calloc(n_no_gs, sizeof(double*)); */
-  /* double **t_tau_vr_inv = (double **)calloc(n_no_gs, sizeof(double*)); */
-  /* double **t_tau_wr = (double **)calloc(n_no_gs, sizeof(double*)); */
-  /* double **k_no_gs = (double **)calloc(n_no_gs, sizeof(double*)); */
-  /* double *p_no_gs = (double *)calloc(n_no_gs, sizeof(double)); */
-  /* for (unsigned i = 0; i < n_no_gs; i++) { */
-  /*   t_tau[i] = (double *)calloc(n_no_gs, sizeof(double)); */
-  /*   t_tau_vr[i] = (double *)calloc(n_no_gs, sizeof(double)); */
-  /*   t_tau_vr_inv[i] = (double *)calloc(n_no_gs, sizeof(double)); */
-  /*   t_tau_wr[i] = (double *)calloc(n_no_gs, sizeof(double)); */
-  /*   k_no_gs[i] = (double *)calloc(n_no_gs, sizeof(double)); */
-  /* } */
-
-  /* for (unsigned i = 0; i < n_total; i++) { */
-  /*   if (i != 0 && i != 15 && i != 63) { */
-  /*     for (unsigned j = 0; j < n_no_gs; j++) { */
-  /*       k_no_gs[i][j] */ 
-  /*     } */
-  /*   } */
-  /* } */
-  /* decompose_transfer_matrix(n_total, k_tot, Tij_vr, Tij_vr_inv, Tij_wr); */
-
-  /* double excite = mean_excitation_lifetime(n_total, Tij_vr, */
-  /*                                          Tij_vr_inv, */
-  /*                                          Tij_wr, p0); */
-
-  /* fprintf(stdout, "\n<τ> (ps) = %12.8e\n", excite); */
-
-  /* status = generate_filename(sizeof(fn), fn, "tij_vr_inv", "tau"); */
-  /* status = generate_filename(sizeof(fn), fn, "fw", "tau"); */
-  /* if (status == 0) { */
-  /*   fp = fopen(fn, "w"); */
-  /*   fprintf(fp, "%12.8e", excite); */
-  /*   cl = fclose(fp); */
-  /*   if (cl != 0) { */
-  /*       fprintf(stdout, "Failed to close <τ> " */
-  /*           "output file %s, error no. %d.\n", fn, cl); */
-  /*       exit(EXIT_FAILURE); */
-  /*   } */
-  /* } else { */
-  /*   fprintf(stdout, "Filename could not be generated - not writing\n"); */
-  /* } */
 
   fprintf(stdout, "\n-------------------\n"
                     "POPULATION DYNAMICS\n"
