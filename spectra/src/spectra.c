@@ -452,7 +452,7 @@ main(int argc, char** argv)
       VERA_absorption, beta);
   double k_sum = 0.;
 
-  bool print_i_xa = false;
+  bool print_i_xa = true;
   if (print_i_xa) {
     for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
       std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});

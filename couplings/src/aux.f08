@@ -24,17 +24,22 @@ module aux
 
     end function cross
 
-    function CD(mu, r, eig, wi, gn)
+    function circular_dichroism(mu, r, eig, wi, gn) result(CD)
       implicit none
       real(dp), dimension(:),    intent(in) :: wi
       real(dp), dimension(:, :), intent(in) :: mu, r, eig, gn
       real(dp), dimension(:), allocatable :: CD, gco
-      real(dp) :: dd, w, pi
+      real(dp) :: dd, w, pi, lambda
       integer :: Nt, Ns, n, m, k, step
       pi = 4 * atan(1.0_dp)
       Nt = size(mu, 2) 
       Ns = size(gn, 2)
       allocate(gco(Ns))
+      allocate(CD(Ns))
+      gco = 0.0
+      CD = 0.0
+
+      ! this can be condensed down for sure
       do n = 1, Nt
         do m = 1, Nt
           dd = dot_product(cross(mu(n, :), mu(m, :)), r(n, :) - r(m, :))
@@ -42,15 +47,20 @@ module aux
             do step = 1, Ns
               w = step * 2 * PI / Ns
               ! not right yet - need to think about the gn part
-              gco(step) = eig(k, n) * eig(k, m) *&
-                  (1 / sqrt(2 * pi)) * exp(-(w - wi(k))**2)
+              gco(step) = gco(step) + (eig(k, n) * eig(k, m) *&
+                  (1 / sqrt(2 * pi)) * exp(-(w - wi(k))**2))
             end do
           end do
+          do step = 1, Ns
+            w = step * 2 * PI / Ns
+            CD(step) = gco(step) * dd * ((-16) * (pi**2) * w / (9 * lambda))
+          end do
+          
         end do
       end do
       deallocate(gco)
 
-    end function CD
+    end function circular_dichroism
     
     function get_file_length(buffer) result(res)
       implicit none
