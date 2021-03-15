@@ -58,7 +58,7 @@ main(int argc, char** argv)
   };
 
   pulse VERA_absorption = {
-    .type = LORENTZIAN,
+    .type = GAUSSIAN,
     .target_state = 0,
     .amplitude = 0.,
     .centre = 0.,
@@ -235,7 +235,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (p->tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        kd * integral[i] * (1./ sqrt(p->tau)) * 6.4);
+        kd * integral[i] * (1./ sqrt(p->tau)));
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -261,7 +261,7 @@ main(int argc, char** argv)
       /* unpack the ordering used by FFTW */
       kd = j * 2. * M_PI / (p->tau);
       fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-          kd * chiw[i][j] * (1./ sqrt(p->tau)) * 6.4);
+          kd * chiw[i][j] * (1./ sqrt(p->tau)));
     }
     cl = fclose(fp);
     if (cl != 0) {
@@ -400,7 +400,7 @@ main(int argc, char** argv)
     /* unpack the ordering used by FFTW */
     kd = i * 2. * M_PI / (p->tau);
     fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-        (pow(kd, 3.) * integral[i] * (1./ sqrt(p->tau))) * 6.4);
+        (pow(kd, 3.) * integral[i] * (1./ sqrt(p->tau))));
   }
   cl = fclose(fp);
   if (cl != 0) {
@@ -424,7 +424,7 @@ main(int argc, char** argv)
       /* unpack the ordering used by FFTW */
       kd = j * 2. * M_PI / (p->tau);
       fprintf(fp, "%18.10f %18.10f\n", kd / TOFS, 
-          kd * chiw[i][j] * (1./ sqrt(p->tau)) * 6.4);
+          kd * chiw[i][j] * (1./ sqrt(p->tau)));
     }
     cl = fclose(fp);
     if (cl != 0) {
@@ -452,7 +452,7 @@ main(int argc, char** argv)
       VERA_absorption, beta);
   double k_sum = 0.;
 
-  bool print_i_xa = true;
+  bool print_i_xa = false;
   if (print_i_xa) {
     for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
       std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});

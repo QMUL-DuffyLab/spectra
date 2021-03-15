@@ -19,6 +19,7 @@
 #define TOFS (2. * M_PI * CMS * 100. * 1E-15)
 #define TOCM1 ((1.295E3 * 8.988E9 * 0.5))
 
+#define KB 1.38064852E-23
 #define CVAC 299792458.0
 #define HBAR 1.0545718176E-34
 #define EV 1.602176634E-19

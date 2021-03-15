@@ -75,7 +75,7 @@ program coupling_calc
   kc = 8.988E9_dp * 0.5_dp
 
   ! these are the ones we read in from
-  ei_file         = trim(adjustl(input_dir)) // "/ei.txt"
+  ei_file         = trim(adjustl(input_dir)) // "/en.txt"
   lambda_file     = trim(adjustl(input_dir)) // "/lambda.txt"
   gnt_file        = trim(adjustl(input_dir)) // "/gnt.txt"
   lifetimes_file  = trim(adjustl(input_dir)) // "/lifetimes.txt"
@@ -293,6 +293,13 @@ program coupling_calc
     do j = 1, size(block_indices)
       Jeig(block_indices(i), j) = bloc(i, j)
     end do
+  end do
+  ! the other eigenvalues don't get reconverted to wavenumbers
+  ! and it messes with the F(w) calculation later on. Once that
+  ! is fixed to account for VERA this shouldn't be an issue and
+  ! these lines can be deleted - quick and dirty for now
+  do i = size(block_indices) + 1, control_len
+    eigvals(i) = eigvals(i) * e2kb * kc
   end do
   deallocate(bloc)
   deallocate(block_eigvals)

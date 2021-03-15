@@ -162,6 +162,8 @@ novod_energies = {
         'CLA612' : 15097,
         'CLA613' : 15175,
         'CLA614' : 15264,
+        'LUT620' : 16940, # testing
+        'LUT621' : 16940,
         }
 
 dict_from_vangelis = {

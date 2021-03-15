@@ -75,7 +75,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
     # different information needs to be printed to the file based on
     # file name. Maybe a pair of dicts and then a comprehension
     input_file     = "{}/pigments.{}".format(output_path, snapshot_number) 
-    energy_file    = "{}/ei.txt".format(output_path) 
+    energy_file    = "{}/en.txt".format(output_path) 
     lifetimes_file = "{}/lifetimes.txt".format(output_path) 
     lambda_file    = "{}/lambda.txt".format(output_path) 
     gnt_file       = "{}/gnt.txt".format(output_path) 
@@ -103,8 +103,8 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
             print(pigment_data.pigment_data[p[0:3]][state]["lifetime"], file=h)
         else:
             if p in pigment_data.site_energies.keys():
-                print(pigment_data.site_energies[p], file=g)
-                # print(pigment_data.novod_energies[p], file=g)
+                # print(pigment_data.site_energies[p], file=g)
+                print(pigment_data.novod_energies[p], file=g)
             else:
                 print(pigment_data.pigment_data[p[0:3]]["S1"]["energy"], file=g)
 

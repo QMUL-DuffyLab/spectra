@@ -222,9 +222,15 @@ create_VERA_from_file(char *filename)
         sz = line.find("=") + 1;
         n_vib = std::stoul(line.substr(sz));
       }
-      if (line.find("beta")!=std::string::npos) {
+      if (line.find("T")!=std::string::npos) {
         sz = line.find("=") + 1;
-        beta = std::stod(line.substr(sz));
+        double t = std::stod(line.substr(sz));
+        /* i want to be able to specify temperature in Kelvin
+         * for convenience but the VERA functions use beta in
+         * wavenumbers because that's how I wrote them. just
+         * do the conversion here and be done with it :) */
+        t *= KB / (2 * PI * HBAR * 100 * CVAC);
+        beta = 1. / t;
       }
       if (line.find("mu_ratio")!=std::string::npos) {
         sz = line.find("=") + 1;
@@ -1164,7 +1170,7 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
             } else {
               double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
               e_xa = x.get_w_elec(a[0]);
-              /* NB: this shouldn't be hardcoded!!! */
+              /* NB: check with chris that this is 1200 and not like 800 */
               /* FWHM should be 1150 or 1200 */
               v_abs.width = 1200.0;
               double fc_sq = 1.;

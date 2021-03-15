@@ -19,8 +19,9 @@ incident(pulse p, unsigned int tau)
       sum += ww[i];
     }
     else if (p.type == GAUSSIAN) {
-      ww[i] = (1. / (p.width * sqrt(2. * M_PI))) *
-              exp(-0.5 * pow(fabs(wn - p.centre) / p.width, 2.));
+      double sigma = p.width / (2. * sqrt(2. * log(2.)));
+      ww[i] = (1. / (sigma * sqrt(2. * M_PI))) *
+              exp(-0.5 * pow(fabs(wn - p.centre) / sigma, 2.));
       sum += ww[i];
     }
     else if (p.type == DELTA) {
@@ -314,6 +315,8 @@ double*
 bcs (unsigned const int N, const double* eigvals, const double T)
 {
   /* calculate t = 0 boltzmannised exciton populations */
+  /* note that kB / (h C) in wavenumbers comes out as about 0.69
+   * and 1 / (0.69 T) == 1.439 / T */
   double beta = 1.439 / T;
   double sum = 0.0;
   double *populations = (double *)calloc(N, sizeof(double));
