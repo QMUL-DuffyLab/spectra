@@ -4,6 +4,7 @@
 #include <complex>
 #include <gsl/gsl_eigen.h>
 #include "input.h"
+#include "cd.h"
 #include "steady_state.h"
 #include "forster.h"
 #include "vera.h"
@@ -66,6 +67,8 @@ main(int argc, char** argv)
     .t_peak = 0.1,
     .duration = 70.0E-3,
   };
+
+  bool calculate_CD = true;
 
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MUSQ;
@@ -436,6 +439,37 @@ main(int argc, char** argv)
 
   free(p_i_equib);
 
+  if (calculate_CD) {
+    double **com = (double **)calloc(p->N, sizeof(double *));
+    for (unsigned i = 0; i < p->N; i++) {
+      com[i] = (double *)calloc(3, sizeof(double));
+    }
+    com = read_mu(p->com_file, p->N);
+
+    double *cdw = (double *)calloc(p->tau, sizeof(double));
+    cd(n_chl, p->tau, chiw, mu, eig, com, eigvals, cdw);
+
+    for (unsigned i = 0; i < p->N; i++) {
+      free(com[i]);
+    }
+    free(com);
+    strcpy(fn, p->fw_file);
+    status = generate_filename(sizeof(fn), fn, "fw", "cd");
+    if(status != 0) {
+      fprintf(stdout, "CD filename not constructed\n", i);
+    } else {
+      fp = fopen(fn, "w");
+      print_vector(fp, NULL, p->tau, cdw);
+      cl = fclose(fp);
+      if (cl != 0) {
+          fprintf(stdout, "Failed to close CD "
+              "output file, error no. %d.\n", cl);
+          exit(EXIT_FAILURE);
+      }
+    }
+    free(cdw);
+  }
+
   fprintf(stdout, "\n----------\n"
                     "VERA RATES\n"
                     "----------\n\n");
@@ -444,9 +478,9 @@ main(int argc, char** argv)
 
   size_t n_chl    = 14; /* number of chlorophylls */
   size_t n_car    = 2;
-  size_t n_s_car  = 48;
+  size_t n_s_car  = vera.n_total;
   size_t n_total  = n_chl + 1 + (n_car * n_s_car);
-  double beta     = 1. / protocol.T;
+  double beta     = 1.439 / protocol.T;
   std::vector<double> k_chl_car = k_i_xa(vera, n_chl,
       n_car, p->tau, eig, eigvals, Jij, normed_ai, normed_fi,
       VERA_absorption, beta);
@@ -455,7 +489,7 @@ main(int argc, char** argv)
   bool print_i_xa = false;
   if (print_i_xa) {
     for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
-      std::vector<size_t> subs = ind2sub(i, {14, 2, 48, 2});
+      std::vector<size_t> subs = ind2sub(i, {n_chl, n_car, n_s_car, 2});
       std::vector<size_t> xa = ind2sub(subs[2],
           vera.get_pop_extents());
       fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
@@ -471,6 +505,13 @@ main(int argc, char** argv)
   double **k_tot = (double **)calloc(n_total, sizeof(double *));
   for (unsigned i = 0; i < n_total; i++) {
     double *k_tot = (double *)calloc(n_total, sizeof(double));
+  }
+
+  /* not finished - should give option to just read in the total rates */
+  bool read_car_rates = false;
+  if (read_car_rates) {
+    fp = fopen("in/car_rates.dat", "rb");
+
   }
 
   k_tot = total_rates(n_chl, vera, n_car, n_s_car, gamma, Jij,

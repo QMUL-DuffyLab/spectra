@@ -23,9 +23,8 @@ print_vector(FILE *stream, char* name, unsigned n, double *vector)
   fprintf(stream, "Printing vector %s:\n", name);
   }
   for (i = 0; i < n; i++) {
-    fprintf(stream, "%8.4e ", vector[i]);
+    fprintf(stream, "%8.4e\n", vector[i]);
   }
-  fprintf(stream, "\n");
 }
 
 /** interchange between an aritrary 2d array and a contiguous one.

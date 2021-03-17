@@ -387,6 +387,7 @@ VERA::VERA(size_t elec, size_t norm, size_t vib,
   : n_elec(elec),
     n_normal(norm),
     n_vib(vib),
+    n_total(elec * pow(n_vib + 1, n_normal)),
     beta(bet),
     mu_ratio(mu_r),
     s2_stokes(s2_s)
@@ -419,6 +420,7 @@ VERA::VERA(size_t elec, size_t norm, size_t vib,
   : n_elec(elec),
     n_normal(norm),
     n_vib(vib),
+    n_total(elec * pow(n_vib + 1, n_normal)),
     beta(bet),
     mu_ratio(mu_r),
     s2_stokes(s2_s)
@@ -1459,9 +1461,9 @@ size_t n_total, double *res)
   free(rate_matrix);
 }
 
-double **total_rates(unsigned n_chl, VERA car, unsigned n_car,
-unsigned n_s_car, double *gamma, double **Jij, std::vector<double> k_i_delta,
-double **redfield_rates)
+double **total_rates(unsigned n_chl, std::vector<double> intra_car,
+unsigned n_car, unsigned n_s_car, double *gamma, double **Jij,
+std::vector<double> k_i_delta, double **redfield_rates)
 {
   unsigned n_tot = n_chl + 1 + (n_car * n_s_car);
   double **k_tot = (double **)calloc(n_tot, sizeof(double*));
@@ -1470,7 +1472,7 @@ double **redfield_rates)
   }
 
   std::vector<size_t> extents = {n_chl, n_car, n_s_car, 2};
-  std::vector<double> intra_car = car.intra_rates();
+  /* std::vector<double> intra_car = car.intra_rates(); */
 
   /* note - might not need 0 < j < n_tot; might just be
    * i < j < n_tot and then fill in the rest with detailed balance etc.

@@ -35,7 +35,7 @@ cd(unsigned n_chl, unsigned ns, double **chiw, double **mu,
     for (unsigned m = 0; m < n_chl; m++) {
       cross(mu[n], mu[m], v);
       for (unsigned l = 0; l < 3; l++) {
-        rnm[l] = com[m][l] = com[n][l];
+        rnm[l] = com[n][l] - com[m][l];
       }
       dot(v, rnm, dd);
 

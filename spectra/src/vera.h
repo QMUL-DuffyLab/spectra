@@ -79,6 +79,7 @@ class VERA {
     size_t n_elec;
     size_t n_normal;
     size_t n_vib;
+    size_t n_total;
     double beta;
     double mu_ratio;
     double s2_stokes;
@@ -156,9 +157,9 @@ void
 intra_rate_test(double *population, std::vector<double> rates,
 size_t n_total, double *res);
 
-double **total_rates(unsigned n_chl, VERA car, unsigned n_car,
-unsigned n_s_car, double *gamma, double **Jij, std::vector<double> k_i_delta,
-double **redfield_rates);
+double **total_rates(unsigned n_chl, std::vector<double> intra_car, 
+unsigned n_car, unsigned n_s_car, double *gamma, double **Jij,
+std::vector<double> k_i_delta, double **redfield_rates);
 
 
 #endif
