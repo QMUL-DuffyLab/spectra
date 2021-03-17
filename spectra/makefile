@@ -38,6 +38,7 @@ ifeq ($(UNAME), Linux)
 endif
 
 SOURCES = ./src/input.c \
+	  ./src/cd.c \
 	  ./src/invert_matrix.c \
 	  ./src/forster.c \
 	  ./src/fluorescence.c \

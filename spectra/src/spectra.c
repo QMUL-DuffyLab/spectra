@@ -439,37 +439,6 @@ main(int argc, char** argv)
 
   free(p_i_equib);
 
-  if (calculate_CD) {
-    double **com = (double **)calloc(p->N, sizeof(double *));
-    for (unsigned i = 0; i < p->N; i++) {
-      com[i] = (double *)calloc(3, sizeof(double));
-    }
-    com = read_mu(p->com_file, p->N);
-
-    double *cdw = (double *)calloc(p->tau, sizeof(double));
-    cd(n_chl, p->tau, chiw, mu, eig, com, eigvals, cdw);
-
-    for (unsigned i = 0; i < p->N; i++) {
-      free(com[i]);
-    }
-    free(com);
-    strcpy(fn, p->fw_file);
-    status = generate_filename(sizeof(fn), fn, "fw", "cd");
-    if(status != 0) {
-      fprintf(stdout, "CD filename not constructed\n", i);
-    } else {
-      fp = fopen(fn, "w");
-      print_vector(fp, NULL, p->tau, cdw);
-      cl = fclose(fp);
-      if (cl != 0) {
-          fprintf(stdout, "Failed to close CD "
-              "output file, error no. %d.\n", cl);
-          exit(EXIT_FAILURE);
-      }
-    }
-    free(cdw);
-  }
-
   fprintf(stdout, "\n----------\n"
                     "VERA RATES\n"
                     "----------\n\n");
@@ -514,7 +483,7 @@ main(int argc, char** argv)
 
   }
 
-  k_tot = total_rates(n_chl, vera, n_car, n_s_car, gamma, Jij,
+  k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij,
           k_chl_car, odep.Tij);
 
   /* for (unsigned i = 0; i < n_total; i++) { */
@@ -593,6 +562,38 @@ main(int argc, char** argv)
   p0 = (double *)calloc(n_total, sizeof(double));
   for (unsigned i = 1; i < n_chl + 1; i++) {
     p0[i] = 1./n_chl;
+  }
+
+  if (calculate_CD) {
+    double **com = (double **)calloc(p->N, sizeof(double *));
+    for (unsigned i = 0; i < p->N; i++) {
+      com[i] = (double *)calloc(3, sizeof(double));
+    }
+    com = read_mu(p->com_file, p->N);
+
+    double *cdw = (double *)calloc(p->tau, sizeof(double));
+    cd_calc(n_chl, p->tau, chiw, mu, eig, com, eigvals, cdw);
+
+    for (unsigned i = 0; i < p->N; i++) {
+      free(com[i]);
+    }
+    free(com);
+    strcpy(fn, p->fw_file);
+    status = generate_filename(sizeof(fn), fn, "fw", "cd");
+    if(status != 0) {
+      fprintf(stdout, "CD filename not constructed\n", i);
+    } else {
+      fp = fopen(fn, "w");
+      fprintf(stdout, "\nWriting CD file\n\n");
+      print_vector(fp, NULL, p->tau, cdw);
+      cl = fclose(fp);
+      if (cl != 0) {
+          fprintf(stdout, "Failed to close CD "
+              "output file, error no. %d.\n", cl);
+          exit(EXIT_FAILURE);
+      }
+    }
+    free(cdw);
   }
 
   fprintf(stdout, "\n-------------------\n"

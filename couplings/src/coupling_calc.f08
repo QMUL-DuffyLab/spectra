@@ -388,6 +388,7 @@ program coupling_calc
   write(20, '(a)') adjustl(trim(adjustl(fw_output_file)))
   write(20, '(a)') adjustl(trim(adjustl(pop_file)))
   write(20, '(a)') adjustl(trim(adjustl(jij_file)))
+  write(20, '(a)') adjustl(trim(adjustl(com_file)))
 
   open(unit=10, file=jij_file)
   open(unit=11, file=eigvecs_file)

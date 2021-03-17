@@ -1396,7 +1396,7 @@ VERA::intra_rates()
             size_t n_i_ind = sub2ind(n_i, n_extents);
             size_t n_j_ind = sub2ind(n_j, n_extents);
 
-            double fc_ij = 1., fc_ji = 1.;
+            double fc_ij = 1.;
             for (size_t alpha = 0; alpha < n_normal; alpha++) {
               if (j > i) {
                 fc_ij *= pow(fc[sub2ind({i, j, alpha, 

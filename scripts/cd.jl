@@ -27,7 +27,7 @@ function CD_calc(dir)
 
   for n = 1:nchl
     for m = 1:nchl
-      dd = ((mu[n, :]) × (mu[m, :])) ⋅ (r[n, :] - r[m, :])
+      dd = (×(mu[n, :], mu[m, :])) ⋅ (r[n, :] - r[m, :])
       g_sum = zeros(ns)
       for k = 1:nchl
         # chi_file = format("{}{}{:02d}{}", dir, "chi_i_", k, ".dat")
@@ -48,7 +48,7 @@ function CD_calc(dir)
   wl = replace!(1e7 ./ wn, Inf=>NaN)
 
   open(format("{}{}", dir, "CD.dat"), "w") do io
-    writedlm(io, [wl CD])
+    writedlm(io, [wn CD])
   end
 
   return [wl wn CD]
