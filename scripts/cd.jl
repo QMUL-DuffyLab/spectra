@@ -7,7 +7,7 @@ function CD_calc(dir)
   mu_file   = format("{}{}", dir, "mu_site.out")
   com_file  = format("{}{}", dir, "c_o_m.dat")
   eig_file  = format("{}{}", dir, "eigvecs.out")
-  en_file   = format("{}{}", dir, "ei.txt")
+  en_file   = format("{}{}", dir, "eigvals.out")
   mu        = readdlm(mu_file)
   r         = readdlm(com_file)
   eig       = readdlm(eig_file)
@@ -18,26 +18,32 @@ function CD_calc(dir)
   CD = zeros(ns)
   wn = zeros(ns)
   g_sum = zeros(ns)
+  chi = Array{Real}(undef, nchl, ns, 2)
+  for k = 1:nchl
+    chi_file    = format("{}{}{:02d}{}", dir, "chi_i_", k, ".dat")
+    chi[k, :, :]      = readdlm(chi_file) 
+  end
+  wn = chi[1, :, 1]
 
   for n = 1:nchl
     for m = 1:nchl
-      dd = ((mu[m, :]) × (mu[n, :])) ⋅ (r[m, :] - r[n, :])
+      dd = ((mu[n, :]) × (mu[m, :])) ⋅ (r[n, :] - r[m, :])
       g_sum = zeros(ns)
       for k = 1:nchl
-        chi_file = format("{}{}{:02d}{}", dir, "chi_i_", k, ".dat")
-        chi      = readdlm(chi_file) 
-        if (n == 1 && m == 1 && k == 1)
-          wn       = chi[:, 1]
-        end
-        # s        = sum(chi[:, 2])
-        g        = chi[:, 2] / sum(chi[:, 2])
-        g_sum .+= (g .* (eig[k, n] * eig[k, m] * (en[m] - en[n])))
+        # chi_file = format("{}{}{:02d}{}", dir, "chi_i_", k, ".dat")
+        # chi      = readdlm(chi_file) 
+        # if (n == 1 && m == 1 && k == 1)
+        #   wn       = chi[:, 1]
+        # end
+        # s        = sum(chi[:, 2])Cross product - W
+        g        = chi[k, :, 2] / sum(chi[k, :, 2])
+        g_sum .+= (g .* (eig[k, n] * eig[k, m] * en[k]))
       end
       CD .+= (g_sum .* dd)
     end
   end
 
-  # CD .*= (-16 * pi^2 / 9λ) .* wn
+  CD .*= (-16 * pi^2 / 9λ) .* wn
   # CD .*= (-16 * pi^2 / 9λ) .* wn
   wl = replace!(1e7 ./ wn, Inf=>NaN)
 
