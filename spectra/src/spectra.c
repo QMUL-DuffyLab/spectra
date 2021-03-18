@@ -39,11 +39,11 @@ main(int argc, char** argv)
 
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = {
-    .type=DELTA,
+    .type=GAUSSIAN,
     .target_state = 2,
-    .amplitude = 100.,
-    .centre=15000.,
-    .width=300.,
+    .amplitude = 1.,
+    .centre=15873.,
+    .width=50.,
     .t_peak = 0.1,
     .duration = 70.0E-3
   };

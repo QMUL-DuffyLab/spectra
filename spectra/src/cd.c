@@ -46,7 +46,7 @@ cd_calc(unsigned n_chl, unsigned ns, double **chiw, double **mu,
           /*         eig[k][n] * eigvals[k]) */
           /*       / chiw_sums[k]); */
           g[l] += ((chiw[k][l] / chiw_sums[k])
-                * eig[k][m] * eig[k][n] * eigvals[k]);
+                * eig[m][k] * eig[n][k] * eigvals[k]);
         }
       }
 
