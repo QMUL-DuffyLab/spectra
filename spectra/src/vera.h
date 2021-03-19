@@ -62,6 +62,7 @@ class VERA {
     std::vector<double> dndt(double *population,
                              double t, pulse pump);
     std::vector<double> intra_rates();
+    std::vector<double> boltz_unnorm();
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
     std::vector<size_t> get_extents();

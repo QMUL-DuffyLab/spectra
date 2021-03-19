@@ -1594,3 +1594,17 @@ std::vector<double> k_i_delta, double **redfield_rates)
   return k_tot;
 }
 
+std::vector<double>
+VERA::boltz_unnorm()
+{
+  std::vector<double> b(n_total, 0.);
+  for (unsigned i = 0; i < n_total; i++) {
+    std::vector<size_t> a = ind2sub(i, population_extents);
+    double e = get_w_elec(a[0]);
+    for (unsigned alpha = 0; alpha < n_normal; alpha++) {
+      e += get_w_normal(alpha) * (int)(a[alpha + 1]);
+    }
+    b[i] = exp(-beta * e);
+  }
+  return b;
+}
