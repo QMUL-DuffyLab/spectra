@@ -3,7 +3,7 @@ program coupling_calc
   use aux
   implicit none
   integer, parameter :: cdp = REAL128
-  logical :: verbose, print_jij, print_jij_diag
+  logical :: verbose, print_jij, print_jij_diag, add_energy_noise
   character(100) :: coord_fmt, ei_file, dipoles_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: input_dir, temp_string, tau_string
@@ -28,6 +28,7 @@ program coupling_calc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
+  add_energy_noise = .true.
   print_jij = .false.
   print_jij_diag = .false.
   call cpu_time(start_time)
@@ -170,6 +171,19 @@ program coupling_calc
   ! we multiply the whole Jij matrix later on to convert
   ! to wavenumbers; the read in excitation energies are already
   ! in wavenumbers so do that conversion backwards here
+
+  if (add_energy_noise) then
+    ! we can choose to add random disorder to the site energies
+    ! to mimic interactions with the protein etc etc.
+    call random_init(.true., .true.)
+    write(*, '(a)') "Adding Gaussian disorder to site energies: before"
+    write(*, *) ei
+    call add_noise(ei)
+    write(*, *)
+    write(*, '(a)') "Adding Gaussian disorder to site energies: after"
+    write(*, *) ei
+  end if
+
   ei = ei / (e2kb * kc)
 
   open(newunit=myunit, file=trim(adjustl(com_file)))
@@ -285,7 +299,9 @@ program coupling_calc
   ! set Jeig to the identity
   Jeig = 0.0_dp
   eigvals = ei
-  forall(j = 1:control_len) Jeig(j, j) = 1.0_dp
+  do i = 1, control_len
+    Jeig(i, i) = 1.0_dp
+  end do
   ! now overwite the Redfield block with the diagonalised bit
   ! i think the block_indices(i) is correct??
   do i = 1, size(block_indices)

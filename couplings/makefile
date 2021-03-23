@@ -3,7 +3,7 @@ SOURCES = ./src/aux.f08 \
 	  ./src/coupling_calc.f08
 OBJECTS = $(patsubst %.f08, %.o, $(notdir $(SOURCES)))
 MOD_DIR = mod
-CFLAGS = -J$(MOD_DIR) -std=f2008 -ffree-form -Wall -fcheck=bounds
+CFLAGS = -J$(MOD_DIR) -std=f2018 -ffree-form -Wall -fcheck=bounds
 LFLAGS = -llapack
 EXEC = coupling_calc
 

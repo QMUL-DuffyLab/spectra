@@ -61,6 +61,35 @@ module aux
       deallocate(gco)
 
     end function circular_dichroism
+
+    subroutine add_noise(eigvals)
+      implicit none
+      real(dp), dimension(:), intent(inout) :: eigvals
+      ! real(dp), dimension(:), allocatable :: eigvals_new
+      integer :: i
+      real(dp) :: x, y, r, sigma, mu
+      ! marsaglia method gives Gaussian with mu = 0, sigma = 1
+      mu = 0.0_dp
+      sigma = 120.0_dp
+
+      ! allocate(eigvals_new(size(eigvals)))
+      ! eigvals_new = 0.0_dp
+
+      do i = 1, size(eigvals)
+      ! marsaglia polar method for generating Gaussian random numbers
+      r = 0.0_dp
+      do while (r.ge.1.0_dp.or.r.eq.0.0_dp)
+        call random_number(x)
+        call random_number(y)
+        x = (2.0_dp * x) - 1.0_dp
+        y = (2.0_dp * y) - 1.0_dp
+        r = x**2 + y**2
+      end do
+        r = sqrt(-2.0_dp * log(r) / r) 
+        eigvals(i) = eigvals(i) + (mu + (sigma * x * r))
+      end do
+
+    end subroutine add_noise
     
     function get_file_length(buffer) result(res)
       implicit none
