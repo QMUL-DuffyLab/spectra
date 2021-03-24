@@ -21,7 +21,8 @@ parser.add_argument("-r", "--recalc", type=int, default=1,
         help="Recalculate the average - 1 if yes, 0 if no")
 args = parser.parse_args()
 
-numbers = os.listdir(args.input_dir)
+numbers = [f.name for f in os.scandir(args.input_dir) if f.is_dir()]
+
 initial_data = np.loadtxt("{}/{}/aw.dat".format(args.input_dir, numbers[0]))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
@@ -42,9 +43,9 @@ if args.recalc is 1:
         direc = "{}/{}".format(args.input_dir, number)
         aw_temp = np.loadtxt("{}/aw.dat".format(direc))
         fw_temp = np.loadtxt("{}/fw.dat".format(direc))
-        if os.path.isfile("{}/lifetime.dat"):
+        if os.path.isfile("{}/lifetime.dat".format(direc)):
             taus[i] = np.loadtxt("{}/lifetime.dat".format(direc))
-        elif os.path.isfile("{}/tau.dat"):
+        elif os.path.isfile("{}/tau.dat".format(direc)):
             taus[i] = np.loadtxt("{}/tau.dat".format(direc))
         else:
             taus[i] = 0.0
@@ -65,6 +66,7 @@ else:
     aws = np.loadtxt("{}/aw_average.dat".format(args.input_dir))
     fws = np.loadtxt("{}/fw_average.dat".format(args.input_dir))
     jij = np.loadtxt("{}/jij_average.dat".format(args.input_dir))
+    tau = np.loadtxt("{}/tau_average.dat".format(args.input_dir))
 
 np.savetxt("{}/aw_max.dat".format(args.input_dir), aw_max)
 np.savetxt("{}/fw_max.dat".format(args.input_dir), fw_max)
@@ -86,3 +88,10 @@ else:
 
 draw_maximums = (True, True, True)
 plot_aw_fw(aws, fws, aw_exp, fw_exp, draw_maximums, args.input_dir)
+
+fig, ax = plt.subplots()
+plt.title(r'Lifetime: avg = $ {} $, $ \sigma = {} $'.format(avg_tau, np.std(taus)))
+plt.xlabel("Frame")
+plt.ylabel(r'$ \left< \tau \right>$')
+plt.plot(taus)
+plt.savefig("{}/tau.pdf".format(args.input_dir))
