@@ -1,0 +1,366 @@
+#include "hybrid_vera.h"
+
+std::vector<double>
+k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
+               double **eig, double *eigvals, double **car_rates,
+               double **Jij, double **normed_ai, double **normed_fi,
+               pulse v_abs, double beta, double *car_decays)
+{
+  size_t vib_total = pow(x.n_vib + 1, x.n_normal);
+  double ji = 0., ji_work = 0.;
+  double *abs = (double *)calloc(tau, sizeof(double));
+  double *fi_ad  = (double *)calloc(tau, sizeof(double));
+  double *ai_fd  = (double *)calloc(tau, sizeof(double));
+  std::vector<double> k_i_xa;
+  unsigned short print_ji = 0;
+  unsigned short print_delta_fc = 0;
+  std::vector<size_t> pop_extents = x.get_pop_extents();
+
+  /* for (unsigned i = 1; i < x.get_pop_extents().size(); i++) { */
+  /*   vib_extents.push_back(x.get_pop_extents()[i]); */
+  /* } */
+
+  for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
+    for (unsigned carotenoid = n_chl;
+        carotenoid < n_chl + n_car; carotenoid++) {
+      /* assumes the carotenoids are at the end of the arrays;
+       * fortran code puts them there so shouldn't be an issue */
+
+      ji = 0.;
+      for (unsigned n = 0; n < n_chl; n++) {
+        for (unsigned m = 0; m < n_chl; m++) {
+          ji += eig[m][chl_index] * eig[n][chl_index]
+             * Jij[m][carotenoid] * Jij[n][carotenoid];
+        }
+      }
+
+      if (print_ji) {
+        fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
+      }
+
+      /* outer loop runs from vib_total to 2 * vib_total because
+       * we're looping over the first excited electronic state (S1).
+       * the upward rate is just the rate from the true g/s to this
+       * state; then the inner loop is over the whole set of ground
+       * states, to get the effective decay rate. */
+      for (unsigned ii = vib_total; ii < 2 * vib_total; ii++) {
+        std::vector<size_t> a = ind2sub(ii, pop_extents);
+        /* we're only considering the transition from the true g/s
+         * up to (1, {a}) */
+        double e_xa = x.get_w_elec(a[0]);
+        double chl_car = 0.;
+        double car_chl = 0.;
+        double fc_sq = 1.;
+
+        for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
+          e_xa += x.get_w_normal(alpha) * a[alpha + 1];
+          fc_sq *= pow(x.get_fc({1, 0, alpha,
+                0, a[alpha + 1]}), 2.);
+        }
+        ji_work = ji * fc_sq;
+
+        /* e_xa is also delta_xy_ba in this case since y_b = {0} */
+        /* first element is the S0-S1 width which is all we need */
+        v_abs.width = x.get_widths(0);
+        /* now we have to calculate the rate between every delta_xy_ba */
+        v_abs.centre = e_xa;
+        abs = incident(v_abs, tau);
+
+        for (unsigned step = 0; step < tau; step++) {
+          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
+          ai_fd[step] = normed_ai[chl_index][step] * abs[step];
+        }
+        
+        if (print_delta_fc) {
+          fprintf(stdout, "%5u %12.8e %12.8e %12.8e\n", ii,
+              e_xa, fc_sq, ji_work);
+        }
+
+        chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
+        car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
+
+        for (unsigned kk = 0; kk < vib_total; kk++) {
+
+          /* NB: indexing!!! */
+          car_decays[ii] += car_rates[kk][ii];
+
+        } // kk
+
+        chl_car *= CM_PER_PS * 2 * PI;
+        car_chl *= CM_PER_PS * 2 * PI;
+        if (eigvals[chl_index] > e_xa) {
+          car_chl *= exp(-beta * (eigvals[chl_index] - e_xa));
+        } else {
+          chl_car *= exp(-beta * (e_xa - eigvals[chl_index]));
+        }
+        k_i_xa.push_back(chl_car);
+        k_i_xa.push_back(car_chl);
+
+        bool print_details = false;
+        if (print_details) {
+          fprintf(stdout, "chl = %2u, car = %2u,"
+          " state = (%2lu, %2lu, %2lu): e_chl = %10.6e,"
+          " e_car = %10.6e, forward rate = %10.6e,"
+          " backward_rate = %10.6e\n", chl_index, carotenoid,
+          a[0], a[1], a[2], eigvals[chl_index], e_xa, chl_car, car_chl);
+        }
+
+      } // ii
+    }
+  } // chl_index
+  free(abs);
+  free(fi_ad);
+  free(ai_fd);
+
+  return k_i_xa;
+}
+
+double**
+car_transfer(VERA x, double *decays)
+{
+  std::vector<size_t> extents = x.get_pop_extents();
+  std::vector<size_t> subscripts(extents.size(), 0.),
+                      subs_ivr(extents.size(), 0.),
+                      subs_ic(extents.size(), 0.);
+
+  unsigned s1_total = pow(x.n_vib + 1, x.n_normal) + 1;
+  unsigned n_total = x.n_total;
+  std::vector<double> rates = x.intra_rates();
+
+  double **t = (double **)calloc(n_total, sizeof(double*));
+  for (unsigned i = 0; i < n_total; i++) {
+    t[i] = (double *)calloc(n_total, sizeof(double));
+  }
+
+  /* indices - ground state is index 0 */
+  for (unsigned i = 1; i <= s1_total; i++) {
+    subscripts = ind2sub(i - 1, extents);  
+    /* this will return 0, a_1, a_2, so add one to the electronic index */
+    subscripts[0]++;
+    size_t ind = sub2ind(subscripts, extents);
+
+    for (unsigned j = 1; j <= s1_total; j++) {
+      if (i == j) {
+        t[i - 1][j - 1] -= decays[i - 1];
+        t[0][i - 1] += decays[i - 1];
+      } else {
+        subs_ivr = ind2sub(j - 1, extents);
+        subs_ic = subs_ivr;
+
+        subs_ivr[0]++;
+        size_t ind_ivr = sub2ind(subs_ivr, extents);
+        t[j - 1][i - 1] = rates[sub2ind({ind, ind_ivr}, {n_total, n_total})];
+      }
+
+    }
+
+  }
+  return t;
+}
+
+double**
+hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
+    double *gamma, double **Jij, std::vector<double> k_i_delta,
+    double **redfield_rates, double *car_decays)
+{
+  /* n_vib_tot is the total number of vibrational levels
+   * per electronic state; we only need this here because
+   * we're not concerned with hot ground states/S2 */
+  unsigned n_vib_tot = pow(x->n_vib + 1, x->n_normal);
+  unsigned size = n_chl + 1 + (n_car * n_vib_tot) + 1;
+  double **k_tot = (double **)calloc(size, sizeof(double*));
+  for (unsigned i = 0; i < size; i++) {
+    k_tot[i] = (double *)calloc(size, sizeof(double));
+  }
+
+  std::vector<size_t> car_extents = x->get_pop_extents();
+  std::vector<size_t> chl_car_extents = {n_chl, n_car, n_vib_tot, 2};
+  std::vector<double> car_rates = x->intra_rates();
+
+  for (unsigned i = 0; i < size; i++) {
+    for (unsigned j = 0; j < size; j++) {
+      unsigned rgs = 0;
+      unsigned cgs = n_chl + 1;
+      bool i_rgs  = (i == rgs);
+      bool j_rgs  = (j == rgs);
+      bool i_chls = (i > 0 && i <= n_chl);
+      bool j_chls = (j > 0 && j <= n_chl);
+      bool i_cgs  = (i == cgs);
+      bool j_cgs  = (j == cgs);
+      bool i_620  = (i > n_chl + 1 && i <= n_chl + 1 + n_vib_tot);
+      bool j_620  = (j > n_chl + 1 && j <= n_chl + 1 + n_vib_tot);
+      bool i_621  = (i > n_chl + 1 + n_vib_tot);
+      bool j_621  = (j > n_chl + 1 + n_vib_tot);
+
+      if (i_rgs) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          k_tot[i][j] += (1. / (1000 * gamma[j - 1]));
+        }
+        if (j_620) {
+          continue;
+        }
+        if (j_621) {
+          continue;
+        }
+      }
+
+      if (j_rgs) {
+        /* nothing comes out of Redfield ground state */
+        continue;
+      }
+
+      if (i_chls) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          /* redfield rate: i/j - 1 because of ground state */
+          /* [i][j] not [j][i] because this is already a transfer matrix */
+          k_tot[i][j] = redfield_rates[i - 1][j - 1];
+          if (i == j) {
+            /* need to subtract the outward rates to the carotenoids */
+            for (unsigned k = 0; k < n_vib_tot; k++) {
+              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 0, k, 0},
+                             chl_car_extents)];
+              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 1, k, 0},
+                             chl_car_extents)];
+            }
+          }
+        }
+        if (j_620) {
+          k_tot[j][i] = k_i_delta[sub2ind({i - 1, 0, j - (n_chl + 2), 0},
+                        chl_car_extents)];
+        }
+        if (j_621) {
+          k_tot[j][i] = k_i_delta[sub2ind({i - 1, 1,
+              j - (n_vib_tot + n_chl + 2), 0}, chl_car_extents)];
+        }
+      } // i_chls
+
+      if (i_cgs) {
+        if (j_rgs) {
+        }
+        if (j_chls) {
+        }
+        if (j_620) {
+          k_tot[j][i] += car_decays[j - (n_chl + 2)];
+        }
+        if (j_621) {
+          k_tot[j][i] += car_decays[j - (n_chl + 2)];
+        }
+      } // i_cgs
+
+      if (i_620) {
+        if (j_rgs) {
+        }
+        if (j_chls) {
+        }
+        if (j_620) {
+          if (i == j) {
+            k_tot[i][j] -= car_decays[j - (n_chl + 2)];
+          }
+          /* this needs confirming, but:
+           * the total rate matrix, VERA.intra_rates(), contains
+           * both the IVR and IC rates. but on a given electronic
+           * state, only IVR is nonzero, and across electronic
+           * states, only IC is nonzero. hence, if we ensure we're 
+           * on the same electronic state, intra_rates()[i][j]
+           * should just be the IVR rate.
+           */
+          std::vector<size_t> i_subs = ind2sub(i - (n_chl + 2), car_extents);
+          std::vector<size_t> j_subs = ind2sub(i - (n_chl + 2), car_extents);
+          /* S1! */
+          i_subs[0]++; j_subs[0]++;
+          size_t i_index = sub2ind(i_subs, car_extents);
+          size_t j_index = sub2ind(j_subs, car_extents);
+          k_tot[i][j] = car_rates[sub2ind({i_index, j_index},
+              {x->n_total, x->n_total})];
+        }
+        if (j_621) {
+        }
+      }
+
+      /* this can be folded into the 620 bit i guess; these blocks
+       * will be identical, it's only the chl-car blocks which differ */
+      if (i_621) {
+        if (j_rgs) {
+        }
+        if (j_chls) {
+        }
+        if (j_620) {
+        }
+        if (j_621) {
+          if (i == j) {
+            k_tot[i][j] -= car_decays[j - (n_chl + 2)];
+          }
+          /* this needs confirming, but:
+           * the total rate matrix, VERA.intra_rates(), contains
+           * both the IVR and IC rates. but on a given electronic
+           * state, only IVR is nonzero, and across electronic
+           * states, only IC is nonzero. hence, if we ensure we're 
+           * on the same electronic state, intra_rates()[i][j]
+           * should just be the IVR rate.
+           */
+          std::vector<size_t> i_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
+                                       car_extents);
+          std::vector<size_t> j_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
+                                       car_extents);
+          /* S1! */
+          i_subs[0]++; j_subs[0]++;
+          size_t i_index = sub2ind(i_subs, car_extents);
+          size_t j_index = sub2ind(j_subs, car_extents);
+          /* i think it should be [j][i] = ...[i][j]. think about it */
+          k_tot[j][i] = car_rates[sub2ind({i_index, j_index},
+              {x->n_total, x->n_total})];
+        }
+      }
+
+    } // j
+  }
+  return k_tot;
+
+}
+
+double*
+hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
+             double *eigvals, VERA *x)
+{
+  /* get the boltzmann factor for every state and normalise, 
+   * then return just the chlorophyll boltzmann factors. we do this
+   * because the carotenoid doesn't fluoresce but does have some
+   * population on it. note that, as everywhere else in the code,
+   * this assumes all the carotenoids are identical */
+  unsigned n_vib_tot = pow(x->n_vib + 1, x->n_normal);
+  double *work = (double *)calloc(n_chl + 2 * n_vib_tot, sizeof(double));
+  double *boltz = (double *)calloc(n_chl, sizeof(double));
+  std::vector<size_t> extents = x->get_pop_extents();
+  double work_sum = 0.;
+
+  for (unsigned i = 0; i < n_chl + n_vib_tot; i++) {
+    if (i < n_chl) {
+      work[i] = exp(-beta * eigvals[i]); // dimensions!
+      work_sum += work[i];
+    } else {
+      std::vector<size_t> subs = ind2sub(i - n_chl, extents);
+      subs[0]++;
+      double e_xa = x->get_w_elec(subs[0]);
+      for (unsigned alpha = 0; alpha < x->n_normal; alpha++) {
+        e_xa += x->get_w_normal(alpha) * subs[alpha + 1];
+      }
+      work[i] = exp(-beta * e_xa);
+      work[i + n_vib_tot] = exp(-beta * e_xa);
+      work_sum += 2 * work[i];
+    }
+  }
+  for (unsigned i = 0; i < n_chl + 2 * n_vib_tot; i++) {
+    work[i] /= work_sum;
+  }
+  for (unsigned i = 0; i < n_chl; i++) {
+    boltz[i] = work[i];
+  }
+  return boltz;
+
+}

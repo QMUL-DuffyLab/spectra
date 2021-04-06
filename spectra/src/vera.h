@@ -65,6 +65,7 @@ class VERA {
     std::vector<double> boltz_unnorm();
     double get_w_elec(size_t i);
     double get_w_normal(size_t i);
+    double get_widths(size_t i);
     std::vector<size_t> get_extents();
     std::vector<size_t> get_pop_extents();
     std::vector<double> get_w_normal();

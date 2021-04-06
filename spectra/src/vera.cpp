@@ -491,6 +491,13 @@ VERA::set_w_normal(std::vector<double> w_mode)
   }
 }
 
+double
+VERA::get_widths(size_t i)
+{
+  return widths[i];
+}
+
+
 void
 VERA::set_widths(double* wid, size_t n_widths)
 {
@@ -1172,9 +1179,11 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
             } else {
               double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
               e_xa = x.get_w_elec(a[0]);
-              /* NB: check with chris that this is 1200 and not like 800 */
-              /* FWHM should be 1150 or 1200 */
-              v_abs.width = 1200.0;
+              /* widths should be given as S0-S1, S0-S2, S1-S2, S1-Sn,
+               * then a[0] + b[0] - 1 will always point to the right one */
+              /* v_abs.width = x.get_widths(a[0] + b[0] - 1); */
+
+              v_abs.width = 1070.0;
               double fc_sq = 1.;
 
               for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {

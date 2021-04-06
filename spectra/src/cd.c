@@ -29,7 +29,6 @@ cd_calc(unsigned n_chl, unsigned ns, double **chiw, double **mu,
     chiw_sums[n] = sum;
   }
 
-
   for (unsigned n = 0; n < n_chl; n++) {
     for (unsigned m = 0; m < n_chl; m++) {
       cross(mu[n], mu[m], v);
@@ -41,17 +40,13 @@ cd_calc(unsigned n_chl, unsigned ns, double **chiw, double **mu,
       double *g = (double *)calloc(ns, sizeof(double));
       for (unsigned k = 0; k < n_chl; k++) {
         for (unsigned l = 0; l < ns; l++) {
-          /* cd[l] += -(2 * PI * ((float)l / (ns * TOFS)) * dd) */
-          /*       * ((chiw[k][l] * eig[k][m] * */ 
-          /*         eig[k][n] * eigvals[k]) */
-          /*       / chiw_sums[k]); */
           g[l] += ((chiw[k][l] / chiw_sums[k])
                 * eig[m][k] * eig[n][k] * eigvals[k]);
         }
       }
 
       for (unsigned l = 0; l < ns; l++) {
-        cd[l] += g[l] * dd * (-2. * PI * ((float)l / (ns * TOFS)));
+        cd[l] -= g[l] * dd * (-2. * PI * ((float)l / (ns * TOFS)));
       }
       free(g);
 
