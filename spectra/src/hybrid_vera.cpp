@@ -2,7 +2,7 @@
 
 std::vector<double>
 k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
-               double **eig, double *eigvals, double **car_rates,
+               double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
                pulse v_abs, double beta, double *car_decays)
 {
@@ -15,10 +15,10 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   unsigned short print_ji = 0;
   unsigned short print_delta_fc = 0;
   std::vector<size_t> pop_extents = x.get_pop_extents();
-
-  /* for (unsigned i = 1; i < x.get_pop_extents().size(); i++) { */
-  /*   vib_extents.push_back(x.get_pop_extents()[i]); */
-  /* } */
+  std::vector<double> car_rates = x.intra_rates();
+  size_t n_s_total = vib_total * x.n_elec;
+  bool print_decay_details = false;
+  bool output_lineshapes = true;
 
   for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
     for (unsigned carotenoid = n_chl;
@@ -54,8 +54,8 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
 
         for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
           e_xa += x.get_w_normal(alpha) * a[alpha + 1];
-          fc_sq *= pow(x.get_fc({1, 0, alpha,
-                0, a[alpha + 1]}), 2.);
+          fc_sq *= pow(x.get_fc({0, 1, alpha,
+                a[alpha + 1], 0}), 2.);
         }
         ji_work = ji * fc_sq;
 
@@ -65,6 +65,69 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         /* now we have to calculate the rate between every delta_xy_ba */
         v_abs.centre = e_xa;
         abs = incident(v_abs, tau);
+        if (output_lineshapes) {
+          /* both carotenoids have same lineshapes */
+          if (carotenoid == n_chl) {
+            /* this is a nightmare lol strings in C!!!
+             * snprintf will add a null char which we don't want,
+             * so define another char[2] and memcpy the formatted 
+             * number to that without the null char. then gen filename.
+             * set the number back to 01 each time by redefining fn,
+             * otherwise we'd have to keep track of the previous number
+             * and search for that. i guess alternatively we could
+             * hardcode the index of the underscore and overwrite
+             * two characters after that. but who cares. it's ugly either way
+             * */
+            char fn[200] = "out/NLLZ/7_PROD_2/2/1000/car_01.dat\0";
+            char snum[3], car_num[2], num[2];
+            int status = snprintf(snum, 3, "%02u", ii);
+            memcpy(car_num, snum, 2);
+            status = generate_filename(sizeof(fn), fn, "01", snum);
+            if (status != 0) {
+              fprintf(stdout, "filename generation for outputting"
+                  "car lineshape %d didn't work\n", ii);
+              break;
+            } else {
+              FILE *fp = fopen(fn, "w");
+              for (unsigned step = 0; step < tau; step++) {
+                fprintf(fp, "%10.6e\n", abs[step]);
+              }
+              int cl = fclose(fp);
+              if (cl != 0) {
+                fprintf(stdout, "Failed to close car lineshape"
+                    "output file no. %d, error no. %d.\n", ii, cl);
+                exit(EXIT_FAILURE);
+              }
+            }
+            if (ii == vib_total) {
+              char fn[200] = "out/NLLZ/7_PROD_2/2/1000/chl_01.dat\0";
+              status = snprintf(snum, 3, "%02u", chl_index);
+              memcpy(num, snum, 2);
+              fprintf(stdout, "num = %s", num);
+              status = generate_filename(sizeof(fn), fn, "01", snum);
+              fprintf(stdout, "%s", fn);
+              if (status != 0) {
+                fprintf(stdout, "filename generation for outputting"
+                    "chl lineshape %d didn't work\n", chl_index);
+                break;
+              } else {
+                FILE *fp = fopen(fn, "w");
+                for (unsigned step = 0; step < tau; step++) {
+                  fprintf(fp, "%10.6e %10.6e\n",
+                      normed_ai[chl_index][step],
+                      normed_fi[chl_index][step]);
+                }
+                int cl = fclose(fp);
+                if (cl != 0) {
+                  fprintf(stdout, "Failed to close chl lineshape"
+                      "output file no. %d, error no. %d.\n", chl_index, cl);
+                  exit(EXIT_FAILURE);
+                }
+              }
+            }
+
+          } // car = n_chl
+        }
 
         for (unsigned step = 0; step < tau; step++) {
           fi_ad[step] = normed_fi[chl_index][step] * abs[step];
@@ -82,7 +145,13 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         for (unsigned kk = 0; kk < vib_total; kk++) {
 
           /* NB: indexing!!! */
-          car_decays[ii] += car_rates[kk][ii];
+          car_decays[ii - vib_total] += car_rates[sub2ind({kk, ii},
+                          {n_s_total, n_s_total})];
+          if (print_decay_details) {
+            fprintf(stdout, "%2u %2u %10.6e\n",
+                ii, kk, car_rates[sub2ind({kk, ii},
+                {n_s_total, n_s_total})]);
+          }
 
         } // kk
 
@@ -96,13 +165,13 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         k_i_xa.push_back(chl_car);
         k_i_xa.push_back(car_chl);
 
-        bool print_details = false;
+        bool print_details = true;
         if (print_details) {
           fprintf(stdout, "chl = %2u, car = %2u,"
           " state = (%2lu, %2lu, %2lu): e_chl = %10.6e,"
-          " e_car = %10.6e, forward rate = %10.6e,"
+          " e_car = %10.6e, fc^2 = %10.6e, forward rate = %10.6e,"
           " backward_rate = %10.6e\n", chl_index, carotenoid,
-          a[0], a[1], a[2], eigvals[chl_index], e_xa, chl_car, car_chl);
+          a[0], a[1], a[2], eigvals[chl_index], e_xa, fc_sq, chl_car, car_chl);
         }
 
       } // ii
@@ -246,10 +315,10 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
         if (j_chls) {
         }
         if (j_620) {
-          k_tot[j][i] += car_decays[j - (n_chl + 2)];
+          k_tot[i][j] += car_decays[j - (n_chl + 2)];
         }
         if (j_621) {
-          k_tot[j][i] += car_decays[j - (n_chl + 2)];
+          k_tot[i][j] += car_decays[j - (n_vib_tot + n_chl + 2)];
         }
       } // i_cgs
 
@@ -257,10 +326,16 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
         if (j_rgs) {
         }
         if (j_chls) {
+          k_tot[j][i] += k_i_delta[sub2ind({j - 1, 0,
+              i - (n_chl + 2), 1}, chl_car_extents)];
         }
         if (j_620) {
           if (i == j) {
             k_tot[i][j] -= car_decays[j - (n_chl + 2)];
+            for (unsigned k = 0; k < n_chl; k++) {
+              k_tot[i][j] -= k_i_delta[sub2ind({k, 0, j - (n_chl + 2), 1},
+                            chl_car_extents)];
+            }
           }
           /* this needs confirming, but:
            * the total rate matrix, VERA.intra_rates(), contains
@@ -289,31 +364,27 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
         if (j_rgs) {
         }
         if (j_chls) {
+          k_tot[j][i] += k_i_delta[sub2ind({j - 1, 1,
+              i - (n_vib_tot + n_chl + 2), 1}, chl_car_extents)];
         }
         if (j_620) {
         }
         if (j_621) {
           if (i == j) {
-            k_tot[i][j] -= car_decays[j - (n_chl + 2)];
+            k_tot[i][j] -= car_decays[j - (n_vib_tot + n_chl + 2)];
+            for (unsigned k = 0; k < n_chl; k++) {
+              k_tot[i][j] -= k_i_delta[sub2ind({k, 1,
+                  j - (n_vib_tot + n_chl + 2), 1}, chl_car_extents)];
+            }
           }
-          /* this needs confirming, but:
-           * the total rate matrix, VERA.intra_rates(), contains
-           * both the IVR and IC rates. but on a given electronic
-           * state, only IVR is nonzero, and across electronic
-           * states, only IC is nonzero. hence, if we ensure we're 
-           * on the same electronic state, intra_rates()[i][j]
-           * should just be the IVR rate.
-           */
           std::vector<size_t> i_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
                                        car_extents);
           std::vector<size_t> j_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
                                        car_extents);
-          /* S1! */
           i_subs[0]++; j_subs[0]++;
           size_t i_index = sub2ind(i_subs, car_extents);
           size_t j_index = sub2ind(j_subs, car_extents);
-          /* i think it should be [j][i] = ...[i][j]. think about it */
-          k_tot[j][i] = car_rates[sub2ind({i_index, j_index},
+          k_tot[i][j] = car_rates[sub2ind({i_index, j_index},
               {x->n_total, x->n_total})];
         }
       }
@@ -334,7 +405,7 @@ hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
    * population on it. note that, as everywhere else in the code,
    * this assumes all the carotenoids are identical */
   unsigned n_vib_tot = pow(x->n_vib + 1, x->n_normal);
-  double *work = (double *)calloc(n_chl + 2 * n_vib_tot, sizeof(double));
+  double *work = (double *)calloc(n_chl + n_car * n_vib_tot, sizeof(double));
   double *boltz = (double *)calloc(n_chl, sizeof(double));
   std::vector<size_t> extents = x->get_pop_extents();
   double work_sum = 0.;
@@ -351,16 +422,19 @@ hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
         e_xa += x->get_w_normal(alpha) * subs[alpha + 1];
       }
       work[i] = exp(-beta * e_xa);
-      work[i + n_vib_tot] = exp(-beta * e_xa);
-      work_sum += 2 * work[i];
+      for (unsigned j = 0; j < n_car; j++) {
+        work[i + (j * n_vib_tot)] = exp(-beta * e_xa);
+      }
+      work_sum += n_car * work[i];
     }
   }
-  for (unsigned i = 0; i < n_chl + 2 * n_vib_tot; i++) {
+  for (unsigned i = 0; i < n_chl + n_car * n_vib_tot; i++) {
     work[i] /= work_sum;
   }
   for (unsigned i = 0; i < n_chl; i++) {
     boltz[i] = work[i];
   }
+  free(work);
   return boltz;
 
 }

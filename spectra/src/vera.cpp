@@ -672,7 +672,6 @@ VERA::fc_calc()
     for (size_t j = 0; j < n_elec + 1; j++) {
       if (i != j) {
 
-        /* std::cout << ", j = " << j; */
         for (size_t alpha = 0; alpha < n_normal; alpha++) {
           double displacement = get_disp({alpha, i, j});
 
@@ -701,6 +700,14 @@ VERA::fc_calc()
               std::vector<size_t> subscripts = {i, j, alpha, a, b};
               index = sub2ind(subscripts, fc_extents);
               fc[index] = fc_array[a][b];
+
+              bool print_fc = true;
+              if (print_fc) {
+                fprintf(stdout, "(%1lu %1lu %1lu %1lu %1lu): "
+                    "disp = %10.6e, FC = %10.6e\n",
+                    i, j, alpha, a, b, displacement, fc[index]);
+              }
+
             }
           }
 
@@ -1190,6 +1197,7 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
                 delta_xy_ba += x.get_w_normal(alpha)
                              * (int)(a[alpha + 1] - b[alpha + 1]);
                 e_xa += x.get_w_normal(alpha) * a[alpha + 1];
+                /* NB: are the vibrational indices the wrong way round??? */
                 fc_sq *= pow(x.get_fc({a[0], b[0], alpha,
                       b[alpha + 1], a[alpha + 1]}), 2.);
               }

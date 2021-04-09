@@ -5,7 +5,7 @@
 
 std::vector<double>
 k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
-               double **eig, double *eigvals, double **car_rates,
+               double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
                pulse v_abs, double beta, double *car_decays);
 

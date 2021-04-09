@@ -46,6 +46,7 @@ SOURCES = ./src/input.c \
 	  ./src/spectra.c \
 	  ./src/LSODA.cpp \
 	  ./src/vera.cpp \
+	  ./src/hybrid_vera.cpp \
 	  ../lineshape/src/parameters.c \
 	  ../lineshape/src/functions.c
 

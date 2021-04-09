@@ -8,6 +8,7 @@
 #include "steady_state.h"
 #include "forster.h"
 #include "vera.h"
+#include "hybrid_vera.h"
 
 int
 main(int argc, char** argv)
@@ -321,14 +322,110 @@ main(int argc, char** argv)
   }
   fprintf(stdout, "\n");
 
+  fprintf(stdout, "\n----------\n"
+                    "VERA RATES\n"
+                    "----------\n\n");
+
+  VERA vera = create_VERA_from_file("in/vera_params.dat");
+
+  size_t n_chl    = 14; /* number of chlorophylls */
+  size_t n_car    = 2;
+
+  bool hybrid = true;
+  size_t n_s_car, n_total;
+  if (hybrid) {
+    n_s_car  = pow(vera.n_vib + 1, vera.n_normal);
+    /* + 2 because in the hybrid model we just have one ground state */
+    n_total  = n_chl + 2 + (n_car * n_s_car);
+  } else {
+    n_s_car  = vera.n_total;
+    n_total  = n_chl + 1 + (n_car * n_s_car);
+  }
+
+  double beta     = 1.439 / protocol.T;
+  double *car_decays = (double *)calloc(n_s_car, sizeof(double));
+  if (car_decays == NULL) {
+    fprintf(stderr, "car_decays allocation failed!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  std::vector<double> k_chl_car;
+
+  if (hybrid) {
+    k_chl_car = k_i_xa_hybrid(vera, n_chl,
+      n_car, p->tau, eig, eigvals,
+      Jij, normed_ai, normed_fi,
+      VERA_absorption, beta, car_decays);
+  } else {
+    k_chl_car = k_i_xa(vera, n_chl,
+        n_car, p->tau, eig, eigvals, Jij, normed_ai, normed_fi,
+        VERA_absorption, beta);
+  }
+  double k_sum = 0.;
+
+  bool print_decays = true;
+  if (print_decays) {
+    fprintf(stdout, "Calculated S1 decay rates (ps^{-1}):");
+    for (unsigned i = 0; i < n_s_car; i++) {
+      std::vector<size_t> subs = ind2sub(i, vera.get_pop_extents());
+      fprintf(stdout, "%2u (%1lu, %1lu, %1lu) = %10.6e\n",
+              i, subs[0] + 1, subs[1], subs[2], car_decays[i]);
+    }
+  }
+
+  bool print_i_xa = true;
+  if (print_i_xa) {
+    fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n",
+        k_chl_car.size(), n_chl, n_car, n_s_car);
+    for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
+      std::vector<size_t> subs = ind2sub(i, {n_chl, n_car, n_s_car, 2});
+      std::vector<size_t> xa = ind2sub(subs[2],
+          vera.get_pop_extents());
+      fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
+          " %10.6e %10.6e\n", 
+          i, subs[0], subs[1], xa[0], xa[1], xa[2],
+          k_chl_car[i], k_chl_car[i + 1]);
+      k_sum += k_chl_car[i];
+
+    }
+    fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
+  }
+
+  double **k_tot = (double **)calloc(n_total, sizeof(double *));
+  for (unsigned i = 0; i < n_total; i++) {
+    double *k_tot = (double *)calloc(n_total, sizeof(double));
+  }
+
+  /* not finished - should give option to just read in the total rates */
+  bool read_car_rates = false;
+  if (read_car_rates) {
+    fp = fopen("in/car_rates.dat", "rb");
+
+  }
+
+  VERA *vera_ptr = &vera;
+  if (hybrid) {
+    k_tot = hybrid_transfer(n_chl, n_car, vera_ptr, gamma, Jij,
+        k_chl_car, odep.Tij, car_decays);
+  } else {
+    k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij,
+            k_chl_car, odep.Tij);
+  }
+
   fprintf(stdout, "\n-------------------------\n"
                   "STEADY STATE FLUORESCENCE\n"
                   "-------------------------\n\n");
 
   void *params = &odep;
   double *p0 = guess(population_guess, boltz, musq, max, p->N);
+  double *p_i = (double *)calloc(p->N, sizeof(double));
 
-  double *p_i_equib = steady_state_populations(p0, params, p->N);
+  bool steady_state = false;
+  if (steady_state) {
+    p_i = steady_state_populations(p0, params, p->N);
+  } else {
+    p_i = hybrid_boltz(p->N, n_car, beta, eigvals, vera_ptr); 
+  }
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
     boltz_sum += boltz[i] * musq[i];
@@ -350,10 +447,10 @@ main(int argc, char** argv)
     fprintf(fp, "# i\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
     for (i = 0; i < p->N; i++) {
       fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n",
-          i, p_i_equib[i], boltz[i],
+          i, p_i[i], boltz[i],
           (boltz[i] * musq[i]) / boltz_sum);
       fprintf(fp, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n",
-          i, p_i_equib[i], boltz[i],
+          i, p_i[i], boltz[i],
           (boltz[i] * musq[i]) / boltz_sum);
     }
     cl = fclose(fp);
@@ -371,16 +468,12 @@ main(int argc, char** argv)
   integral = (double *)calloc(p->tau, sizeof(double));
   for (i = 0; i < p->N; i++) {
     for (unsigned int j = 0; j < p->tau; j++) {
-      Ftv[j] = p_i_equib[i] * Ft(eigvals[i],
+      Ftv[j] = p_i[i] * Ft(eigvals[i],
               gi_array[i][j][0], gi_array[i][j][1],
               lambda[i], (double)j * TOFS,
               1. / (1000000. * gamma[i]));
       in[j][0] = REAL(Ftv[j]);
       in[j][1] = IMAG(Ftv[j]);
-      /* in[j][1] = p_i_equib[i] * *Ft(eigvals[i], */
-      /*         gi_array[i][j][0], gi_array[i][j][1], */
-      /*         lambda[i], (double)j * TOFS, */
-      /*         1. / (1000000. * gamma[i]))[1]; */
     }
 
     fftw_execute(plan); 
@@ -437,60 +530,11 @@ main(int argc, char** argv)
     }
   }
 
-  free(p_i_equib);
+  free(p_i);
 
-  fprintf(stdout, "\n----------\n"
-                    "VERA RATES\n"
-                    "----------\n\n");
-
-  VERA vera = create_VERA_from_file("in/vera_params.dat");
-
-  size_t n_chl    = 14; /* number of chlorophylls */
-  size_t n_car    = 2;
-  size_t n_s_car  = vera.n_total;
-  size_t n_total  = n_chl + 1 + (n_car * n_s_car);
-  double beta     = 1.439 / protocol.T;
-  std::vector<double> k_chl_car = k_i_xa(vera, n_chl,
-      n_car, p->tau, eig, eigvals, Jij, normed_ai, normed_fi,
-      VERA_absorption, beta);
-  double k_sum = 0.;
-
-  bool print_i_xa = false;
-  if (print_i_xa) {
-    for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
-      std::vector<size_t> subs = ind2sub(i, {n_chl, n_car, n_s_car, 2});
-      std::vector<size_t> xa = ind2sub(subs[2],
-          vera.get_pop_extents());
-      fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
-          " %10.6e %10.6e\n", 
-          i, subs[0], subs[1], xa[0], xa[1], xa[2],
-          k_chl_car[i], k_chl_car[i + 1]);
-      k_sum += k_chl_car[i];
-
-    }
-    fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
-  }
-
-  double **k_tot = (double **)calloc(n_total, sizeof(double *));
-  for (unsigned i = 0; i < n_total; i++) {
-    double *k_tot = (double *)calloc(n_total, sizeof(double));
-  }
-
-  /* not finished - should give option to just read in the total rates */
-  bool read_car_rates = false;
-  if (read_car_rates) {
-    fp = fopen("in/car_rates.dat", "rb");
-
-  }
-
-  k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij,
-          k_chl_car, odep.Tij);
-
-  /* for (unsigned i = 0; i < n_total; i++) { */
-  /*   for (unsigned j = 0; j < n_total; j++) { */
-  /*     fprintf(stdout, "%3u %3u %10.6e\n", i, j, k_tot[i][j]); */
-  /*   } */
-  /* } */
+  fprintf(stdout, "\n---------------\n"
+                    "TRANSFER MATRIX\n"
+                    "---------------\n\n");
   
   double **Tij_vr, **Tij_vr_inv, **Tij_wr;
   Tij_vr = (double **)calloc(n_total, sizeof(double*));
