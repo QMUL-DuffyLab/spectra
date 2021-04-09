@@ -17,8 +17,9 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   std::vector<size_t> pop_extents = x.get_pop_extents();
   std::vector<double> car_rates = x.intra_rates();
   size_t n_s_total = vib_total * x.n_elec;
-  bool print_decay_details = false;
-  bool output_lineshapes = true;
+  bool print_decay_details = true;
+  bool print_details = false;
+  bool output_lineshapes = false;
 
   for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
     for (unsigned carotenoid = n_chl;
@@ -142,18 +143,21 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
         car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
 
-        for (unsigned kk = 0; kk < vib_total; kk++) {
+        /* only calculate this once lol */
+        if (chl_index == 0 && carotenoid == n_chl) {
+          for (unsigned kk = 0; kk < vib_total; kk++) {
 
-          /* NB: indexing!!! */
-          car_decays[ii - vib_total] += car_rates[sub2ind({kk, ii},
-                          {n_s_total, n_s_total})];
-          if (print_decay_details) {
-            fprintf(stdout, "%2u %2u %10.6e\n",
-                ii, kk, car_rates[sub2ind({kk, ii},
-                {n_s_total, n_s_total})]);
-          }
+            /* NB: indexing!!! */
+            car_decays[ii - vib_total] += car_rates[sub2ind({kk, ii},
+                            {n_s_total, n_s_total})];
+            if (print_decay_details) {
+              fprintf(stdout, "%2u %2u %10.6e\n",
+                  ii, kk, car_rates[sub2ind({kk, ii},
+                  {n_s_total, n_s_total})]);
+            }
 
-        } // kk
+          } // kk
+        }
 
         chl_car *= CM_PER_PS * 2 * PI;
         car_chl *= CM_PER_PS * 2 * PI;
@@ -165,7 +169,6 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         k_i_xa.push_back(chl_car);
         k_i_xa.push_back(car_chl);
 
-        bool print_details = true;
         if (print_details) {
           fprintf(stdout, "chl = %2u, car = %2u,"
           " state = (%2lu, %2lu, %2lu): e_chl = %10.6e,"
@@ -182,49 +185,6 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   free(ai_fd);
 
   return k_i_xa;
-}
-
-double**
-car_transfer(VERA x, double *decays)
-{
-  std::vector<size_t> extents = x.get_pop_extents();
-  std::vector<size_t> subscripts(extents.size(), 0.),
-                      subs_ivr(extents.size(), 0.),
-                      subs_ic(extents.size(), 0.);
-
-  unsigned s1_total = pow(x.n_vib + 1, x.n_normal) + 1;
-  unsigned n_total = x.n_total;
-  std::vector<double> rates = x.intra_rates();
-
-  double **t = (double **)calloc(n_total, sizeof(double*));
-  for (unsigned i = 0; i < n_total; i++) {
-    t[i] = (double *)calloc(n_total, sizeof(double));
-  }
-
-  /* indices - ground state is index 0 */
-  for (unsigned i = 1; i <= s1_total; i++) {
-    subscripts = ind2sub(i - 1, extents);  
-    /* this will return 0, a_1, a_2, so add one to the electronic index */
-    subscripts[0]++;
-    size_t ind = sub2ind(subscripts, extents);
-
-    for (unsigned j = 1; j <= s1_total; j++) {
-      if (i == j) {
-        t[i - 1][j - 1] -= decays[i - 1];
-        t[0][i - 1] += decays[i - 1];
-      } else {
-        subs_ivr = ind2sub(j - 1, extents);
-        subs_ic = subs_ivr;
-
-        subs_ivr[0]++;
-        size_t ind_ivr = sub2ind(subs_ivr, extents);
-        t[j - 1][i - 1] = rates[sub2ind({ind, ind_ivr}, {n_total, n_total})];
-      }
-
-    }
-
-  }
-  return t;
 }
 
 double**
@@ -346,7 +306,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
            * should just be the IVR rate.
            */
           std::vector<size_t> i_subs = ind2sub(i - (n_chl + 2), car_extents);
-          std::vector<size_t> j_subs = ind2sub(i - (n_chl + 2), car_extents);
+          std::vector<size_t> j_subs = ind2sub(j - (n_chl + 2), car_extents);
           /* S1! */
           i_subs[0]++; j_subs[0]++;
           size_t i_index = sub2ind(i_subs, car_extents);
@@ -379,7 +339,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
           }
           std::vector<size_t> i_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
                                        car_extents);
-          std::vector<size_t> j_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
+          std::vector<size_t> j_subs = ind2sub(j - (n_vib_tot + n_chl + 2),
                                        car_extents);
           i_subs[0]++; j_subs[0]++;
           size_t i_index = sub2ind(i_subs, car_extents);

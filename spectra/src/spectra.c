@@ -686,18 +686,24 @@ main(int argc, char** argv)
       if (j == 0) { // redfield gs
         sum += pt[j];
       }
-      if (j > n_chl && j < (n_s_car + n_chl + 1)) { // 620
-        std::vector<size_t> subs = ind2sub(j - (n_chl + 1),
-                                   vera.get_pop_extents());
-        if (subs[0] == 0) {
+      if (hybrid) {
+        if (j == n_chl + 1) {
           sum += pt[j];
         }
-      }
-      if (j >= (n_s_car + n_chl + 1)) { // 621
-        std::vector<size_t> subs = ind2sub(j - (n_s_car + n_chl + 1),
-                                   vera.get_pop_extents());
-        if (subs[0] == 0) {
-          sum += pt[j];
+      } else {
+        if (j > n_chl && j < (n_s_car + n_chl + 1)) { // 620
+          std::vector<size_t> subs = ind2sub(j - (n_chl + 1),
+                                     vera.get_pop_extents());
+          if (subs[0] == 0) {
+            sum += pt[j];
+          }
+        }
+        if (j >= (n_s_car + n_chl + 1)) { // 621
+          std::vector<size_t> subs = ind2sub(j - (n_s_car + n_chl + 1),
+                                     vera.get_pop_extents());
+          if (subs[0] == 0) {
+            sum += pt[j];
+          }
         }
       }
 
