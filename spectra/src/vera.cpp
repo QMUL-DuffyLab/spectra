@@ -701,7 +701,7 @@ VERA::fc_calc()
               index = sub2ind(subscripts, fc_extents);
               fc[index] = fc_array[a][b];
 
-              bool print_fc = true;
+              bool print_fc = false;
               if (print_fc) {
                 fprintf(stdout, "(%1lu %1lu %1lu %1lu %1lu): "
                     "disp = %10.6e, FC = %10.6e\n",

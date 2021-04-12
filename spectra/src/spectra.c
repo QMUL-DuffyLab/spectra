@@ -363,7 +363,7 @@ main(int argc, char** argv)
   }
   double k_sum = 0.;
 
-  bool print_decays = true;
+  bool print_decays = false;
   if (print_decays) {
     fprintf(stdout, "Calculated S1 decay rates (ps^{-1}):");
     for (unsigned i = 0; i < n_s_car; i++) {
@@ -373,7 +373,7 @@ main(int argc, char** argv)
     }
   }
 
-  bool print_i_xa = true;
+  bool print_i_xa = false;
   if (print_i_xa) {
     fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n",
         k_chl_car.size(), n_chl, n_car, n_s_car);

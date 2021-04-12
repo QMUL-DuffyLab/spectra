@@ -17,7 +17,7 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   std::vector<size_t> pop_extents = x.get_pop_extents();
   std::vector<double> car_rates = x.intra_rates();
   size_t n_s_total = vib_total * x.n_elec;
-  bool print_decay_details = true;
+  bool print_decay_details = false;
   bool print_details = false;
   bool output_lineshapes = false;
 
@@ -185,6 +185,47 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   free(ai_fd);
 
   return k_i_xa;
+}
+
+double**
+car_transfer(VERA x, double *decays)
+{
+  std::vector<size_t> extents = x.get_pop_extents();
+  std::vector<size_t> subscripts(extents.size(), 0.),
+                      j_subs(extents.size(), 0.);
+
+  unsigned s1_total = pow(x.n_vib + 1, x.n_normal) + 1;
+  unsigned n_total = x.n_total;
+  std::vector<double> rates = x.intra_rates();
+
+  double **t = (double **)calloc(n_total, sizeof(double*));
+  for (unsigned i = 0; i < n_total; i++) {
+    t[i] = (double *)calloc(n_total, sizeof(double));
+  }
+
+  /* indices - ground state is index 0 */
+  for (unsigned i = 1; i <= s1_total; i++) {
+    subscripts = ind2sub(i - 1, extents);  
+    /* this will return 0, a_1, a_2, so add one to the electronic index */
+    subscripts[0]++;
+    size_t ind = sub2ind(subscripts, extents);
+
+    for (unsigned j = 1; j <= s1_total; j++) {
+      if (i == j) {
+        t[i - 1][j - 1] -= decays[i - 1];
+        t[0][j - 1] += decays[i - 1];
+      } else {
+        j_subs = ind2sub(j - 1, extents);
+
+        j_subs[0]++;
+        size_t j_ind = sub2ind(j_subs, extents);
+        t[j - 1][i - 1] = rates[sub2ind({ind, j_ind}, {n_total, n_total})];
+      }
+
+    }
+
+  }
+  return t;
 }
 
 double**
