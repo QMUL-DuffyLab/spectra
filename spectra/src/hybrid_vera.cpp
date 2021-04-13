@@ -237,7 +237,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
    * per electronic state; we only need this here because
    * we're not concerned with hot ground states/S2 */
   unsigned n_vib_tot = pow(x->n_vib + 1, x->n_normal);
-  unsigned size = n_chl + 1 + (n_car * n_vib_tot) + 1;
+  unsigned size = n_chl + 1 + n_car * (n_vib_tot + 1);
   double **k_tot = (double **)calloc(size, sizeof(double*));
   for (unsigned i = 0; i < size; i++) {
     k_tot[i] = (double *)calloc(size, sizeof(double));
@@ -250,17 +250,20 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
   for (unsigned i = 0; i < size; i++) {
     for (unsigned j = 0; j < size; j++) {
       unsigned rgs = 0;
-      unsigned cgs = n_chl + 1;
+      unsigned gs_620 = n_chl + 1;
+      unsigned gs_621 = n_vib_tot + 1 + gs_620;
       bool i_rgs  = (i == rgs);
       bool j_rgs  = (j == rgs);
-      bool i_chls = (i > 0 && i <= n_chl);
-      bool j_chls = (j > 0 && j <= n_chl);
-      bool i_cgs  = (i == cgs);
-      bool j_cgs  = (j == cgs);
-      bool i_620  = (i > n_chl + 1 && i <= n_chl + 1 + n_vib_tot);
-      bool j_620  = (j > n_chl + 1 && j <= n_chl + 1 + n_vib_tot);
-      bool i_621  = (i > n_chl + 1 + n_vib_tot);
-      bool j_621  = (j > n_chl + 1 + n_vib_tot);
+      bool i_chls = (i > rgs && i <= n_chl);
+      bool j_chls = (j > rgs && j <= n_chl);
+      bool i_620_gs  = (i == gs_620);
+      bool j_620_gs  = (j == gs_620);
+      bool i_620  = (i > gs_620 && i < gs_621);
+      bool j_620  = (j > gs_620 && j < gs_621);
+      bool i_621_gs  = (i == gs_621);
+      bool j_621_gs  = (j == gs_621);
+      bool i_621  = (i > gs_621);
+      bool j_621  = (j > gs_621);
 
       if (i_rgs) {
         if (j_rgs) {
@@ -301,40 +304,39 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
           }
         }
         if (j_620) {
-          k_tot[j][i] = k_i_delta[sub2ind({i - 1, 0, j - (n_chl + 2), 0},
+          k_tot[j][i] = k_i_delta[sub2ind({i - 1, 0, j - (gs_620 + 1), 0},
                         chl_car_extents)];
         }
         if (j_621) {
           k_tot[j][i] = k_i_delta[sub2ind({i - 1, 1,
-              j - (n_vib_tot + n_chl + 2), 0}, chl_car_extents)];
+              j - (gs_621 + 1), 0}, chl_car_extents)];
         }
       } // i_chls
 
-      if (i_cgs) {
+      if (i_620_gs) {
         if (j_rgs) {
         }
         if (j_chls) {
         }
         if (j_620) {
-          k_tot[i][j] += car_decays[j - (n_chl + 2)];
+          k_tot[i][j] += car_decays[j - (gs_620 + 1)];
         }
         if (j_621) {
-          k_tot[i][j] += car_decays[j - (n_vib_tot + n_chl + 2)];
         }
-      } // i_cgs
+      } // i_620_gs
 
       if (i_620) {
         if (j_rgs) {
         }
         if (j_chls) {
           k_tot[j][i] += k_i_delta[sub2ind({j - 1, 0,
-              i - (n_chl + 2), 1}, chl_car_extents)];
+              i - (gs_620 + 1), 1}, chl_car_extents)];
         }
         if (j_620) {
           if (i == j) {
-            k_tot[i][j] -= car_decays[j - (n_chl + 2)];
+            k_tot[i][j] -= car_decays[j - (gs_620 + 1)];
             for (unsigned k = 0; k < n_chl; k++) {
-              k_tot[i][j] -= k_i_delta[sub2ind({k, 0, j - (n_chl + 2), 1},
+              k_tot[i][j] -= k_i_delta[sub2ind({k, 0, j - (gs_620 + 1), 1},
                             chl_car_extents)];
             }
           }
@@ -346,8 +348,8 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
            * on the same electronic state, intra_rates()[i][j]
            * should just be the IVR rate.
            */
-          std::vector<size_t> i_subs = ind2sub(i - (n_chl + 2), car_extents);
-          std::vector<size_t> j_subs = ind2sub(j - (n_chl + 2), car_extents);
+          std::vector<size_t> i_subs = ind2sub(i - (gs_620 + 1), car_extents);
+          std::vector<size_t> j_subs = ind2sub(j - (gs_620 + 1), car_extents);
           /* S1! */
           i_subs[0]++; j_subs[0]++;
           size_t i_index = sub2ind(i_subs, car_extents);
@@ -361,26 +363,38 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
 
       /* this can be folded into the 620 bit i guess; these blocks
        * will be identical, it's only the chl-car blocks which differ */
+
+      if (i_621_gs) {
+        if (j_rgs) {
+        }
+        if (j_chls) {
+        }
+        if (j_620) {
+        }
+        if (j_621) {
+          k_tot[i][j] += car_decays[j - (gs_621 + 1)];
+        }
+      } // i_620_gs
       if (i_621) {
         if (j_rgs) {
         }
         if (j_chls) {
           k_tot[j][i] += k_i_delta[sub2ind({j - 1, 1,
-              i - (n_vib_tot + n_chl + 2), 1}, chl_car_extents)];
+              i - (gs_621 + 1), 1}, chl_car_extents)];
         }
         if (j_620) {
         }
         if (j_621) {
           if (i == j) {
-            k_tot[i][j] -= car_decays[j - (n_vib_tot + n_chl + 2)];
+            k_tot[i][j] -= car_decays[j - (gs_621 + 1)];
             for (unsigned k = 0; k < n_chl; k++) {
               k_tot[i][j] -= k_i_delta[sub2ind({k, 1,
-                  j - (n_vib_tot + n_chl + 2), 1}, chl_car_extents)];
+                  j - (gs_621 + 1), 1}, chl_car_extents)];
             }
           }
-          std::vector<size_t> i_subs = ind2sub(i - (n_vib_tot + n_chl + 2),
+          std::vector<size_t> i_subs = ind2sub(i - (gs_621 + 1),
                                        car_extents);
-          std::vector<size_t> j_subs = ind2sub(j - (n_vib_tot + n_chl + 2),
+          std::vector<size_t> j_subs = ind2sub(j - (gs_621 + 1),
                                        car_extents);
           i_subs[0]++; j_subs[0]++;
           size_t i_index = sub2ind(i_subs, car_extents);

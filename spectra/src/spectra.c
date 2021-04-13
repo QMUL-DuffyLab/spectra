@@ -690,6 +690,9 @@ main(int argc, char** argv)
         if (j == n_chl + 1) {
           sum += pt[j];
         }
+        if (j == n_s_car + n_chl + 2) {
+          sum += pt[j];
+        }
       } else {
         if (j > n_chl && j < (n_s_car + n_chl + 1)) { // 620
           std::vector<size_t> subs = ind2sub(j - (n_chl + 1),
@@ -721,6 +724,7 @@ main(int argc, char** argv)
         if (status == 0) {
           FILE *hp = fopen(fn, "w");
           fprintf(hp, "%+12.8e\n", float(i));
+          fprintf(stdout, "<tau> = %+12.8e\n", float(i));
           cl = fclose(hp);
           if (cl != 0) {
               fprintf(stdout, "Failed to close tau "
