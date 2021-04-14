@@ -28,7 +28,7 @@ program coupling_calc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
   verbose = .true.
-  add_energy_noise = .false.
+  add_energy_noise = .true.
   print_jij = .false.
   print_jij_diag = .false.
   call cpu_time(start_time)

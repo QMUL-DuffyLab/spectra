@@ -66,9 +66,35 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         /* now we have to calculate the rate between every delta_xy_ba */
         v_abs.centre = e_xa;
         abs = incident(v_abs, tau);
-        if (output_lineshapes) {
-          /* both carotenoids have same lineshapes */
-          if (carotenoid == n_chl) {
+        for (unsigned step = 0; step < tau; step++) {
+          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
+          ai_fd[step] = normed_ai[chl_index][step] * abs[step];
+        }
+        
+        if (print_delta_fc) {
+          fprintf(stdout, "%5u %12.8e %12.8e %12.8e\n", ii,
+              e_xa, fc_sq, ji_work);
+        }
+
+        chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
+        car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
+
+        /* only calculate this once lol */
+        if (chl_index == 0 && carotenoid == n_chl) {
+          for (unsigned kk = 0; kk < vib_total; kk++) {
+
+            /* NB: indexing!!! */
+            car_decays[ii - vib_total] += car_rates[sub2ind({kk, ii},
+                            {n_s_total, n_s_total})];
+            if (print_decay_details) {
+              fprintf(stdout, "%2u %2u %10.6e\n",
+                  ii, kk, car_rates[sub2ind({kk, ii},
+                  {n_s_total, n_s_total})]);
+            }
+
+          } // kk
+          if (output_lineshapes) {
+            /* both carotenoids have same lineshapes */
             /* this is a nightmare lol strings in C!!!
              * snprintf will add a null char which we don't want,
              * so define another char[2] and memcpy the formatted 
@@ -90,6 +116,11 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
               break;
             } else {
               FILE *fp = fopen(fn, "w");
+              fprintf(fp, "# chl_car = %10.6e\n",
+                      chl_car * CM_PER_PS * PI * 2);
+              fprintf(fp, "# car_chl = %10.6e\n",
+                      car_chl * CM_PER_PS * PI * 2);
+
               for (unsigned step = 0; step < tau; step++) {
                 fprintf(fp, "%10.6e\n", abs[step]);
               }
@@ -126,37 +157,9 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
                 }
               }
             }
+          } // output_lineshapes
 
-          } // car = n_chl
-        }
 
-        for (unsigned step = 0; step < tau; step++) {
-          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
-          ai_fd[step] = normed_ai[chl_index][step] * abs[step];
-        }
-        
-        if (print_delta_fc) {
-          fprintf(stdout, "%5u %12.8e %12.8e %12.8e\n", ii,
-              e_xa, fc_sq, ji_work);
-        }
-
-        chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
-        car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
-
-        /* only calculate this once lol */
-        if (chl_index == 0 && carotenoid == n_chl) {
-          for (unsigned kk = 0; kk < vib_total; kk++) {
-
-            /* NB: indexing!!! */
-            car_decays[ii - vib_total] += car_rates[sub2ind({kk, ii},
-                            {n_s_total, n_s_total})];
-            if (print_decay_details) {
-              fprintf(stdout, "%2u %2u %10.6e\n",
-                  ii, kk, car_rates[sub2ind({kk, ii},
-                  {n_s_total, n_s_total})]);
-            }
-
-          } // kk
         }
 
         chl_car *= CM_PER_PS * 2 * PI;
