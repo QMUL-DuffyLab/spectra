@@ -33,10 +33,12 @@ parser.add_argument("-t", "--tau", type=int, default=2048,
               picoseconds. Default is 2048 since it's a power of 2,
               which makes the FFTs slightly more optimised later.
               ''')
-parser.add_argument("-c", "--chl_ansatz", type=int, default=0,
+parser.add_argument("-c", "--chl_ansatz", type=int, default=2,
         help='''The ansatz to use for chlorophyll a and b: 0 = OBO,
         1 = RENGER, 2 = BIG
         ''')
+parser.add_argument("-n", "--num_repeats", type=int, default=0,
+        help="Number of repeats to run (static disorder)")
 
 args = parser.parse_args()
 
@@ -67,9 +69,13 @@ def get_pigments(input_dir):
     return pigment_dirs
 
 def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
-    recalc_lineshapes):
+    recalc_lineshapes, num_repeats):
     # fortran won't create the directory; do it here
-    output_path = "{}/{}/{}".format(direc, protein, snapshot_number)
+    if (num_repeats == 0):
+        output_path = "{}/{}/{}".format(direc, protein, snapshot_number)
+    else:
+        output_path = "{}/{}/r_{}/{}".format(direc, protein, num_repeats, snapshot_number)
+
     os.makedirs(output_path, exist_ok=True)
     # there must be a nicer way of doing this but i can't think of it:
     # different information needs to be printed to the file based on
@@ -127,9 +133,9 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
 
     return (input_file, output_path)
 
-def run_frame(i, plot_spectra, plot_excitons):
+def run_frame(i, plot_spectra, plot_excitons, num_repeats):
     protein = args.input_dir.split('structures/')[-1]
-    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes) # NB: assumes input_dir is just the name of the protein
+    input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes, num_repeats) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
     print("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
@@ -171,10 +177,20 @@ if int(args.frame) == 0:
     # get the numbers - all pigment dirs have the same numbers by construction
     numbers = [fn[5:-4] for fn in os.listdir("{}/{}".format(input_dir, pigment_dirs[0]))]
     for i in range(len(numbers)):
-        run_frame(numbers[i], 0, 0) # range starts from 0
+        if (args.num_repeats > 0):
+            for j in range(args.num_repeats):
+                run_frame(numbers[i], 0, 0, j + 1) # range starts from 0
+
+        else:
+            run_frame(numbers[i], 0, 0, 0) # range starts from 0
 
     t1 = time.time_ns()
     print("Total time taken (s): {:6.3f}".format(float(t1 - t0) / 1000000000))
 else:
-    run_frame(args.frame, args.plot, args.plot_chiw)
+    if (args.num_repeats > 0):
+        for j in range(args.num_repeats):
+            run_frame(args.frame, args.plot, args.plot_chiw, j + 1)
+
+    else:
+        run_frame(args.frame, args.plot, args.plot_chiw, 0)
 

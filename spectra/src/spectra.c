@@ -217,14 +217,16 @@ main(int argc, char** argv)
       chiw[i][j]   = out[j][0]  * musq[i];
       pump[i][j]   = chiw[i][j] * ww[j];
       integral[j] += out[j][0]  * musq[i];
-      ai_sum += out[j][0];
-      fi_sum += ft_out[j][0];
+      double omega = j * 2. * M_PI / (TOFS * p->tau);
+      normed_ai[i][j] = (out[j][0] * omega);
+      normed_fi[i][j] = (ft_out[j][0] * pow(omega, 3.));
     }
+    ai_sum = trapezoid(normed_ai[i], p->tau);
+    fi_sum = trapezoid(normed_fi[i], p->tau);
     for (unsigned int j = 0; j < p->tau; j++) {
-      normed_ai[i][j] = out[j][0] / ai_sum;
-      normed_fi[i][j] = ft_out[j][0] / fi_sum;
+      normed_ai[i][j] = normed_ai[i][j] / (ai_sum * p->tau);
+      normed_fi[i][j] = normed_fi[i][j] / (fi_sum * p->tau);
     }
-
 
     chi_p = pump[i];
     chiw_ints[i] = trapezoid(chi_p, p->tau);
