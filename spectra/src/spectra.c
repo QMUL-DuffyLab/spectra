@@ -685,32 +685,36 @@ main(int argc, char** argv)
     for (j = 0; j < n_total; j++) {
       fprintf(fp, "%+12.8e ", pt[j]);
 
-      if (j == 0) { // redfield gs
+      if (j > 0 && j <= n_chl) {
         sum += pt[j];
       }
-      if (hybrid) {
-        if (j == n_chl + 1) {
-          sum += pt[j];
-        }
-        if (j == n_s_car + n_chl + 2) {
-          sum += pt[j];
-        }
-      } else {
-        if (j > n_chl && j < (n_s_car + n_chl + 1)) { // 620
-          std::vector<size_t> subs = ind2sub(j - (n_chl + 1),
-                                     vera.get_pop_extents());
-          if (subs[0] == 0) {
-            sum += pt[j];
-          }
-        }
-        if (j >= (n_s_car + n_chl + 1)) { // 621
-          std::vector<size_t> subs = ind2sub(j - (n_s_car + n_chl + 1),
-                                     vera.get_pop_extents());
-          if (subs[0] == 0) {
-            sum += pt[j];
-          }
-        }
-      }
+
+      /* if (j == 0) { // redfield gs */
+      /*   sum += pt[j]; */
+      /* } */
+      /* if (hybrid) { */
+      /*   if (j == n_chl + 1) { */
+      /*     sum += pt[j]; */
+      /*   } */
+      /*   if (j == n_s_car + n_chl + 2) { */
+      /*     sum += pt[j]; */
+      /*   } */
+      /* } else { */
+      /*   if (j > n_chl && j < (n_s_car + n_chl + 1)) { // 620 */
+      /*     std::vector<size_t> subs = ind2sub(j - (n_chl + 1), */
+      /*                                vera.get_pop_extents()); */
+      /*     if (subs[0] == 0) { */
+      /*       sum += pt[j]; */
+      /*     } */
+      /*   } */
+      /*   if (j >= (n_s_car + n_chl + 1)) { // 621 */
+      /*     std::vector<size_t> subs = ind2sub(j - (n_s_car + n_chl + 1), */
+      /*                                vera.get_pop_extents()); */
+      /*     if (subs[0] == 0) { */
+      /*       sum += pt[j]; */
+      /*     } */
+      /*   } */
+      /* } */
 
       if (print_pop) {
         fprintf(stdout, "%+12.8e ", pt[j]);
@@ -721,7 +725,7 @@ main(int argc, char** argv)
     fprintf(gp, "%+12.8e\n", sum);
 
     if (!life_yet) {
-      if (sum > (1 - exp(-1.))) {
+      if (sum < (exp(-1.))) {
         status = generate_filename(sizeof(fn), fn, "gs_populations", "tau");
         if (status == 0) {
           FILE *hp = fopen(fn, "w");

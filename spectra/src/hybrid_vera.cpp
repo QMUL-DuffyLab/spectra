@@ -51,14 +51,15 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         double e_xa = x.get_w_elec(a[0]);
         double chl_car = 0.;
         double car_chl = 0.;
-        double fc_sq = 1.;
+        double fc = 1.;
 
         for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
           e_xa += x.get_w_normal(alpha) * a[alpha + 1];
-          fc_sq *= pow(x.get_fc({0, 1, alpha,
-                a[alpha + 1], 0}), 2.);
+          /* fc_sq *= pow(x.get_fc({0, 1, alpha, */
+          /*       a[alpha + 1], 0}), 2.); */
+          fc *= x.get_fc({0, 1, alpha, a[alpha + 1], 0});
         }
-        ji_work = ji * fc_sq;
+        ji_work = ji * fc;
 
         /* e_xa is also delta_xy_ba in this case since y_b = {0} */
         /* first element is the S0-S1 width which is all we need */
@@ -67,13 +68,13 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         v_abs.centre = e_xa;
         abs = incident(v_abs, tau);
         for (unsigned step = 0; step < tau; step++) {
-          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
-          ai_fd[step] = normed_ai[chl_index][step] * abs[step];
+          fi_ad[step] = normed_fi[chl_index][step] * abs[step] / tau;
+          ai_fd[step] = normed_ai[chl_index][step] * abs[step] / tau;
         }
         
         if (print_delta_fc) {
-          fprintf(stdout, "%5u %12.8e %12.8e %12.8e\n", ii,
-              e_xa, fc_sq, ji_work);
+          fprintf(stdout, "%5u %12.8e %12.8e %12.8e %12.8e\n", ii,
+              e_xa, fc, ji_work, trapezoid(abs, tau));
         }
 
         chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
@@ -93,21 +94,27 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
             }
 
           } // kk
-          if (output_lineshapes) {
-            /* both carotenoids have same lineshapes */
-            /* this is a nightmare lol strings in C!!!
-             * snprintf will add a null char which we don't want,
-             * so define another char[2] and memcpy the formatted 
-             * number to that without the null char. then gen filename.
-             * set the number back to 01 each time by redefining fn,
-             * otherwise we'd have to keep track of the previous number
-             * and search for that. i guess alternatively we could
-             * hardcode the index of the underscore and overwrite
-             * two characters after that. but who cares. it's ugly either way
-             * */
+
+
+
+        }
+
+        if (output_lineshapes) {
+          /* both carotenoids have same lineshapes */
+          /* this is a nightmare lol strings in C!!!
+           * snprintf will add a null char which we don't want,
+           * so define another char[2] and memcpy the formatted 
+           * number to that without the null char. then gen filename.
+           * set the number back to 01 each time by redefining fn,
+           * otherwise we'd have to keep track of the previous number
+           * and search for that. i guess alternatively we could
+           * hardcode the index of the underscore and overwrite
+           * two characters after that. but who cares. it's ugly either way
+           * */
+          char snum[3], car_num[2], num[2];
+          if (carotenoid == n_chl) {
             char fn[200] = "out/NLLZ/7_PROD_2/2/1000/car_01.dat\0";
-            char snum[3], car_num[2], num[2];
-            int status = snprintf(snum, 3, "%02u", ii);
+            int status = snprintf(snum, 3, "%02u", chl_index);
             memcpy(car_num, snum, 2);
             status = generate_filename(sizeof(fn), fn, "01", snum);
             if (status != 0) {
@@ -131,36 +138,34 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
                 exit(EXIT_FAILURE);
               }
             }
-            if (ii == vib_total) {
-              char fn[200] = "out/NLLZ/7_PROD_2/2/1000/chl_01.dat\0";
-              status = snprintf(snum, 3, "%02u", chl_index);
-              memcpy(num, snum, 2);
-              fprintf(stdout, "num = %s", num);
-              status = generate_filename(sizeof(fn), fn, "01", snum);
-              fprintf(stdout, "%s", fn);
-              if (status != 0) {
-                fprintf(stdout, "filename generation for outputting"
-                    "chl lineshape %d didn't work\n", chl_index);
-                break;
-              } else {
-                FILE *fp = fopen(fn, "w");
-                for (unsigned step = 0; step < tau; step++) {
-                  fprintf(fp, "%10.6e %10.6e\n",
-                      normed_ai[chl_index][step],
-                      normed_fi[chl_index][step]);
-                }
-                int cl = fclose(fp);
-                if (cl != 0) {
-                  fprintf(stdout, "Failed to close chl lineshape"
-                      "output file no. %d, error no. %d.\n", chl_index, cl);
-                  exit(EXIT_FAILURE);
-                }
+          }
+          if (ii == vib_total) {
+            char fn[200] = "out/NLLZ/7_PROD_2/2/1000/chl_01.dat\0";
+            int status = snprintf(snum, 3, "%02u", chl_index);
+            memcpy(num, snum, 2);
+            fprintf(stdout, "num = %s", num);
+            status = generate_filename(sizeof(fn), fn, "01", snum);
+            fprintf(stdout, "%s", fn);
+            if (status != 0) {
+              fprintf(stdout, "filename generation for outputting"
+                  "chl lineshape %d didn't work\n", chl_index);
+              break;
+            } else {
+              FILE *fp = fopen(fn, "w");
+              for (unsigned step = 0; step < tau; step++) {
+                fprintf(fp, "%10.6e %10.6e\n",
+                    normed_ai[chl_index][step],
+                    normed_fi[chl_index][step]);
+              }
+              int cl = fclose(fp);
+              if (cl != 0) {
+                fprintf(stdout, "Failed to close chl lineshape"
+                    "output file no. %d, error no. %d.\n", chl_index, cl);
+                exit(EXIT_FAILURE);
               }
             }
-          } // output_lineshapes
-
-
-        }
+          }
+        } // output_lineshapes
 
         chl_car *= CM_PER_PS * 2 * PI;
         car_chl *= CM_PER_PS * 2 * PI;
@@ -177,7 +182,7 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
           " state = (%2lu, %2lu, %2lu): e_chl = %10.6e,"
           " e_car = %10.6e, fc^2 = %10.6e, forward rate = %10.6e,"
           " backward_rate = %10.6e\n", chl_index, carotenoid,
-          a[0], a[1], a[2], eigvals[chl_index], e_xa, fc_sq, chl_car, car_chl);
+          a[0], a[1], a[2], eigvals[chl_index], e_xa, fc, chl_car, car_chl);
         }
 
       } // ii

@@ -16,13 +16,13 @@ incident(pulse p, unsigned int tau)
     else if (p.type == LORENTZIAN) {
       ww[i] = (1. / (M_PI * p.width)) * 0.5 * pow(p.width, 2.) / 
               (pow(wn - p.centre, 2.) + pow(0.5 * p.width, 2.));
-      sum += ww[i];
+      /* sum += ww[i]; */
     }
     else if (p.type == GAUSSIAN) {
       double sigma = p.width / (2. * sqrt(2. * log(2.)));
       ww[i] = (1. / (sigma * sqrt(2. * M_PI))) *
               exp(-0.5 * pow(fabs(wn - p.centre) / sigma, 2.));
-      sum += ww[i];
+      /* sum += ww[i]; */
     }
     else if (p.type == DELTA) {
       /* the centre of the delta function probably
@@ -46,6 +46,7 @@ incident(pulse p, unsigned int tau)
      * and be sure it's still normalised. */
     ww[min_arg] = 1.;
   }
+  sum = trapezoid(ww, tau);
   if (sum != 0.0) {
     for (unsigned int i = 0; i < tau; i++) {
       ww[i] /= sum;
