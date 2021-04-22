@@ -9,6 +9,8 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   size_t vib_total = pow(x.n_vib + 1, x.n_normal);
   double ji = 0., ji_work = 0.;
   double *abs = (double *)calloc(tau, sizeof(double));
+  double *gau = (double *)calloc(tau, sizeof(double));
+  double *wn = (double *)calloc(tau, sizeof(double));
   double *fi_ad  = (double *)calloc(tau, sizeof(double));
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<double> k_i_xa;
@@ -20,6 +22,10 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   bool print_decay_details = false;
   bool print_details = true;
   bool output_lineshapes = true;
+
+  for (unsigned i = 0; i < tau; i++) {
+    wn[i] = 2 * PI * i / (TOFS * tau);
+  }
 
   for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
     for (unsigned carotenoid = n_chl;
@@ -67,9 +73,11 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         /* now we have to calculate the rate between every delta_xy_ba */
         v_abs.centre = e_xa;
         abs = incident(v_abs, tau);
+        /* Gaussian(tau, wn, v_abs.centre, v_abs.width, gau); */
+
         for (unsigned step = 0; step < tau; step++) {
-          fi_ad[step] = normed_fi[chl_index][step] * abs[step] / tau;
-          ai_fd[step] = normed_ai[chl_index][step] * abs[step] / tau;
+          fi_ad[step] = normed_fi[chl_index][step] * abs[step];
+          ai_fd[step] = normed_ai[chl_index][step] * abs[step];
         }
         
         if (print_delta_fc) {
@@ -114,7 +122,7 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
           char snum[3], car_num[2], num[2];
           if (carotenoid == n_chl) {
             char fn[200] = "out/NLLZ/7_PROD_2/2/1000/car_01.dat\0";
-            int status = snprintf(snum, 3, "%02u", chl_index);
+            int status = snprintf(snum, 3, "%02u", ii - vib_total);
             memcpy(car_num, snum, 2);
             status = generate_filename(sizeof(fn), fn, "01", snum);
             if (status != 0) {
@@ -143,9 +151,9 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
             char fn[200] = "out/NLLZ/7_PROD_2/2/1000/chl_01.dat\0";
             int status = snprintf(snum, 3, "%02u", chl_index);
             memcpy(num, snum, 2);
-            fprintf(stdout, "num = %s", num);
+            /* fprintf(stdout, "num = %s", num); */
             status = generate_filename(sizeof(fn), fn, "01", snum);
-            fprintf(stdout, "%s", fn);
+            /* fprintf(stdout, "%s", fn); */
             if (status != 0) {
               fprintf(stdout, "filename generation for outputting"
                   "chl lineshape %d didn't work\n", chl_index);
@@ -167,8 +175,8 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
           }
         } // output_lineshapes
 
-        chl_car *= CM_PER_PS * 2 * PI;
-        car_chl *= CM_PER_PS * 2 * PI;
+        chl_car *= pow(CM_PER_PS, 3.) * 2 * PI;
+        car_chl *= pow(CM_PER_PS, 3.) * 2 * PI;
         if (eigvals[chl_index] > e_xa) {
           car_chl *= exp(-beta * (eigvals[chl_index] - e_xa));
         } else {
@@ -179,10 +187,13 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
 
         if (print_details) {
           fprintf(stdout, "chl = %2u, car = %2u,"
-          " state = (%2lu, %2lu, %2lu): e_chl = %10.6e,"
-          " e_car = %10.6e, fc^2 = %10.6e, forward rate = %10.6e,"
-          " backward_rate = %10.6e\n", chl_index, carotenoid,
-          a[0], a[1], a[2], eigvals[chl_index], e_xa, fc, chl_car, car_chl);
+          " state = (%2lu, %2lu, %2lu): "
+          /* "e_chl = %10.6e, e_car = %10.6e, " */
+          "FC = %10.6e, chl->car = %10.6e,"
+          " car->chl = %10.6e\n", chl_index, carotenoid,
+          a[0], a[1], a[2],
+          /* eigvals[chl_index], e_xa, */
+          fc, chl_car, car_chl);
         }
 
       } // ii

@@ -20,8 +20,8 @@ incident(pulse p, unsigned int tau)
     }
     else if (p.type == GAUSSIAN) {
       double sigma = p.width / (2. * sqrt(2. * log(2.)));
-      ww[i] = (1. / (sigma * sqrt(2. * M_PI))) *
-              exp(-0.5 * pow(fabs(wn - p.centre) / sigma, 2.));
+      double norm = (1. / (sigma * sqrt(2. * M_PI)));
+      ww[i] = norm * exp(-0.5 * pow(fabs(wn - p.centre) / sigma, 2.));
       /* sum += ww[i]; */
     }
     else if (p.type == DELTA) {
@@ -46,13 +46,26 @@ incident(pulse p, unsigned int tau)
      * and be sure it's still normalised. */
     ww[min_arg] = 1.;
   }
-  sum = trapezoid(ww, tau);
-  if (sum != 0.0) {
-    for (unsigned int i = 0; i < tau; i++) {
-      ww[i] /= sum;
-    }
-  }
+  /* sum = trapezoid(ww, tau); */
+  /* if (sum != 0.0) { */
+  /*   for (unsigned int i = 0; i < tau; i++) { */
+  /*     ww[i] /= sum; */
+  /*   } */
+  /* } */
   return ww;
+}
+
+void Gaussian(unsigned n, double* w,
+        double Delta_j0_ba, double Delta_w, double *gau)
+{
+  /* first convert the FHWM into a variance */
+  double sig = Delta_w / (2.0 * sqrt(2.0 * log(2.0)));
+  /* normalization constant */
+  double norm=1.0 / (sig * sqrt(2.0 * PI));
+  /* shape function */
+  for (unsigned i = 0; i < n; i++) {
+    gau[i] = norm * exp(-0.5 * pow(w[i] - Delta_j0_ba, 2.) / (pow(sig, 2.)));
+  }
 }
 
 double
@@ -337,7 +350,8 @@ bcs (unsigned const int N, const double* eigvals, const double T)
 double
 trapezoid(double *f, unsigned int n)
 {
-    double dx = 1./n;
+    /* double dx = 1./n; */
+    double dx = 2. * M_PI / (TOFS);
     double sum;
 
     sum = 0.5 * dx * (f[0] + f[n - 1]);

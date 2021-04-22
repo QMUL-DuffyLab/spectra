@@ -72,6 +72,8 @@ typedef struct pulse {
 
 
 double* incident(pulse p, unsigned int tau);
+void Gaussian(unsigned n, double* w,
+        double Delta_j0_ba, double Delta_w, double *gau);
 double intensity(double w, double t, pulse p);
 gsl_matrix* array_to_gsl_matrix(unsigned int n1,
             unsigned int n2, double** mat);

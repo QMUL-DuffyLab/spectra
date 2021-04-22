@@ -224,8 +224,8 @@ main(int argc, char** argv)
     ai_sum = trapezoid(normed_ai[i], p->tau);
     fi_sum = trapezoid(normed_fi[i], p->tau);
     for (unsigned int j = 0; j < p->tau; j++) {
-      normed_ai[i][j] = normed_ai[i][j] / (ai_sum * p->tau);
-      normed_fi[i][j] = normed_fi[i][j] / (fi_sum * p->tau);
+      normed_ai[i][j] = normed_ai[i][j] / (ai_sum);
+      normed_fi[i][j] = normed_fi[i][j] / (fi_sum);
     }
 
     chi_p = pump[i];
@@ -328,7 +328,7 @@ main(int argc, char** argv)
                     "VERA RATES\n"
                     "----------\n\n");
 
-  VERA vera = create_VERA_from_file("in/vera_params.dat");
+  VERA vera = create_VERA_from_file("in/vera.def");
 
   size_t n_chl    = 14; /* number of chlorophylls */
   size_t n_car    = 2;
@@ -650,7 +650,7 @@ main(int argc, char** argv)
   double *pt = (double *)calloc(n_total, sizeof(double));
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
-  unsigned int MAX_ITER = 4000; /* 5 ns */
+  unsigned int MAX_ITER = 1000; /* 1 ns */
   unsigned int print_pop = 0, life = 0;
   status = 0;
   double sum = 0.;
