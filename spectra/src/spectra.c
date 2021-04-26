@@ -79,13 +79,13 @@ main(int argc, char** argv)
   VERA *cars = (VERA *)malloc(p->n_car * sizeof(VERA));
 
   /* malloc 1d stuff, read them in */
-  eigvals     = (double *)calloc(p->N, sizeof(double));
-  gamma       = (double *)calloc(p->N, sizeof(double));
-  rates       = (double *)calloc(p->N, sizeof(double));
-  musq        = (double *)calloc(p->N, sizeof(double));
-  lambda      = (double *)calloc(p->N, sizeof(double));
-  line_params = (Parameters *)malloc(p->N * sizeof(Parameters));
-  chiw_ints   = (double *)calloc(p->N, sizeof(double));
+  eigvals     = (double *)calloc(p->n_chl, sizeof(double));
+  gamma       = (double *)calloc(p->n_chl, sizeof(double));
+  rates       = (double *)calloc(p->n_chl, sizeof(double));
+  musq        = (double *)calloc(p->n_chl, sizeof(double));
+  lambda      = (double *)calloc(p->n_chl, sizeof(double));
+  line_params = (Parameters *)malloc(p->n_chl * sizeof(Parameters));
+  chiw_ints   = (double *)calloc(p->n_chl, sizeof(double));
   ww          = (double *)calloc(p->tau, sizeof(double));
   integral    = (double *)calloc(p->tau, sizeof(double));
   in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
@@ -94,26 +94,29 @@ main(int argc, char** argv)
   ft_out      = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
 
   /* malloc 2d stuff */
-  lineshape_files = (char **)malloc(p->N * sizeof(char*));
-  mu              = (double **)calloc(p->N, sizeof(double*));
+  lineshape_files = (char **)malloc(p->n_chl * sizeof(char*));
+  mu              = (double **)calloc(p->n_chl, sizeof(double*));
   gi_array        = (fftw_complex**)
-                    fftw_malloc(p->N * sizeof(fftw_complex*));
-  eig             = (double **)calloc(p->N, sizeof(double*));
-  wij             = (double **)calloc(p->N, sizeof(double*));
-  kij             = (double **)calloc(p->N, sizeof(double*));
+                    fftw_malloc(p->n_chl * sizeof(fftw_complex*));
+  eig             = (double **)calloc(p->n_chl, sizeof(double*));
+  wij             = (double **)calloc(p->n_chl, sizeof(double*));
+  kij             = (double **)calloc(p->n_chl, sizeof(double*));
+  chiw            = (double **)calloc(p->n_chl, sizeof(double*));
+  pump            = (double **)calloc(p->n_chl, sizeof(double*));
+
   Jij             = (double **)calloc(p->N, sizeof(double*));
-  chiw            = (double **)calloc(p->N, sizeof(double*));
-  pump            = (double **)calloc(p->N, sizeof(double*));
-                      
   for (i = 0; i < p->N; i++) {
+    Jij[i]             = (double *)calloc(p->N, sizeof(double));
+  }
+                      
+  for (i = 0; i < p->n_chl; i++) {
     lineshape_files[i] = (char *)malloc(200 * sizeof(char));
     gi_array[i]        = (fftw_complex*)
-                          fftw_malloc(p->N * sizeof(fftw_complex));
+                          fftw_malloc(p->tau * sizeof(fftw_complex));
     mu[i]              = (double *)calloc(3, sizeof(double));
-    eig[i]             = (double *)calloc(p->N, sizeof(double));
-    wij[i]             = (double *)calloc(p->N, sizeof(double));
-    kij[i]             = (double *)calloc(p->N, sizeof(double));
-    Jij[i]             = (double *)calloc(p->N, sizeof(double));
+    eig[i]             = (double *)calloc(p->n_chl, sizeof(double));
+    wij[i]             = (double *)calloc(p->n_chl, sizeof(double));
+    kij[i]             = (double *)calloc(p->n_chl, sizeof(double));
     chiw[i]            = (double *)calloc(p->tau, sizeof(double));
     pump[i]            = (double *)calloc(p->tau, sizeof(double));
   }
@@ -127,15 +130,16 @@ main(int argc, char** argv)
   eigvals = read(p->eigvals_file, p->N);
 
   /* read 2d stuff */
-  gi_array = read_gi(p->gi_files, p->N, p->tau);
-  eig      = read_eigvecs(p->eigvecs_file, p->N);
-  Jij      = read_eigvecs(p->jij_file, p->N);
-  mu       = read_mu(p->mu_file, p->N);
+  gi_array = read_gi(p->gi_files, p->n_chl, p->tau);
+  eig      = read_eigvecs(p->eigvecs_file, p->n_chl);
+  mu       = read_mu(p->mu_file, p->n_chl);
   ww       = incident(pump_properties, p->tau);
+
+  Jij      = read_eigvecs(p->jij_file, p->N);
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = (char *)malloc(200 * sizeof(char));
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     /* now load in the parameters for each ligand */
     fgets(line, 200, fp);
     line[strcspn(line, "\n")] = 0;
@@ -153,7 +157,7 @@ main(int argc, char** argv)
      * temperature in every lineshape file, at least */
     line_params[i].T = protocol.T;
 
-    for (j = 0; j < p->N; j++) {
+    for (j = 0; j < p->n_chl; j++) {
       /* wij is \omega_{ij} - the gap between the 0-0 lines of two
        * excitons. It's used in calculating the Redfield rates later */
       wij[i][j] = ((eigvals[i] - lambda[i]) - (eigvals[j] - lambda[j]));
@@ -165,14 +169,14 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-  kij = rate_calc(p->N, eig, wij, line_params);
-  check_detailed_balance(p->N, protocol.T, 1e-5, kij, wij);
-  rates = relaxation_rates(p->N, gamma);
+  kij = rate_calc(p->n_chl, eig, wij, line_params);
+  check_detailed_balance(p->n_chl, protocol.T, 1e-5, kij, wij);
+  rates = relaxation_rates(p->n_chl, gamma);
   char fn[200];
   strcpy(fn, p->fw_file);
   status = generate_filename(sizeof(fn), fn, "fw", "rates");
   fp = fopen(fn, "w");
-  print_matrix(fp, NULL, p->N, kij);
+  print_matrix(fp, NULL, p->n_chl, kij);
   cl = fclose(fp);
   if (cl != 0) {
     fprintf(stdout, "Failed to close list of lineshape files %d.\n", cl);
@@ -185,17 +189,17 @@ main(int argc, char** argv)
   ft_plan = fftw_plan_dft_1d(p->tau, 
   	 ft_in, ft_out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  double **normed_ai = (double **)calloc(p->N, sizeof(double*));
-  double **normed_fi = (double **)calloc(p->N, sizeof(double*));
+  double **normed_ai = (double **)calloc(p->n_chl, sizeof(double*));
+  double **normed_fi = (double **)calloc(p->n_chl, sizeof(double*));
   double ai_sum = 0., fi_sum = 0.;
-  for (unsigned i = 0; i < p->N; i++) {
+  for (unsigned i = 0; i < p->n_chl; i++) {
     normed_ai[i] = (double *)calloc(p->tau, sizeof(double));
     normed_fi[i] = (double *)calloc(p->tau, sizeof(double));
   }
 
   COMPLEX *Atv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
   COMPLEX *Ftv = (COMPLEX *)calloc(p->tau, sizeof(COMPLEX));
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     ai_sum = 0.; fi_sum = 0;
     musq[i] = pow(mu[i][0], 2.) + pow(mu[i][1], 2.) + pow(mu[i][2], 2.);
 
@@ -256,7 +260,7 @@ main(int argc, char** argv)
   /* replace g_ with chi_ in gi filenames so we can print out the 
    * individual parts of the spectra. strings in C are so annoying.
    * NB: assumes 200 is enough bytes for gi filename + a few chars! */
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     strcpy(fn, p->gi_files[i]);
     status = generate_filename(sizeof(fn), fn, "g_", "chi_");
     if(status != 0) {
@@ -289,7 +293,7 @@ main(int argc, char** argv)
       "OSC. STRENGTHS AND CHI(W) INTEGRAL\n"
       "----------------------------------\n\n");
   fprintf(stdout, "Pigment        |μ^2|      ∫χ_i(w)\n");
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     fprintf(stdout, "%7d %10.6e %10.6e\n", i + 601, musq[i], chiw_ints[i]);
     if (musq[i] > musq_max) {
       max = i;
@@ -300,30 +304,30 @@ main(int argc, char** argv)
   }
 
   ode_params odep;
-  odep.N = p->N;
+  odep.N = p->n_chl;
   odep.kij = kij;
   odep.rates = rates;
   odep.chiw = chiw_ints;
-  odep.Tij = transfer_matrix(p->N, rates, kij);
-  double *f = (double *)calloc(p->N, sizeof(double));
-  double *y = (double *)calloc(p->N, sizeof(double));
+  odep.Tij = transfer_matrix(p->n_chl, rates, kij);
+  double *f = (double *)calloc(p->n_chl, sizeof(double));
+  /* double *y = (double *)calloc(p->n_chl, sizeof(double)); */
   /* check convergence */
-  double *yprev = (double *)calloc(p->N, sizeof(double));
-  double *boltz = (double *)calloc(p->N, sizeof(double));
+  double *yprev = (double *)calloc(p->n_chl, sizeof(double));
+  double *boltz = (double *)calloc(p->n_chl, sizeof(double));
 
-  boltz = bcs(p->N, eigvals, protocol.T);
+  boltz = bcs(p->n_chl, eigvals, protocol.T);
   fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
                   "-----------------\n\n");
   fprintf(stdout, "Pigment    p_i   |μ^2|*p_i\n");
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     fprintf(stdout, "%7d %8.6f %8.6f\n", i + 601, boltz[i],
         boltz[i] * musq[i]);
     /* possible initial values for transient absorption? */
-    if (i == max) {
-      y[i] = 1.0;
-    } else {
-      y[i] = 0.0;
-    }
+    /* if (i == max) { */
+    /*   y[i] = 1.0; */
+    /* } else { */
+    /*   y[i] = 0.0; */
+    /* } */
   }
   fprintf(stdout, "\n");
 
@@ -333,15 +337,14 @@ main(int argc, char** argv)
 
   VERA vera = create_VERA_from_file("in/vera.def");
 
-  size_t n_chl    = 14; /* number of chlorophylls */
-  size_t n_car    = 2;
+  size_t n_chl    = p->n_chl;
+  size_t n_car    = p->n_car;
 
   bool hybrid = true;
   size_t n_s_car, n_total;
   if (hybrid) {
     n_s_car  = pow(vera.n_vib + 1, vera.n_normal);
-    /* + 2 because in the hybrid model we just have one ground state */
-    n_total  = n_chl + 2 + (n_car * n_s_car);
+    n_total  = n_chl + 1 + (n_car * (n_s_car + 1));
   } else {
     n_s_car  = vera.n_total;
     n_total  = n_chl + 1 + (n_car * n_s_car);
@@ -368,7 +371,7 @@ main(int argc, char** argv)
   }
   double k_sum = 0.;
 
-  bool print_decays = false;
+  bool print_decays = true;
   if (print_decays) {
     fprintf(stdout, "Calculated S1 decay rates (ps^{-1}):");
     for (unsigned i = 0; i < n_s_car; i++) {
@@ -422,14 +425,14 @@ main(int argc, char** argv)
                   "-------------------------\n\n");
 
   void *params = &odep;
-  double *p0 = guess(population_guess, boltz, musq, max, p->N);
-  double *p_i = (double *)calloc(p->N, sizeof(double));
+  double *p0 = guess(population_guess, boltz, musq, max, p->n_chl);
+  double *p_i = (double *)calloc(p->n_chl, sizeof(double));
 
   bool steady_state = false;
   if (steady_state) {
-    p_i = steady_state_populations(p0, params, p->N);
+    p_i = steady_state_populations(p0, params, p->n_chl);
   } else {
-    p_i = hybrid_boltz(p->N, n_car, beta, eigvals, vera_ptr); 
+    p_i = hybrid_boltz(p->n_chl, n_car, beta, eigvals, vera_ptr); 
   }
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
@@ -450,7 +453,7 @@ main(int argc, char** argv)
 
     fprintf(stdout, "i\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
     fprintf(fp, "# i\t p_i^eq(norm)\t boltz\t\t boltz*|μ^2|\n");
-    for (i = 0; i < p->N; i++) {
+    for (i = 0; i < p->n_chl; i++) {
       fprintf(stdout, "%2d\t%+12.8e\t%+12.8e\t%+12.8e\n",
           i, p_i[i], boltz[i],
           (boltz[i] * musq[i]) / boltz_sum);
@@ -471,7 +474,7 @@ main(int argc, char** argv)
   /* need to zero the running integral before FFT! */
   free(integral);
   integral = (double *)calloc(p->tau, sizeof(double));
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     for (unsigned int j = 0; j < p->tau; j++) {
       Ftv[j] = p_i[i] * Ft(eigvals[i],
               gi_array[i][j][0], gi_array[i][j][1],
@@ -511,7 +514,7 @@ main(int argc, char** argv)
 
   fprintf(stdout, "\nWriting χ^{bar}_i(w) files\n");
   /* replace with chi_bar_ this time */
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     strcpy(fn, p->gi_files[i]);
     status = generate_filename(sizeof(fn), fn, "g_", "chi_bar_");
     if(status != 0) {
@@ -609,21 +612,21 @@ main(int argc, char** argv)
   /* change P(0) to just be on the chls */
   free(p0);
   p0 = (double *)calloc(n_total, sizeof(double));
-  for (unsigned i = 1; i < n_chl + 1; i++) {
-    p0[i] = 1./n_chl;
+  for (unsigned i = 1; i < p->n_chl + 1; i++) {
+    p0[i] = 1. / p->n_chl;
   }
 
   if (calculate_CD) {
-    double **com = (double **)calloc(p->N, sizeof(double *));
-    for (unsigned i = 0; i < p->N; i++) {
+    double **com = (double **)calloc(p->n_chl, sizeof(double *));
+    for (unsigned i = 0; i < p->n_chl; i++) {
       com[i] = (double *)calloc(3, sizeof(double));
     }
-    com = read_mu(p->com_file, p->N);
+    com = read_mu(p->com_file, p->n_chl);
 
     double *cdw = (double *)calloc(p->tau, sizeof(double));
     cd_calc(n_chl, p->tau, chiw, mu, eig, com, eigvals, cdw);
 
-    for (unsigned i = 0; i < p->N; i++) {
+    for (unsigned i = 0; i < p->n_chl; i++) {
       free(com[i]);
     }
     free(com);
@@ -781,26 +784,26 @@ main(int argc, char** argv)
 
 
   /* deallocations of 2d stuff */
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < n_total; i++) {
     /* free_chromophore(cs[i]); */
-    fftw_free(gi_array[i]);
     free(Tij_vr[i]);
     free(Tij_vr_inv[i]);
     free(Tij_wr[i]);
+    free(k_tot[i]);
+  }
+  for (i = 0; i < p->n_chl; i++) {
     free(lineshape_files[i]);
     free(eig[i]);
     free(mu[i]);
     free(wij[i]);
     free(kij[i]);
-    free(k_tot[i]);
-    free(Jij[i]);
     free(chiw[i]);
     free(pump[i]);
     free(odep.Tij[i]);
     free(normed_ai[i]);
     free(normed_fi[i]);
+    fftw_free(gi_array[i]);
   }
-  /* free(gi_array); */
   free(mu);
   free(eig);
   free(wij);
@@ -811,17 +814,26 @@ main(int argc, char** argv)
   free(pt_prev);
   free(normed_ai);
   free(normed_fi);
-  /* free(ei); */
+
+  for (i = 0; i < p->N; i++) {
+    free(Jij[i]);
+  }
+  free(Jij);
 
   fftw_free(gi_array);
-  fftw_cleanup();
+  /* fftw_cleanup(); */
 
   free(p0); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
-  free(line); free(lineshape_files); free(integral);
+  free(line); free(lineshape_files);
+  free(integral);
   free(eigvals); free(gamma); free(lambda);
   free(line_params);
-  free(y); free(f); free(yprev); free(rates);
-  free(Jij); free(chiw); free(pump); free(chiw_ints);
+  free(car_decays);
+  /* free(y); */
+  free(f);
+  free(yprev);
+  free(rates);
+  free(chiw); free(pump); free(chiw_ints);
   free(p);
 
   exit(EXIT_SUCCESS);

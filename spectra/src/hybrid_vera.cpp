@@ -18,8 +18,8 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   std::vector<double> car_rates = x.intra_rates();
   size_t n_s_total = vib_total * x.n_elec;
   bool print_decay_details = false;
-  bool print_details = false;
-  bool output_lineshapes = false;
+  bool print_details = true;
+  bool output_lineshapes = true;
 
   for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
     for (unsigned carotenoid = n_chl;
