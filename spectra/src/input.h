@@ -49,6 +49,8 @@ typedef struct {
   double T; /**< Temperature */
   ansatz chl_ansatz;
   unsigned int tau; /**< number of steps in g(t) arrays (\f$ \equiv \f$ fs) */
+  unsigned int n_chl;
+  unsigned int n_car;
   char eigvecs_file[200], eigvals_file[200], ei_file[200], mu_file[200],
   lambda_file[200], gamma_file[200], aw_file[200], fw_file[200],
   pop_file[200], jij_file[200], com_file[200];

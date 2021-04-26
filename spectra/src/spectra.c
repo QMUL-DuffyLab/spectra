@@ -37,6 +37,7 @@ main(int argc, char** argv)
   Input *p = read_input_file(argv[1]);
   Protocol protocol = get_protocol(argv[2]);
   fprintf(stdout, "τ = %5d, T = %9.4f\n", p->tau, p->T);
+  fprintf(stdout, "n_chl = %2d, n_car = %2d\n", p->n_chl, p->n_car);
 
   /* specifies form of incident light for source term in P_i eqns */
   pulse pump_properties = {
@@ -74,6 +75,9 @@ main(int argc, char** argv)
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MUSQ;
 
+  /* malloc carotenoid stuff */
+  VERA *cars = (VERA *)malloc(p->n_car * sizeof(VERA));
+
   /* malloc 1d stuff, read them in */
   eigvals     = (double *)calloc(p->N, sizeof(double));
   gamma       = (double *)calloc(p->N, sizeof(double));
@@ -86,8 +90,8 @@ main(int argc, char** argv)
   integral    = (double *)calloc(p->tau, sizeof(double));
   in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
   out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
-  ft_in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
-  ft_out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
+  ft_in       = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
+  ft_out      = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
 
   /* malloc 2d stuff */
   lineshape_files = (char **)malloc(p->N * sizeof(char*));
@@ -101,7 +105,7 @@ main(int argc, char** argv)
   chiw            = (double **)calloc(p->N, sizeof(double*));
   pump            = (double **)calloc(p->N, sizeof(double*));
                       
-  for (i = 0; i < p-> N; i++) {
+  for (i = 0; i < p->N; i++) {
     lineshape_files[i] = (char *)malloc(200 * sizeof(char));
     gi_array[i]        = (fftw_complex*)
                           fftw_malloc(p->N * sizeof(fftw_complex));
@@ -121,7 +125,6 @@ main(int argc, char** argv)
   gamma   = read(p->gamma_file, p->N);
   lambda  = read(p->lambda_file, p->N);
   eigvals = read(p->eigvals_file, p->N);
-  /* this'll need adding to the input struct */
 
   /* read 2d stuff */
   gi_array = read_gi(p->gi_files, p->N, p->tau);

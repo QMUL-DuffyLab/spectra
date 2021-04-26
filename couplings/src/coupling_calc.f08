@@ -394,6 +394,8 @@ program coupling_calc
   ! stuff to read into spectra.c
   write(20, *) control_len
   write(20, *) tau
+  write(20, *) size(block_indices) ! number of chlorophylls
+  write(20, *) control_len - size(block_indices) ! number of carotenoids
   write(20, *) temperature
   write(20, '(a)') adjustl(trim(adjustl(eigvecs_file)))
   write(20, '(a)') adjustl(trim(adjustl(eigvals_file)))

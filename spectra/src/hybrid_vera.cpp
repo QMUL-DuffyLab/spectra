@@ -9,8 +9,6 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   size_t vib_total = pow(x.n_vib + 1, x.n_normal);
   double ji = 0., ji_work = 0.;
   double *abs = (double *)calloc(tau, sizeof(double));
-  double *gau = (double *)calloc(tau, sizeof(double));
-  double *wn = (double *)calloc(tau, sizeof(double));
   double *fi_ad  = (double *)calloc(tau, sizeof(double));
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<double> k_i_xa;
@@ -20,12 +18,8 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   std::vector<double> car_rates = x.intra_rates();
   size_t n_s_total = vib_total * x.n_elec;
   bool print_decay_details = false;
-  bool print_details = true;
-  bool output_lineshapes = true;
-
-  for (unsigned i = 0; i < tau; i++) {
-    wn[i] = 2 * PI * i / (TOFS * tau);
-  }
+  bool print_details = false;
+  bool output_lineshapes = false;
 
   for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
     for (unsigned carotenoid = n_chl;
@@ -73,7 +67,6 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
         /* now we have to calculate the rate between every delta_xy_ba */
         v_abs.centre = e_xa;
         abs = incident(v_abs, tau);
-        /* Gaussian(tau, wn, v_abs.centre, v_abs.width, gau); */
 
         for (unsigned step = 0; step < tau; step++) {
           fi_ad[step] = normed_fi[chl_index][step] * abs[step];
@@ -122,7 +115,7 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
           char snum[3], car_num[2], num[2];
           if (carotenoid == n_chl) {
             char fn[200] = "out/NLLZ/7_PROD_2/2/1000/car_01.dat\0";
-            int status = snprintf(snum, 3, "%02u", ii - vib_total);
+            int status = snprintf(snum, 3, "%02lu", ii - vib_total);
             memcpy(car_num, snum, 2);
             status = generate_filename(sizeof(fn), fn, "01", snum);
             if (status != 0) {
@@ -276,11 +269,11 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
       bool i_chls = (i > rgs && i <= n_chl);
       bool j_chls = (j > rgs && j <= n_chl);
       bool i_620_gs  = (i == gs_620);
-      bool j_620_gs  = (j == gs_620);
+      /* bool j_620_gs  = (j == gs_620); */
       bool i_620  = (i > gs_620 && i < gs_621);
       bool j_620  = (j > gs_620 && j < gs_621);
       bool i_621_gs  = (i == gs_621);
-      bool j_621_gs  = (j == gs_621);
+      /* bool j_621_gs  = (j == gs_621); */
       bool i_621  = (i > gs_621);
       bool j_621  = (j > gs_621);
 

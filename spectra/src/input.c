@@ -45,6 +45,10 @@ read_input_file(char* filename)
     fgets(line, 199, fp);
     p->tau = atoi(line);
     fgets(line, 199, fp);
+    p->n_chl = atoi(line);
+    fgets(line, 199, fp);
+    p->n_car = atoi(line);
+    fgets(line, 199, fp);
     p->T = atof(line);
     fgets(line, 199, fp);
     /* below is from stackoverflow - sets the newline to a null char */

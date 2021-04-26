@@ -137,11 +137,14 @@ def run_frame(i, plot_spectra, plot_excitons, num_repeats):
     protein = args.input_dir.split('structures/')[-1]
     input_file, output_path = construct_input_files(pigment_dirs, output_dir, i, protein, recalc_lineshapes, num_repeats) # NB: assumes input_dir is just the name of the protein
     print("Calculating for frame {}.\n\n".format(output_path))
+
     print("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
-    print("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     os.system("./couplings/coupling_calc {} {} {} {}".format(input_file, output_path, args.temperature, args.tau))
+
+    print("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     ti = time.time_ns()
-    os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
+    subprocess.run(["./spectra/exec_spectra", "in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)], check=True)
+    # sts = os.system("./spectra/exec_spectra {} {} {}".format("in/input_spectra.dat", args.protocol, "{}/lineshapes.{}".format(output_path, i)))
     tf = time.time_ns()
     print("Time taken (ms): {:6.3f}".format(float(tf - ti) / 1000000))
     if plot_spectra != 0:
