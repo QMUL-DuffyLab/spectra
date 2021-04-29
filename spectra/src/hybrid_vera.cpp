@@ -13,13 +13,13 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<double> k_i_xa;
   unsigned short print_ji = 0;
-  unsigned short print_delta_fc = 0;
+  unsigned short print_delta_fc = 1;
   std::vector<size_t> pop_extents = x.get_pop_extents();
   std::vector<double> car_rates = x.intra_rates();
   size_t n_s_total = vib_total * x.n_elec;
   bool print_decay_details = false;
-  bool print_details = true;
-  bool output_lineshapes = true;
+  bool print_details = false;
+  bool output_lineshapes = false;
 
   for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
     for (unsigned carotenoid = n_chl;
@@ -28,12 +28,14 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
        * fortran code puts them there so shouldn't be an issue */
 
       ji = 0.;
-      for (unsigned n = 0; n < n_chl; n++) {
+      /* for (unsigned n = 0; n < n_chl; n++) { */
         for (unsigned m = 0; m < n_chl; m++) {
-          ji += eig[m][chl_index] * eig[n][chl_index]
-             * Jij[m][carotenoid] * Jij[n][carotenoid];
+          ji += eig[m][chl_index]
+              /* * pow(eig[n][chl_index], 2.) */
+              /* * Jij[m][carotenoid] * Jij[n][carotenoid]; */
+              * Jij[m][carotenoid];
         }
-      }
+      /* } */
 
       if (print_ji) {
         fprintf(stdout, "%5u %12.8e\n", chl_index, ji);
@@ -73,13 +75,20 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
           ai_fd[step] = normed_ai[chl_index][step] * abs[step];
         }
         
+        chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, 2. * M_PI / (TOFS * tau), tau);
+        car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, 2. * M_PI / (TOFS * tau), tau);
+
         if (print_delta_fc) {
-          fprintf(stdout, "%5u %12.8e %12.8e %12.8e %12.8e\n", ii,
-              e_xa, fc, ji_work, trapezoid(abs, tau));
+          fprintf(stdout, "%2u %1u %2u %10.6e %10.6e %10.6e "
+              "%10.6e %10.6e %10.6e %10.6e\n",
+              chl_index, carotenoid, ii, e_xa, fc, ji_work, 
+              trapezoid(fi_ad, 2. * M_PI / (TOFS * tau), tau),
+              trapezoid(ai_fd, 2. * M_PI / (TOFS * tau), tau),
+              chl_car,
+              car_chl
+              );
         }
 
-        chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
-        car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
 
         /* only calculate this once lol */
         if (chl_index == 0 && carotenoid == n_chl) {
@@ -95,8 +104,6 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
             }
 
           } // kk
-
-
 
         }
 
@@ -168,8 +175,8 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
           }
         } // output_lineshapes
 
-        chl_car *= pow(CM_PER_PS, 3.) * 2 * PI;
-        car_chl *= pow(CM_PER_PS, 3.) * 2 * PI;
+        chl_car *= CM_PER_PS * 2. * PI;
+        car_chl *= CM_PER_PS * 2. * PI;
         if (eigvals[chl_index] > e_xa) {
           car_chl *= exp(-beta * (eigvals[chl_index] - e_xa));
         } else {

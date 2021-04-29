@@ -88,7 +88,7 @@ int jacobian (double t, const double y[], double *dfdy,
               double dfdt[], void *params);
 double* bcs (unsigned const int N, const double* eigvals,
              const double T);
-double trapezoid(double *f, unsigned int n);
+double trapezoid(double *f, double dx, unsigned int n);
 void decompose_transfer_matrix(unsigned n, double **Tij,
                                double **Tij_vr, double **Tij_vr_inv,
                                double **Tij_wr);

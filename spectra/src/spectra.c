@@ -228,15 +228,15 @@ main(int argc, char** argv)
       normed_ai[i][j] = (out[j][0] * omega);
       normed_fi[i][j] = (ft_out[j][0] * pow(omega, 3.));
     }
-    ai_sum = trapezoid(normed_ai[i], p->tau);
-    fi_sum = trapezoid(normed_fi[i], p->tau);
+    ai_sum = trapezoid(normed_ai[i], 2. * M_PI / (TOFS * p->tau), p->tau);
+    fi_sum = trapezoid(normed_fi[i], 2. * M_PI / (TOFS * p->tau), p->tau);
     for (unsigned int j = 0; j < p->tau; j++) {
       normed_ai[i][j] = normed_ai[i][j] / (ai_sum);
       normed_fi[i][j] = normed_fi[i][j] / (fi_sum);
     }
 
     chi_p = pump[i];
-    chiw_ints[i] = trapezoid(chi_p, p->tau);
+    chiw_ints[i] = trapezoid(chi_p, 2. * M_PI / (TOFS * p->tau), p->tau);
 
   }
   free(Atv);
@@ -381,7 +381,7 @@ main(int argc, char** argv)
     }
   }
 
-  bool print_i_xa = false;
+  bool print_i_xa = true;
   if (print_i_xa) {
     fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n",
         k_chl_car.size(), n_chl, n_car, n_s_car);
@@ -611,10 +611,15 @@ main(int argc, char** argv)
 
   /* change P(0) to just be on the chls */
   free(p0);
+
   p0 = (double *)calloc(n_total, sizeof(double));
+  double *p0_chl = (double *)calloc(p->n_chl, sizeof(double));
+  p0_chl = bcs(p->n_chl, eigvals, protocol.T);
   for (unsigned i = 1; i < p->n_chl + 1; i++) {
-    p0[i] = 1. / p->n_chl;
+    /* p0[i] = 1. / p->n_chl; */
+    p0[i] = p0_chl[i];
   }
+  free(p0_chl);
 
   if (calculate_CD) {
     double **com = (double **)calloc(p->n_chl, sizeof(double *));

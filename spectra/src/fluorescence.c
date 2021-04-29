@@ -348,17 +348,17 @@ bcs (unsigned const int N, const double* eigvals, const double T)
 }
 
 double
-trapezoid(double *f, unsigned int n)
+trapezoid(double *f, double dx, unsigned int n)
 {
-    /* double dx = 1./n; */
-    double dx = 2. * M_PI / (TOFS);
-    double sum;
+  /* note that this assumes regular spacing dx because that's
+   * all we ever have to deal with here */
+  double sum;
 
-    sum = 0.5 * dx * (f[0] + f[n - 1]);
-    for (unsigned int i = 1; i < n - 1; i++) {
-	sum += dx * f[i];
-    }
-    return sum;
+  sum = 0.5 * dx * (f[0] + f[n - 1]);
+  for (unsigned int i = 1; i < n - 1; i++) {
+      sum += dx * f[i];
+  }
+  return sum;
 }
 
 /** Do the eigendecomposition of the transfer matrix.

@@ -1236,8 +1236,10 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
                     delta_xy_ba, fc_sq, ji_work);
               }
 
-              chl_car += pow(ji_work, 2.) * trapezoid(fi_ad, tau);
-              car_chl += pow(ji_work, 2.) * trapezoid(ai_fd, tau);
+              chl_car += pow(ji_work, 2.) * trapezoid(fi_ad,
+                  2. * M_PI / (TOFS * tau), tau);
+              car_chl += pow(ji_work, 2.) * trapezoid(ai_fd,
+                  2. * M_PI / (TOFS * tau), tau);
 
               /* ki_delta_xy_ba.push_back(CM_PER_PS * (2 * PI) * */
               /*     pow(ji_work, 2.) * trapezoid(fi_ad, tau)); */
