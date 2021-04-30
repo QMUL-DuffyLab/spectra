@@ -661,11 +661,12 @@ main(int argc, char** argv)
   double *pt = (double *)calloc(n_total, sizeof(double));
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
-  unsigned int MAX_ITER = 1000; /* 1 ns */
+  unsigned int MAX_ITER = 4000; /* 4 ns */
   unsigned int print_pop = 0, life = 0;
   status = 0;
   double sum = 0.;
   bool life_yet = false;
+  bool write_pop_to_file = false;
 
   FILE *gp;
   strcpy(fn, p->pop_file);

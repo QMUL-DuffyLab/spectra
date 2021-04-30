@@ -3,7 +3,7 @@ program coupling_calc
   use aux
   implicit none
   integer, parameter :: cdp = REAL128
-  logical :: verbose, print_jij, print_jij_diag, add_energy_noise
+  logical :: verbose, print_jij, print_jij_diag, add_energy_noise, inc_lut_2
   character(100) :: coord_fmt, ei_file, dipoles_file,&
   lambda_file, gnt_file, lifetimes_file, g_i_count
   character(100) :: input_dir, temp_string, tau_string
@@ -27,6 +27,7 @@ program coupling_calc
     Jij, Jeig, mu, mu_ex, r_charge, kappa, theta, bloc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
+  inc_lut_2 = .false.
   verbose = .true.
   add_energy_noise = .false.
   print_jij = .false.
@@ -395,7 +396,11 @@ program coupling_calc
   write(20, *) control_len
   write(20, *) tau
   write(20, *) size(block_indices) ! number of chlorophylls
-  write(20, *) control_len - size(block_indices) ! number of carotenoids
+  if (inc_lut_2) then
+    write(20, *) control_len - size(block_indices) ! number of carotenoids
+  else
+    write(20, *) 1 ! number of carotenoids
+  end if
   write(20, *) temperature
   write(20, '(a)') adjustl(trim(adjustl(eigvecs_file)))
   write(20, '(a)') adjustl(trim(adjustl(eigvals_file)))

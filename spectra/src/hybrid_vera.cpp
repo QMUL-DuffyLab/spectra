@@ -315,10 +315,10 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, VERA *x,
           if (i == j) {
             /* need to subtract the outward rates to the carotenoids */
             for (unsigned k = 0; k < n_vib_tot; k++) {
-              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 0, k, 0},
-                             chl_car_extents)];
-              k_tot[i][j] -= k_i_delta[sub2ind({i - 1, 1, k, 0},
-                             chl_car_extents)];
+              for (unsigned car = 0; car < n_car; car++) {
+                k_tot[i][j] -= k_i_delta[sub2ind({i - 1, car, k, 0},
+                               chl_car_extents)];
+              }
             }
           }
         }

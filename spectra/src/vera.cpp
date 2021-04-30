@@ -58,15 +58,15 @@ sub2ind(std::vector<size_t> subscripts, std::vector<size_t> extents)
         std::cerr << "sub2ind error: subscripts[" << i
           << "] > extents[" << i << "]" << std::endl;
         index = -1;
-        std::cerr << "subscripts = ";
+        std::cerr << "subscripts = (";
         for (unsigned j = 0; j < subscripts.size(); j++) {
-          std::cerr << subscripts[i];
+          std::cerr << subscripts[i] << " ";
         }
-        std::cerr << std::endl;
+        std::cerr << ")" << std::endl;
 
-        std::cerr << "extents = ";
+        std::cerr << "extents = (";
         for (unsigned j = 0; j < subscripts.size(); j++) {
-          std::cerr << extents[i];
+          std::cerr << extents[i] << " ";
         }
         std::cerr << std::endl;
       } else {
