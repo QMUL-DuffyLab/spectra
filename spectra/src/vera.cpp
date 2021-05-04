@@ -657,6 +657,11 @@ VERA::set_disp(std::vector<double> di)
   }
   for (size_t i = 0; i < di.size(); i++) {
     disp[i] = di[i];
+    /* std::vector<size_t> subs = ind2sub(i, 
+     * {n_normal, n_elec + 1, n_elec + 1}); */
+    /* std::cout << "(" << subs[0] << ", " */ 
+    /*           << subs[1] << ", " */ 
+    /*           << subs[2] << ") = " << disp[i] << std::endl; */
   }
 }
 

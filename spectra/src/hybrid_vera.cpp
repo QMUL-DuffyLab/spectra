@@ -13,7 +13,7 @@ k_i_xa_hybrid(VERA x, unsigned n_chl, unsigned n_car, unsigned tau,
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<double> k_i_xa;
   unsigned short print_ji = 0;
-  unsigned short print_delta_fc = 1;
+  unsigned short print_delta_fc = 0;
   std::vector<size_t> pop_extents = x.get_pop_extents();
   std::vector<double> car_rates = x.intra_rates();
   size_t n_s_total = vib_total * x.n_elec;
