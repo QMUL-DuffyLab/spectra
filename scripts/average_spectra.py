@@ -29,6 +29,7 @@ fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/{}/J_ij.out".format(args.input_dir, numbers[0])))
 
 
+gs_pops = np.zeros((3, len(numbers)))
 aw_max = np.zeros(len(numbers))
 fw_max = np.zeros(len(numbers))
 taus = np.zeros(len(numbers))
@@ -56,6 +57,16 @@ if args.recalc is 1:
         aws = aws + aw_temp
         fws = fws + fw_temp
         avg_tau = avg_tau + taus[i]
+        pop_temp = np.loadtxt("{}/populations.dat".format(direc))
+        pop_at_tau = pop_temp[int(taus[i])]
+        if (len(pop_at_tau) == 50):
+            gs_pops[0, i] = pop_at_tau[1]
+            gs_pops[1, i] = pop_at_tau[16]
+            gs_pops[2, i] = pop_at_tau[33]
+        else:
+            gs_pops[0, i] = pop_at_tau[1]
+            gs_pops[1, i] = pop_at_tau[16]
+
 
     print("\nDone.")
     aws = aws / float(len(numbers))
@@ -75,6 +86,7 @@ np.savetxt("{}/fw_average.dat".format(args.input_dir), fws)
 np.savetxt("{}/jij_average.dat".format(args.input_dir), jij)
 np.savetxt("{}/tau_average.dat".format(args.input_dir), np.array([avg_tau, np.std(taus)]))
 np.savetxt("{}/tau.dat".format(args.input_dir), taus)
+np.savetxt("{}/gs_pops_at_tau.dat".format(args.input_dir), gs_pops)
 print("<τ> = {}".format(avg_tau))
 print("Standard deviation of A(w) max = {} (cm^[-1])".format(np.std(aw_max)))
 print("Standard deviation of F(w) max = {} (cm^[-1])".format(np.std(fw_max)))

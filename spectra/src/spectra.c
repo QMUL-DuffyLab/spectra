@@ -615,10 +615,15 @@ main(int argc, char** argv)
   p0 = (double *)calloc(n_total, sizeof(double));
   double *p0_chl = (double *)calloc(p->n_chl, sizeof(double));
   p0_chl = bcs(p->n_chl, eigvals, protocol.T);
-  for (unsigned i = 1; i < p->n_chl + 1; i++) {
+  double p0_sum = 0.;
+  for (unsigned i = 0; i < p->n_chl; i++) {
     /* p0[i] = 1. / p->n_chl; */
-    p0[i] = p0_chl[i];
+    p0[i + 1] = p0_chl[i];
+    p0_sum += p0_chl[i];
+    fprintf(stdout, "%2d %10.6f\n", i, p0[i + 1]);
   }
+  fprintf(stdout, "sum = %10.6f\n", p0_sum);
+
   free(p0_chl);
 
   if (calculate_CD) {
