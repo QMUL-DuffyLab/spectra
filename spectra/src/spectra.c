@@ -76,7 +76,17 @@ main(int argc, char** argv)
   ss_init population_guess = MUSQ;
 
   /* malloc carotenoid stuff */
-  VERA *cars = (VERA *)malloc(p->n_car * sizeof(VERA));
+  /* VERA *cars = (VERA *)malloc(p->n_car * sizeof(VERA)); */
+  std::vector<VERA> cars;
+  /* shouldn't hardcode this in principle. but */
+  if (p->n_car == 1) {
+    cars.push_back(create_VERA_from_file("in/LUT620.dat"));
+  } else {
+    cars.push_back(create_VERA_from_file("in/LUT620.dat"));
+    cars.push_back(create_VERA_from_file("in/LUT621.dat"));
+    /* cars[0] = create_VERA_from_file("in/LUT620.dat"); */
+    /* cars[1] = create_VERA_from_file("in/LUT621.dat"); */
+  }
 
   /* malloc 1d stuff, read them in */
   eigvals     = (double *)calloc(p->n_chl, sizeof(double));
@@ -341,17 +351,26 @@ main(int argc, char** argv)
   size_t n_car    = p->n_car;
 
   bool hybrid = true;
-  size_t n_s_car, n_total;
+  std::vector<size_t> n_s_cars(n_car, 0);
+  size_t n_total = n_chl + 1;
   if (hybrid) {
-    n_s_car  = pow(vera.n_vib + 1, vera.n_normal);
-    n_total  = n_chl + 1 + (n_car * (n_s_car + 1));
+    for (unsigned i = 0; i < n_car; i++) {
+      n_s_cars[i]  = pow(cars[i].n_vib + 1, cars[i].n_normal);
+      n_total     += (n_s_cars[i] + 1);
+    }
   } else {
-    n_s_car  = vera.n_total;
-    n_total  = n_chl + 1 + (n_car * n_s_car);
+    for (unsigned i = 0; i < n_car; i++) {
+      n_s_cars[i] = cars[i].n_total;
+      n_total    += n_s_cars[i];
+    }
   }
 
   double beta     = 1.439 / protocol.T;
-  double *car_decays = (double *)calloc(n_s_car, sizeof(double));
+  double **car_decays = (double **)calloc(n_car, sizeof(double));
+  for (unsigned i = 0; i < n_car; i++) {
+    car_decays[i] = (double *)calloc(n_s_cars[i], sizeof(double));
+  }
+
   if (car_decays == NULL) {
     fprintf(stderr, "car_decays allocation failed!\n");
     exit(EXIT_FAILURE);
@@ -360,40 +379,43 @@ main(int argc, char** argv)
   std::vector<double> k_chl_car;
 
   if (hybrid) {
-    k_chl_car = k_i_xa_hybrid(vera, n_chl,
+    k_chl_car = k_i_xa_hybrid(cars, n_chl,
       n_car, p->tau, eig, eigvals,
       Jij, normed_ai, normed_fi,
       VERA_absorption, beta, car_decays);
   } else {
-    k_chl_car = k_i_xa(vera, n_chl,
-        n_car, p->tau, eig, eigvals, Jij, normed_ai, normed_fi,
-        VERA_absorption, beta);
+    /* k_chl_car = k_i_xa(vera, n_chl, */
+    /*     n_car, p->tau, eig, eigvals, Jij, normed_ai, normed_fi, */
+    /*     VERA_absorption, beta); */
   }
   double k_sum = 0.;
 
   bool print_decays = true;
   if (print_decays) {
     fprintf(stdout, "Calculated S1 decay rates (ps^{-1}):");
-    for (unsigned i = 0; i < n_s_car; i++) {
-      std::vector<size_t> subs = ind2sub(i, vera.get_pop_extents());
-      fprintf(stdout, "%2u (%1lu, %1lu, %1lu) = %10.6e\n",
-              i, subs[0] + 1, subs[1], subs[2], car_decays[i]);
+    for (unsigned i = 0; i < n_car; i++) {
+      for (unsigned j = 0; j < n_s_cars[i]; j++) {
+        std::vector<size_t> subs = ind2sub(j, cars[i].get_pop_extents());
+        fprintf(stdout, "%2u (%1lu, %1lu, %1lu) = %10.6e\n",
+                i, subs[0] + 1, subs[1], subs[2], car_decays[i][j]);
+      }
     }
   }
 
   bool print_i_xa = true;
+  /* NB - this won't work if n_s_car is different between the cars */
   if (print_i_xa) {
     fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n",
-        k_chl_car.size(), n_chl, n_car, n_s_car);
-    for (unsigned i = 0; i < k_chl_car.size(); i = i + 2) {
-      std::vector<size_t> subs = ind2sub(i, {n_chl, n_car, n_s_car, 2});
+        k_chl_car.size(), n_chl, n_car, n_s_cars[0]);
+    for (unsigned j = 0; j < k_chl_car.size(); j = j + 2) {
+      std::vector<size_t> subs = ind2sub(j, {n_chl, n_car, n_s_cars[0], 2});
       std::vector<size_t> xa = ind2sub(subs[2],
           vera.get_pop_extents());
       fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
           " %10.6e %10.6e\n", 
-          i, subs[0], subs[1], xa[0], xa[1], xa[2],
-          k_chl_car[i], k_chl_car[i + 1]);
-      k_sum += k_chl_car[i];
+          j, subs[0], subs[1], xa[0], xa[1], xa[2],
+          k_chl_car[j], k_chl_car[j + 1]);
+      k_sum += k_chl_car[j];
 
     }
     fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
@@ -411,13 +433,13 @@ main(int argc, char** argv)
 
   }
 
-  VERA *vera_ptr = &vera;
+  /* VERA *vera_ptr = &vera; */
   if (hybrid) {
-    k_tot = hybrid_transfer(n_chl, n_car, vera_ptr, gamma, Jij,
+    k_tot = hybrid_transfer(n_chl, n_car, cars, gamma, Jij,
         k_chl_car, odep.Tij, car_decays);
   } else {
-    k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij,
-            k_chl_car, odep.Tij);
+    /* k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij, */
+    /*         k_chl_car, odep.Tij); */
   }
 
   fprintf(stdout, "\n-------------------------\n"
@@ -432,7 +454,7 @@ main(int argc, char** argv)
   if (steady_state) {
     p_i = steady_state_populations(p0, params, p->n_chl);
   } else {
-    p_i = hybrid_boltz(p->n_chl, n_car, beta, eigvals, vera_ptr); 
+    p_i = hybrid_boltz(p->n_chl, n_car, beta, eigvals, cars); 
   }
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
@@ -756,6 +778,21 @@ main(int argc, char** argv)
           }
         } else {
           fprintf(stdout, "tau file could not be created");
+        }
+        status = generate_filename(sizeof(fn), fn, "tau", "pop_at_tau");
+        if (status == 0) {
+          FILE *hp = fopen(fn, "w");
+          for (unsigned j = 0; j < n_total; j++) {
+            fprintf(hp, "%+12.8e ", pt[j]);
+          }
+          cl = fclose(hp);
+          if (cl != 0) {
+              fprintf(stdout, "Failed to close pop_at_tau "
+                  "output file %s, error no. %d.\n", fn, cl);
+              exit(EXIT_FAILURE);
+          }
+        } else {
+          fprintf(stdout, "pop_at_tau file could not be created");
         }
         life_yet = true;
       }

@@ -8,6 +8,7 @@ write them out, plot them.
 
 import os
 import argparse
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from plot_aw import plot_aw_fw
@@ -29,11 +30,13 @@ fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/{}/J_ij.out".format(args.input_dir, numbers[0])))
 
 
-gs_pops = np.zeros((3, len(numbers)))
+gs_pops = np.zeros((len(numbers), 3))
 aw_max = np.zeros(len(numbers))
 fw_max = np.zeros(len(numbers))
 taus = np.zeros(len(numbers))
 avg_tau = 0.0
+curdir = os.getcwd()
+os.chdir(args.input_dir)
 
 if args.recalc is 1:
     print("Summing A(w) and F(w) per frame")
@@ -41,7 +44,7 @@ if args.recalc is 1:
         if (i % 100) is 0:
             print(".", end='', flush=True)
 
-        direc = "{}/{}".format(args.input_dir, number)
+        direc = "{}/{}".format(os.getcwd(), number)
         aw_temp = np.loadtxt("{}/aw.dat".format(direc))
         fw_temp = np.loadtxt("{}/fw.dat".format(direc))
         if os.path.isfile("{}/lifetime.dat".format(direc)):
@@ -57,16 +60,16 @@ if args.recalc is 1:
         aws = aws + aw_temp
         fws = fws + fw_temp
         avg_tau = avg_tau + taus[i]
-        pop_temp = np.loadtxt("{}/populations.dat".format(direc))
-        pop_at_tau = pop_temp[int(taus[i])]
+        pop_at_tau = np.loadtxt("{}/pop_at_tau.dat".format(direc))
         if (len(pop_at_tau) == 50):
-            gs_pops[0, i] = pop_at_tau[1]
-            gs_pops[1, i] = pop_at_tau[16]
-            gs_pops[2, i] = pop_at_tau[33]
+            gs_pops[i, 0] = pop_at_tau[0]
+            gs_pops[i, 1] = pop_at_tau[15]
+            gs_pops[i, 2] = pop_at_tau[32]
         else:
-            gs_pops[0, i] = pop_at_tau[1]
-            gs_pops[1, i] = pop_at_tau[16]
+            gs_pops[i, 0] = pop_at_tau[0]
+            gs_pops[i, 1] = pop_at_tau[15]
 
+        subprocess.run(["zip", "-rm", "{}.zip".format(direc), "{}".format(number)], check=True)
 
     print("\nDone.")
     aws = aws / float(len(numbers))
@@ -79,6 +82,8 @@ else:
     jij = np.loadtxt("{}/jij_average.dat".format(args.input_dir))
     tau = np.loadtxt("{}/tau_average.dat".format(args.input_dir))
 
+
+os.chdir(curdir)
 np.savetxt("{}/aw_max.dat".format(args.input_dir), aw_max)
 np.savetxt("{}/fw_max.dat".format(args.input_dir), fw_max)
 np.savetxt("{}/aw_average.dat".format(args.input_dir), aws)
