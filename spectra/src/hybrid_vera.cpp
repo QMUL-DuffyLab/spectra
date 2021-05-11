@@ -1,6 +1,6 @@
 #include "hybrid_vera.h"
 
-std::vector<double>
+std::vector<std::vector<double>>
 k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
                double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
@@ -14,7 +14,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
   double *abs = (double *)calloc(tau, sizeof(double));
   double *fi_ad  = (double *)calloc(tau, sizeof(double));
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
-  std::vector<double> k_i_xa;
+  std::vector<std::vector<double>> k_i_xa(n_car);
   unsigned short print_ji = 0;
   unsigned short print_delta_fc = 0;
   std::vector<std::vector<size_t>> pop_extents;
@@ -33,9 +33,9 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
   bool print_details = false;
   bool output_lineshapes = false;
 
-  for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
-    for (unsigned carotenoid = n_chl;
-        carotenoid < n_chl + n_car; carotenoid++) {
+  for (unsigned carotenoid = n_chl;
+      carotenoid < n_chl + n_car; carotenoid++) {
+    for (unsigned chl_index = 0; chl_index < n_chl; chl_index++) {
       /* assumes the carotenoids are at the end of the arrays;
        * fortran code puts them there so shouldn't be an issue */
 
@@ -199,8 +199,8 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
         } else {
           chl_car *= exp(-beta * (e_xa - eigvals[chl_index]));
         }
-        k_i_xa.push_back(chl_car);
-        k_i_xa.push_back(car_chl);
+        k_i_xa[car_index].push_back(chl_car);
+        k_i_xa[car_index].push_back(car_chl);
 
         if (print_details) {
           fprintf(stdout, "chl = %2u, car = %2u,"
@@ -266,7 +266,7 @@ car_transfer(VERA x, double *decays)
 
 double**
 hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
-    double *gamma, double **Jij, std::vector<double> k_i_delta,
+    double *gamma, double **Jij, std::vector<std::vector<double>> k_i_delta,
     double **redfield_rates, double **car_decays)
 {
   /* n_vib_tot is the total number of vibrational levels
@@ -294,7 +294,12 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
    * a vector of vectors, one for each carotenoid, then make the 
    * below a vector of vectors in the same way
    */
-  std::vector<size_t> chl_car_extents = {n_chl, n_car, n_vib_tot[0], 2};
+  /* std::vector<size_t> chl_car_extents = {n_chl, n_car, n_vib_tot[0], 2}; */
+  std::vector<std::vector<size_t>> chl_car_extents;
+  for (unsigned i = 0; i < n_car; i++) {
+    chl_car_extents.push_back({n_chl, n_vib_tot[i], 2});
+  }
+
   std::vector<std::vector<double>> car_rates;
   for (unsigned i = 0; i < n_car; i++) {
     car_rates.push_back(x[i].intra_rates());
@@ -303,8 +308,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
   std::vector<size_t> car_gs_indices(n_car, 0);
   car_gs_indices[0] = n_chl + 1;
   for (unsigned k = 1; k < n_car; k++) {
-    car_gs_indices[k] = car_gs_indices[k - 1] + n_vib_tot[k - 1];
-    fprintf(stdout, "%1u: %2lu\n", k, car_gs_indices[k]);
+    car_gs_indices[k] = car_gs_indices[k - 1] + n_vib_tot[k - 1] + 1;
   }
 
   std::vector<bool> i_in_car(n_car, false);
@@ -318,22 +322,33 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
         j_in_car[k] = false;
       }
 
-      for (unsigned k = 0; k < n_car; k++) {
-        /* break statements ensure only the first
-         * case will be set to true */
-        /* cast both to int bc otherwise you get wraparound */
-        if ((int)i - (int)car_gs_indices[k] > 0) {
+      for (unsigned k = n_car; k--;) {
+        /* this looks weird but bear with me:
+         * we want it to be true if i / j correspond to an actual
+         * vibronic state on the carotenoid. if they correspond to the
+         * ad-hoc ground state index, we don't want these to be true;
+         * we deal with that case separately */
+        if (i == car_gs_indices[k]) break;
+        /* also: cast both to int bc otherwise you get wraparound */
+        if ((int)i > (int)car_gs_indices[k]) {
           i_in_car[k] = true;
           break;
         }
       }
 
-      for (unsigned k = 0; k < n_car; k++) {
-        if ((int)j - (int)car_gs_indices[k] > 0) {
+      for (unsigned k = n_car; k--;) {
+        if (j == car_gs_indices[k]) break;
+        if ((int)j > (int)car_gs_indices[k]) {
           j_in_car[k] = true;
           break;
         }
       }
+
+      /* for (unsigned k = 0; k < n_car; k++) { */
+      /*   if ((int)j - (int)car_gs_indices[k] <= 0) { */
+      /*     j_in_car[k] = false; */
+      /*   } */
+      /* } */
       /* unsigned gs_620 = n_chl + 1; */
       /* unsigned gs_621 = n_vib_tot + 1 + gs_620; */
       bool i_rgs  = (i == rgs);
@@ -350,11 +365,11 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
       /* bool i_621  = (i > gs_621); */
       /* bool j_621  = (j > gs_621); */
 
-      /* fprintf(stdout, "i = %2u, j = %2u, i_chls = %1d, j_chls = %1d ", */
+      /* fprintf(stdout, "i = %2u, j = %2u, i_chls = %1d, j_chls = %1d", */
       /*     i, j, i_chls, j_chls); */
       /* for (unsigned k = 0; k < n_car; k++) { */
       /*   /1* fprintf(stdout, "%1u %1d %1d", k, i_in_car[k], j_in_car[k]); *1/ */
-      /*   std::cout << "car " << k << ": i_in_car =" << i_in_car[k] */ 
+      /*   std::cout << " car " << k << ": i_in_car = " << i_in_car[k] */ 
       /*     << ", j_in_car = " << j_in_car[k]; */
       /* } */
       /* fprintf(stdout, "\n"); */
@@ -389,10 +404,10 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
           k_tot[i][j] = redfield_rates[i - 1][j - 1];
           if (i == j) {
             /* need to subtract the outward rates to the carotenoids */
-            for (unsigned car = 0; car < n_car; car++) {
-              for (unsigned k = 0; k < n_vib_tot[car]; k++) {
-                k_tot[i][j] -= k_i_delta[sub2ind({i - 1, car, k, 0},
-                               chl_car_extents)];
+            for (unsigned k = 0; k < n_car; k++) {
+              for (unsigned vib = 0; vib < n_vib_tot[k]; vib++) {
+                k_tot[i][j] -= k_i_delta[k][sub2ind({i - 1, vib, 0},
+                               chl_car_extents[k])];
               }
             }
           }
@@ -402,26 +417,31 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
       for (unsigned k = 0; k < n_car; k++) {
         if (i_chls) {
           if (j_in_car[k]) {
-            k_tot[j][i] = k_i_delta[sub2ind({i - 1, 0,
-                j - (car_gs_indices[k] + 1), 0}, chl_car_extents)];
+            k_tot[j][i] = k_i_delta[k][sub2ind({i - 1,
+                j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])];
+            /* fprintf(stdout, "%2u %2u %1u %2lu - (%2lu %2lu %2lu)\n", */
+            /*     i, j, k, car_gs_indices[k], chl_car_extents[k][0], */
+            /*     chl_car_extents[k][1], chl_car_extents[k][2]); */
           }
         }
+
         if (i == car_gs_indices[k]) {
           if (j_in_car[k]) {
             k_tot[i][j] += car_decays[k][j - car_gs_indices[k] + 1];
           }
         }
+
         if (i_in_car[k]) {
           if (j_chls) {
-            k_tot[j][i] += k_i_delta[sub2ind({j - 1, 0,
-                i - (car_gs_indices[k] + 1), 1}, chl_car_extents)];
+            k_tot[j][i] += k_i_delta[k][sub2ind({j - 1,
+                i - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])];
           }
           if (j_in_car[k]) {
             if (i == j) {
               k_tot[i][j] -= car_decays[k][j - (car_gs_indices[k] + 1)];
               for (unsigned m = 0; m < n_chl; m++) {
-                k_tot[i][j] -= k_i_delta[sub2ind({m, 0,
-                    j - (car_gs_indices[k] + 1), 1}, chl_car_extents)];
+                k_tot[i][j] -= k_i_delta[k][sub2ind({m,
+                    j - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])];
               }
             }
             std::vector<size_t> i_subs = ind2sub(i - (car_gs_indices[k] + 1),
@@ -571,23 +591,23 @@ hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
       for (unsigned k = 0; k < n_car; k++) {
         i_in_car[k] = false;
       }
-      for (unsigned k = 0; k < n_car; k++) {
-        if (i - car_starts[k] > 0) {
+      for (unsigned k = n_car; k--;) {
+        if ((int)i > (int)car_starts[k]) {
           i_in_car[k] = true;
           break;
         }
       }
       for (unsigned k = 0; k < n_car; k++) {
         if (i_in_car[k]) {
-        std::vector<size_t> subs = ind2sub(i - car_starts[k], extents[k]);
-        subs[0]++;
-        double e_xa = x[k].get_w_elec(subs[0]);
-        for (unsigned alpha = 0; alpha < x[k].n_normal; alpha++) {
-          e_xa += x[k].get_w_normal(alpha) * subs[alpha + 1];
-        }
+          std::vector<size_t> subs = ind2sub(i - car_starts[k], extents[k]);
+          subs[0]++;
+          double e_xa = x[k].get_w_elec(subs[0]);
+          for (unsigned alpha = 0; alpha < x[k].n_normal; alpha++) {
+            e_xa += x[k].get_w_normal(alpha) * subs[alpha + 1];
+          }
 
-        work[i] = exp(-beta * e_xa);
-        work_sum += work[i];
+          work[i] = exp(-beta * e_xa);
+          work_sum += work[i];
         }
       }
 

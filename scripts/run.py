@@ -71,7 +71,7 @@ def get_pigments(input_dir):
 def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
     recalc_lineshapes, num_repeats):
     # fortran won't create the directory; do it here
-    include_protein = False
+    include_protein = True
     if (num_repeats == 0):
         if (include_protein):
             output_path = "{}/{}/{}".format(direc, protein, snapshot_number)

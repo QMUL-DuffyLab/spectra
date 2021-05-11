@@ -345,7 +345,7 @@ main(int argc, char** argv)
                     "VERA RATES\n"
                     "----------\n\n");
 
-  VERA vera = create_VERA_from_file("in/vera.def");
+  /* VERA vera = create_VERA_from_file("in/vera.def"); */
 
   size_t n_chl    = p->n_chl;
   size_t n_car    = p->n_car;
@@ -376,7 +376,7 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-  std::vector<double> k_chl_car;
+  std::vector<std::vector<double>> k_chl_car;
 
   if (hybrid) {
     k_chl_car = k_i_xa_hybrid(cars, n_chl,
@@ -403,20 +403,20 @@ main(int argc, char** argv)
   }
 
   bool print_i_xa = true;
-  /* NB - this won't work if n_s_car is different between the cars */
   if (print_i_xa) {
-    fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n",
-        k_chl_car.size(), n_chl, n_car, n_s_cars[0]);
-    for (unsigned j = 0; j < k_chl_car.size(); j = j + 2) {
-      std::vector<size_t> subs = ind2sub(j, {n_chl, n_car, n_s_cars[0], 2});
-      std::vector<size_t> xa = ind2sub(subs[2],
-          vera.get_pop_extents());
-      fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
-          " %10.6e %10.6e\n", 
-          j, subs[0], subs[1], xa[0], xa[1], xa[2],
-          k_chl_car[j], k_chl_car[j + 1]);
-      k_sum += k_chl_car[j];
-
+    /* fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n", */
+    /*     k_chl_car.size(), n_chl, n_car, n_s_cars[0]); */
+    for (unsigned k = 0; k < n_car; k++) {
+      for (unsigned j = 0; j < k_chl_car[k].size(); j = j + 2) {
+        std::vector<size_t> subs = ind2sub(j, {n_chl, n_s_cars[k], 2});
+        std::vector<size_t> xa = ind2sub(subs[2],
+            cars[k].get_pop_extents());
+        fprintf(stdout, "%4u (%1lu)<->(%1lu)(%1lu %1lu %1lu)"
+            " %10.6e %10.6e\n", 
+            j, subs[0], subs[1], xa[0], xa[1], xa[2],
+            k_chl_car[k][j], k_chl_car[k][j + 1]);
+        k_sum += k_chl_car[k][j];
+      }
     }
     fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
   }

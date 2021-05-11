@@ -3,7 +3,7 @@
 #include "vera.h"
 
 
-std::vector<double>
+std::vector<std::vector<double>>
 k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
                double **eig, double *eigvals,
                double **Jij, double **normed_ai, double **normed_fi,
@@ -14,7 +14,7 @@ hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
              double *eigvals, std::vector<VERA> x);
 double**
 hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
-    double *gamma, double **Jij, std::vector<double> k_i_delta,
+    double *gamma, double **Jij, std::vector<std::vector<double>> k_i_delta,
     double **redfield_rates, double **car_decays);
 
 #endif
