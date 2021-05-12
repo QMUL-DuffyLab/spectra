@@ -71,8 +71,6 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
 
         for (unsigned alpha = 0; alpha < x[car_index].n_normal; alpha++) {
           e_xa += x[car_index].get_w_normal(alpha) * a[alpha + 1];
-          /* fc_sq *= pow(x.get_fc({0, 1, alpha, */
-          /*       a[alpha + 1], 0}), 2.); */
           fc *= x[car_index].get_fc({0, 1, alpha, a[alpha + 1], 0});
         }
         ji_work = ji * fc;
@@ -135,6 +133,10 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
            * and search for that. i guess alternatively we could
            * hardcode the index of the underscore and overwrite
            * two characters after that. but who cares. it's ugly either way
+           *
+           * also note that this'll fail if the hardcoded directory doesn't
+           * exist. this function doesn't have access to the filenames atm
+           * so i did it like this, please do not judge lol
            * */
           char snum[3], car_num[2], num[2];
           if (carotenoid == n_chl) {
@@ -344,35 +346,10 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
         }
       }
 
-      /* for (unsigned k = 0; k < n_car; k++) { */
-      /*   if ((int)j - (int)car_gs_indices[k] <= 0) { */
-      /*     j_in_car[k] = false; */
-      /*   } */
-      /* } */
-      /* unsigned gs_620 = n_chl + 1; */
-      /* unsigned gs_621 = n_vib_tot + 1 + gs_620; */
       bool i_rgs  = (i == rgs);
       bool j_rgs  = (j == rgs);
-
       bool i_chls = (i > rgs && i <= n_chl);
       bool j_chls = (j > rgs && j <= n_chl);
-      /* bool i_620_gs  = (i == gs_620); */
-      /* bool j_620_gs  = (j == gs_620); */
-      /* bool i_620  = (i > gs_620 && i < gs_621); */
-      /* bool j_620  = (j > gs_620 && j < gs_621); */
-      /* bool i_621_gs  = (i == gs_621); */
-      /* bool j_621_gs  = (j == gs_621); */
-      /* bool i_621  = (i > gs_621); */
-      /* bool j_621  = (j > gs_621); */
-
-      /* fprintf(stdout, "i = %2u, j = %2u, i_chls = %1d, j_chls = %1d", */
-      /*     i, j, i_chls, j_chls); */
-      /* for (unsigned k = 0; k < n_car; k++) { */
-      /*   /1* fprintf(stdout, "%1u %1d %1d", k, i_in_car[k], j_in_car[k]); *1/ */
-      /*   std::cout << " car " << k << ": i_in_car = " << i_in_car[k] */ 
-      /*     << ", j_in_car = " << j_in_car[k]; */
-      /* } */
-      /* fprintf(stdout, "\n"); */
 
       if (i_rgs) {
         if (j_rgs) {
@@ -381,12 +358,6 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
         if (j_chls) {
           k_tot[i][j] += (1. / (1000 * gamma[j - 1]));
         }
-        /* if (j_620) { */
-        /*   continue; */
-        /* } */
-        /* if (j_621) { */
-        /*   continue; */
-        /* } */
       }
 
       if (j_rgs) {
@@ -419,9 +390,6 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
           if (j_in_car[k]) {
             k_tot[j][i] = k_i_delta[k][sub2ind({i - 1,
                 j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])];
-            /* fprintf(stdout, "%2u %2u %1u %2lu - (%2lu %2lu %2lu)\n", */
-            /*     i, j, k, car_gs_indices[k], chl_car_extents[k][0], */
-            /*     chl_car_extents[k][1], chl_car_extents[k][2]); */
           }
         }
 
@@ -457,96 +425,6 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
           }
         }
       }
-
-      /* if (i_620_gs) {*/
-      /*   if (j_rgs) {*/
-      /*   }*/
-      /*   if (j_chls) {*/
-      /*   }*/
-      /*   if (j_620) {*/
-      /*     k_tot[i][j] += car_decays[j - (gs_620 + 1)];*/
-      /*   }*/
-      /*   if (j_621) {*/
-      /*   }*/
-      /* } // i_620_gs*/
-
-      /* if (i_620) {*/
-      /*   if (j_rgs) {*/
-      /*   }*/
-      /*   if (j_chls) {*/
-      /*     k_tot[j][i] += k_i_delta[sub2ind({j - 1, 0,*/
-      /*         i - (gs_620 + 1), 1}, chl_car_extents)];*/
-      /*   }*/
-      /*   if (j_620) {*/
-      /*     if (i == j) {*/
-      /*       k_tot[i][j] -= car_decays[j - (gs_620 + 1)];*/
-      /*       for (unsigned k = 0; k < n_chl; k++) {*/
-      /*         k_tot[i][j] -= k_i_delta[sub2ind({k, 0, j - (gs_620 + 1), 1},*/
-      /*                       chl_car_extents)];*/
-      /*       }*/
-      /*     }*/
-           /* this needs confirming, but:
-            * the total rate matrix, VERA.intra_rates(), contains
-            * both the IVR and IC rates. but on a given electronic
-            * state, only IVR is nonzero, and across electronic
-            * states, only IC is nonzero. hence, if we ensure we're
-            * on the same electronic state, intra_rates()[i][j]
-            * should just be the IVR rate.*/
-      /*     std::vector<size_t> i_subs = ind2sub(i - (gs_620 + 1), car_extents);*/
-      /*     std::vector<size_t> j_subs = ind2sub(j - (gs_620 + 1), car_extents);*/
-           /* S1! */
-      /*     i_subs[0]++; j_subs[0]++;*/
-      /*     size_t i_index = sub2ind(i_subs, car_extents);*/
-      /*     size_t j_index = sub2ind(j_subs, car_extents);*/
-      /*     k_tot[i][j] = car_rates[sub2ind({i_index, j_index},*/
-      /*         {x->n_total, x->n_total})];*/
-      /*   }*/
-      /*   if (j_621) {*/
-      /*   }*/
-      /* }*/
-
-      /* this can be folded into the 620 bit i guess; these blocks
-       * will be identical, it's only the chl-car blocks which differ */
-
-      /* if (i_621_gs) {*/
-      /*   if (j_rgs) {*/
-      /*   }*/
-      /*   if (j_chls) {*/
-      /*   }*/
-      /*   if (j_620) {*/
-      /*   }*/
-      /*   if (j_621) {*/
-      /*     k_tot[i][j] += car_decays[j - (gs_621 + 1)];*/
-      /*   }*/
-      /* } // i_620_gs*/
-      /* if (i_621) {*/
-      /*   if (j_rgs) {*/
-      /*   }*/
-      /*   if (j_chls) {*/
-      /*     k_tot[j][i] += k_i_delta[sub2ind({j - 1, 1,*/
-      /*         i - (gs_621 + 1), 1}, chl_car_extents)];*/
-      /*   }*/
-      /*   if (j_620) {*/
-      /*   }*/
-      /*   if (j_621) {*/
-      /*     if (i == j) {*/
-      /*       k_tot[i][j] -= car_decays[j - (gs_621 + 1)];*/
-      /*       for (unsigned k = 0; k < n_chl; k++) {*/
-      /*         k_tot[i][j] -= k_i_delta[sub2ind({k, 1,*/
-      /*             j - (gs_621 + 1), 1}, chl_car_extents)];*/
-      /*       }*/
-      /*     }*/
-      /*     std::vector<size_t> i_subs = ind2sub(i - (gs_621 + 1),*/
-      /*                                  car_extents);*/
-      /*     std::vector<size_t> j_subs = ind2sub(j - (gs_621 + 1),*/
-      /*                                  car_extents);*/
-      /*     i_subs[0]++; j_subs[0]++;*/
-      /*     size_t i_index = sub2ind(i_subs, car_extents);*/
-      /*     size_t j_index = sub2ind(j_subs, car_extents);*/
-      /*     k_tot[i][j] = car_rates[sub2ind({i_index, j_index},*/
-      /*         {x->n_total, x->n_total})];*/
-      /*   }*/
-      /* }*/
 
     } // j
   }
