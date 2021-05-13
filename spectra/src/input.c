@@ -48,6 +48,14 @@ read_input_file(char* filename)
     p->n_chl = atoi(line);
     fgets(line, 199, fp);
     p->n_car = atoi(line);
+    /* next block will be useful if/when I can set number of
+     * carotenoids before the fortran code - as it is the way it's
+     * hacked together in there means this will fail without lut 2 */
+    /* if (p->n_chl + p->n_car != p->N) { */
+    /*   fprintf(stdout, "Number of chlorophylls + number of" */
+    /*       " carotenoids != total. Check the inputs!\n"); */
+    /*   exit(EXIT_FAILURE); */
+    /* } */
     fgets(line, 199, fp);
     p->T = atof(line);
     fgets(line, 199, fp);

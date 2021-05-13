@@ -395,7 +395,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
 
         if (i == car_gs_indices[k]) {
           if (j_in_car[k]) {
-            k_tot[i][j] += car_decays[k][j - car_gs_indices[k] + 1];
+            k_tot[i][j] += car_decays[k][j - (car_gs_indices[k] + 1)];
           }
         }
 

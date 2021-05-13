@@ -442,6 +442,19 @@ main(int argc, char** argv)
     /*         k_chl_car, odep.Tij); */
   }
 
+  strcpy(fn, p->pop_file);
+  status = generate_filename(sizeof(fn), fn,
+           "populations", "k_tot");
+  if(status != 0) {
+  } else {
+    fp = fopen(fn, "w");
+    print_matrix(fp, NULL, n_total, k_tot);
+
+    cl = fclose(fp);
+    if (cl != 0) {
+    }
+  }
+
   fprintf(stdout, "\n-------------------------\n"
                   "STEADY STATE FLUORESCENCE\n"
                   "-------------------------\n\n");
@@ -707,7 +720,9 @@ main(int argc, char** argv)
   fprintf(stdout, "\nWriting populations\n");
   fp = fopen(p->pop_file, "w");
 
+  double total_sum = 0.;
   for (i = 0; i < MAX_ITER; i++) {
+    total_sum = 0.;
     sum = 0.;
     pt_prev[j] = pt[j];
 
@@ -724,6 +739,7 @@ main(int argc, char** argv)
     for (j = 0; j < n_total; j++) {
       fprintf(fp, "%+12.8e ", pt[j]);
 
+      total_sum += pt[j];
       if (j > 0 && j <= n_chl) {
         sum += pt[j];
       }
@@ -759,6 +775,11 @@ main(int argc, char** argv)
         fprintf(stdout, "%+12.8e ", pt[j]);
       }
 
+    }
+
+    if (abs(total_sum - 1.) > 1E-3) {
+      fprintf(stdout, "step %4u, sum = %10.6e, loss = %10.6e\n",
+          i, total_sum, 1. - total_sum);
     }
 
     fprintf(gp, "%+12.8e\n", sum);
