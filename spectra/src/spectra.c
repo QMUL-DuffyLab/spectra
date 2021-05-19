@@ -777,10 +777,10 @@ main(int argc, char** argv)
 
     }
 
-    if (abs(total_sum - 1.) > 1E-3) {
-      fprintf(stdout, "step %4u, sum = %10.6e, loss = %10.6e\n",
-          i, total_sum, 1. - total_sum);
-    }
+    /* if (abs(total_sum - 1.) > 1E-3) { */
+    /*   fprintf(stdout, "step %4u, sum = %10.6e, loss = %10.6e\n", */
+    /*       i, total_sum, 1. - total_sum); */
+    /* } */
 
     fprintf(gp, "%+12.8e\n", sum);
 
@@ -834,6 +834,21 @@ main(int argc, char** argv)
     }
 
   }
+
+  status = generate_filename(sizeof(fn), fn, "pop_at_tau", "final_pop");
+  if (status == 0) {
+    FILE *hp = fopen(fn, "w");
+    fprintf(hp, "%+12.8e ", total_sum);
+    cl = fclose(hp);
+    if (cl != 0) {
+        fprintf(stdout, "Failed to close final_pop "
+            "output file %s, error no. %d.\n", fn, cl);
+        exit(EXIT_FAILURE);
+    }
+  } else {
+    fprintf(stdout, "pop_at_tau file could not be created");
+  }
+
   fclose(fp);
   fclose(gp);
 

@@ -377,7 +377,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
             /* need to subtract the outward rates to the carotenoids */
             for (unsigned k = 0; k < n_car; k++) {
               for (unsigned vib = 0; vib < n_vib_tot[k]; vib++) {
-                k_tot[i][j] -= k_i_delta[k][sub2ind({i - 1, vib, 0},
+                k_tot[j][i] -= k_i_delta[k][sub2ind({i - 1, vib, 0},
                                chl_car_extents[k])];
               }
             }
@@ -388,7 +388,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
       for (unsigned k = 0; k < n_car; k++) {
         if (i_chls) {
           if (j_in_car[k]) {
-            k_tot[j][i] = k_i_delta[k][sub2ind({i - 1,
+            k_tot[j][i] += k_i_delta[k][sub2ind({i - 1,
                 j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])];
           }
         }
@@ -408,7 +408,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
             if (i == j) {
               k_tot[i][j] -= car_decays[k][j - (car_gs_indices[k] + 1)];
               for (unsigned m = 0; m < n_chl; m++) {
-                k_tot[i][j] -= k_i_delta[k][sub2ind({m,
+                k_tot[j][i] -= k_i_delta[k][sub2ind({m,
                     j - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])];
               }
             }
