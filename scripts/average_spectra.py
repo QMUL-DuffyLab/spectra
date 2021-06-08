@@ -36,11 +36,17 @@ aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/{}/J_ij.out".format(args.input_dir, numbers[0])))
 
+theta_shape = (len(numbers), ) + np.shape(jij)
 
 gs_pops = np.zeros((len(numbers), 3))
 aw_max = np.zeros(len(numbers))
 fw_max = np.zeros(len(numbers))
 taus = np.zeros((len(numbers), 2))
+thetas = np.zeros(theta_shape)
+jijs = np.zeros(theta_shape)
+j620612 = np.zeros(len(numbers))
+kappas = np.zeros(theta_shape)
+final_pop = np.zeros((len(numbers), 2))
 avg_tau = 0.0
 curdir = os.getcwd()
 os.chdir(args.input_dir)
@@ -64,10 +70,15 @@ if args.recalc is 1:
 
         aw_max[i] = aw_temp[np.argmax(aw_temp[:, 1])][0]
         fw_max[i] = fw_temp[np.argmax(fw_temp[:, 1])][0]
-        jij = jij + np.loadtxt("{}/J_ij.out".format(direc))
+        jijs[i]   = np.loadtxt("{}/J_ij.out".format(direc))
+        j620612[i]= jijs[i][14][11]
+        thetas[i] = np.loadtxt("{}/theta.dat".format(direc))
+        kappas[i] = np.loadtxt("{}/kappa.dat".format(direc))
         aws = aws + aw_temp
         fws = fws + fw_temp
         avg_tau = avg_tau + taus[i, 1]
+        final_pop[i, 0] = int(number)
+        final_pop[i, 1] = np.loadtxt("{}/final_pop.dat".format(direc))
         pop_at_tau = np.loadtxt("{}/pop_at_tau.dat".format(direc))
         if (len(pop_at_tau) == 49):
             gs_pops[i, 0] = pop_at_tau[0]
@@ -97,14 +108,28 @@ np.savetxt("{}/aw_max.dat".format(args.input_dir), aw_max)
 np.savetxt("{}/fw_max.dat".format(args.input_dir), fw_max)
 np.savetxt("{}/aw_average.dat".format(args.input_dir), aws)
 np.savetxt("{}/fw_average.dat".format(args.input_dir), fws)
-np.savetxt("{}/jij_average.dat".format(args.input_dir), jij)
 np.savetxt("{}/tau_average.dat".format(args.input_dir), np.array([avg_tau, np.std(taus[:, 1])]))
 np.savetxt("{}/tau.dat".format(args.input_dir), taus)
 np.savetxt("{}/gs_pops_at_tau.dat".format(args.input_dir), gs_pops)
+np.savetxt("{}/final_pop.dat".format(args.input_dir), final_pop)
+np.savetxt("{}/j620612.dat".format(args.input_dir), j620612)
 print("<τ> = {}".format(avg_tau))
 print("Standard deviation of A(w) max = {} (cm^[-1])".format(np.std(aw_max)))
 print("Standard deviation of F(w) max = {} (cm^[-1])".format(np.std(fw_max)))
-print("Standard deviation of <τ> = {}".format(np.std(taus)))
+print("Standard deviation of <τ> = {}".format(np.std(taus[:, 1])))
+
+jij_avg   = np.mean(jijs, axis=0)
+jij_std   = np.std(jijs, axis=0)
+theta_avg = np.mean(thetas, axis=0)
+theta_std = np.std(thetas, axis=0)
+kappa_avg = np.mean(kappas, axis=0)
+kappa_std = np.std(kappas, axis=0)
+np.savetxt("{}/jij_average.dat".format(args.input_dir), jij_avg)
+np.savetxt("{}/jij_std.dat".format(args.input_dir), jij_std)
+np.savetxt("{}/theta_average.dat".format(args.input_dir), theta_avg)
+np.savetxt("{}/theta_std.dat".format(args.input_dir), theta_std)
+np.savetxt("{}/kappa_average.dat".format(args.input_dir), kappa_avg)
+np.savetxt("{}/kappa_std.dat".format(args.input_dir), kappa_std)
 
 # experimental data: this filename construction's ugly
 if (args.protein is 'LHCII'):
@@ -118,8 +143,8 @@ draw_maximums = (True, True, True)
 plot_aw_fw(aws, fws, aw_exp, fw_exp, draw_maximums, args.input_dir)
 
 fig, ax = plt.subplots()
-plt.title(r'Lifetime: avg = $ {} $, $ \sigma = {} $'.format(avg_tau, np.std(taus)))
+plt.title(r'Lifetime: avg = $ {} $, $ \sigma = {} $'.format(avg_tau, np.std(taus[:, 1])))
 plt.xlabel("Frame")
 plt.ylabel(r'$ \left< \tau \right>$')
-plt.plot(taus)
+plt.plot(taus[:, 0], taus[:, 1])
 plt.savefig("{}/tau.pdf".format(args.input_dir))

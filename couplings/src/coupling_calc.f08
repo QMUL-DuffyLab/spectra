@@ -27,7 +27,7 @@ program coupling_calc
     Jij, Jeig, mu, mu_ex, r_charge, kappa, theta, bloc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
-  inc_lut_2 = .true.
+  inc_lut_2 = .false.
   verbose = .true.
   add_energy_noise = .false.
   print_jij = .false.
@@ -336,9 +336,13 @@ program coupling_calc
     ! match the expected value (i.e. for LHCII, the average |mu^2|
     ! over all eight CLAs will equal whatever number I put in for the
     ! oscillator strength of CLA - currently 4.0 Debye
-    ratio = norm_osc(unique_index) / dipoles(i)**2
-    mu(i, :) = mu(i, :) / sqrt(ratio)
-    osc_check(unique_index) = osc_check(unique_index) + sum(mu(i, :)**2)
+    if (index(unique_pigments(unique_index), "LUT").eq.0) then
+      ratio = norm_osc(unique_index) / dipoles(i)**2
+      mu(i, :) = mu(i, :) / sqrt(ratio)
+      osc_check(unique_index) = osc_check(unique_index) + sum(mu(i, :)**2)
+    else
+      osc_check(unique_index) = osc_check(unique_index) + sum(mu(i, :)**2)
+    end if
   end do
 
   if (verbose) then
