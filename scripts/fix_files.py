@@ -151,6 +151,7 @@ for item in filelist:
     temp_list = [[] for i in range(len(pigments))]
     footer_list = [[] for i in range(len(pigments))]
     output_files = [None] * len(pigments)
+    atom_numbers = [None] * len(pigments)
 
     dot = int((str(item)).find(".")) + 1
     suffix = str(item)[dot:]
@@ -168,22 +169,7 @@ for item in filelist:
     frame = str(int(frame))
 
     for pdb_line in arr:
-        if pdb_line[0] != "ATOM":
-            '''
-            the continue here is just papering over a crack really.
-            i was including the CONECT info in the input files for
-            the code, because they're useful for the GCN later. but
-            adding the correct CONECT info in the case where multiple
-            residues are all in one PDB requires us to keep track of
-            the atom numbers for each residue, check every line and then
-            add the CONECT info for the correct atoms at the end?
-            it can be done but i'm not sure it's worth doing,
-            especially because i cut out the atom numbers
-            '''
-            continue
-            # index = res_to_index[str(pdb_line[4])]
-            # footer_list[index].append(pdb_line)
-        else:
+        if pdb_line[0] == "ATOM":
             index = res_to_index[str(pdb_line[4])]
             output_files[index] = output_basenames[str(pdb_line[4])]\
                     + '/frame{}.csv'.format(frame) 
@@ -206,6 +192,30 @@ for item in filelist:
                 temp_list[index].append(\
                         [pdb_line[2], pdb_line[5],\
                          pdb_line[6], pdb_line[7], 0.0])
+
+        elif pdb_line[0] == "TER":
+            index = res_to_index[str(pdb_line[3])]
+            footer_list[index].append(pdb_line)
+            # this depends on the fact that the residues
+            # are listed sequentially in the PDB file!!
+            # actually this is one larger than the final atom number
+            atom_numbers[index] = int(pdb_line[1])
+            
+        elif pdb_line[0] == "CONECT":
+            # this depends on the conect info being after all the
+            # atom data! i think that should be fairly safe though
+            index = 0
+            # this line effectively turns off reporting of CONECT
+            # info if the TER lines aren't included
+            if (atom_numbers[index] is not None):
+                while int(pdb_line[1]) >= atom_numbers[index]:
+                    index = index + 1
+
+                if index != 0:
+                    for i in range(1, len(pdb_line)):
+                        pdb_line[i] = str(int(pdb_line[i]) - (atom_numbers[index - 1] - 1))
+
+                footer_list[index].append(pdb_line)
 
     # i was using numpy for this but it really doesn't like assigning the
     # structured array and keeping the correct dtypes, for some reason, and

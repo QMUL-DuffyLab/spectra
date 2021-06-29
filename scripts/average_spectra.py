@@ -35,8 +35,11 @@ initial_data = np.loadtxt("{}/{}/aw.dat".format(args.input_dir, numbers[0]))
 aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/{}/J_ij.out".format(args.input_dir, numbers[0])))
+eig = np.zeros_like(jij)
 
 theta_shape = (len(numbers), ) + np.shape(jij)
+exc_620_coupling = np.zeros((len(numbers), np.shape(jij)[0]))
+eigvals = np.zeros_like(exc_620_coupling)
 
 gs_pops = np.zeros((len(numbers), 3))
 aw_max = np.zeros(len(numbers))
@@ -44,7 +47,11 @@ fw_max = np.zeros(len(numbers))
 taus = np.zeros((len(numbers), 2))
 thetas = np.zeros(theta_shape)
 jijs = np.zeros(theta_shape)
-j620612 = np.zeros(len(numbers))
+eigs = np.zeros(theta_shape)
+rijsq = np.zeros(theta_shape)
+musq620 = np.zeros(len(numbers))
+j620cl = np.zeros((len(numbers), 3))
+j620ex = np.zeros((len(numbers), 6))
 kappas = np.zeros(theta_shape)
 final_pop = np.zeros((len(numbers), 2))
 avg_tau = 0.0
@@ -68,10 +75,47 @@ if args.recalc is 1:
         else:
             taus[i, 1] = 0.0
 
-        aw_max[i] = aw_temp[np.argmax(aw_temp[:, 1])][0]
-        fw_max[i] = fw_temp[np.argmax(fw_temp[:, 1])][0]
-        jijs[i]   = np.loadtxt("{}/J_ij.out".format(direc))
-        j620612[i]= jijs[i][14][11]
+        aw_max[i]       = aw_temp[np.argmax(aw_temp[:, 1])][0]
+        fw_max[i]       = fw_temp[np.argmax(fw_temp[:, 1])][0]
+        jijs[i]         = np.loadtxt("{}/J_ij.out".format(direc))
+        eigs[i]         = np.loadtxt("{}/eigvecs.out".format(direc))
+        j620cl[i][0]    = jijs[i][14][9]
+        j620cl[i][1]    = jijs[i][14][10]
+        j620cl[i][2]    = jijs[i][14][11]
+        musq620[i]      = np.sum(np.square(np.loadtxt("{}/mu_site.out".format(direc))[14, :]))
+        com             = np.loadtxt("{}/c_o_m.dat".format(direc))
+        for j in range(np.shape(jij)[0]):
+            for k in range(np.shape(jij)[0]):
+                rijsq[i][j][k] = np.sum(np.square(com[j] - com[k]))
+
+        # we want the coupling between lut 1 and the cluster
+        # in the site basis, then the top two? excitons
+        # by their participation in the cluster, the couplings
+        # to those, and their energies
+        cluster_part = [eigs[i][j][9]**2  +
+                        eigs[i][j][10]**2 + 
+                        eigs[i][j][11]**2
+                        for j in range(np.shape(jij)[0])]
+        exc_620_coupling[i] = np.matmul(jijs[i][14, :], eigs[i])
+        # -1:-3:-1 gives us the most cluster-y one and then
+        # the second most cluster-y, bc of the way argsort works
+        cluster_eigvecs = np.argsort(cluster_part)[-1:-3:-1]
+        # print(exc_620_coupling)
+        # print(eig[:, cluster_eigvecs[0]])
+        eigvals[i] = np.loadtxt("{}/eigvals.out".format(direc))
+        j620ex[i][0] = eigvals[i][cluster_eigvecs[0]]
+        j620ex[i][1] = cluster_part[cluster_eigvecs[0]]
+        j620ex[i][2] = exc_620_coupling[i][cluster_eigvecs[0]]
+        j620ex[i][3] = eigvals[i][cluster_eigvecs[1]]
+        j620ex[i][4] = cluster_part[cluster_eigvecs[1]]
+        j620ex[i][5] = exc_620_coupling[i][cluster_eigvecs[1]]
+
+        # we want to average the square of the eigenvector components
+        # since the squares represent the actual participation coefficients
+        # likewise the couplings - only squared couplings appear in the rates
+        eigs[i] = np.square(eigs[i])
+        exc_620_coupling[i] = np.square(exc_620_coupling[i])
+
         thetas[i] = np.loadtxt("{}/theta.dat".format(direc))
         kappas[i] = np.loadtxt("{}/kappa.dat".format(direc))
         aws = aws + aw_temp
@@ -112,7 +156,9 @@ np.savetxt("{}/tau_average.dat".format(args.input_dir), np.array([avg_tau, np.st
 np.savetxt("{}/tau.dat".format(args.input_dir), taus)
 np.savetxt("{}/gs_pops_at_tau.dat".format(args.input_dir), gs_pops)
 np.savetxt("{}/final_pop.dat".format(args.input_dir), final_pop)
-np.savetxt("{}/j620612.dat".format(args.input_dir), j620612)
+np.savetxt("{}/j620cl.dat".format(args.input_dir), j620cl)
+np.savetxt("{}/j620ex.dat".format(args.input_dir), j620ex)
+np.savetxt("{}/musq620.dat".format(args.input_dir), musq620)
 print("<τ> = {}".format(avg_tau))
 print("Standard deviation of A(w) max = {} (cm^[-1])".format(np.std(aw_max)))
 print("Standard deviation of F(w) max = {} (cm^[-1])".format(np.std(fw_max)))
@@ -124,12 +170,28 @@ theta_avg = np.mean(thetas, axis=0)
 theta_std = np.std(thetas, axis=0)
 kappa_avg = np.mean(kappas, axis=0)
 kappa_std = np.std(kappas, axis=0)
+eig_avg   = np.mean(eigs, axis=0)
+eig_std   = np.std(eigs, axis=0)
+eigvals_avg   = np.mean(eigvals, axis=0)
+eigvals_std   = np.std(eigvals, axis=0)
+exc_620_avg = np.mean(exc_620_coupling, axis=0)
+exc_620_std = np.std(exc_620_coupling, axis=0)
+rmsd_avg    = np.sqrt(np.mean(rijsq, axis=0))
+rmsd_std    = np.std(rijsq, axis=0)
 np.savetxt("{}/jij_average.dat".format(args.input_dir), jij_avg)
 np.savetxt("{}/jij_std.dat".format(args.input_dir), jij_std)
 np.savetxt("{}/theta_average.dat".format(args.input_dir), theta_avg)
 np.savetxt("{}/theta_std.dat".format(args.input_dir), theta_std)
 np.savetxt("{}/kappa_average.dat".format(args.input_dir), kappa_avg)
 np.savetxt("{}/kappa_std.dat".format(args.input_dir), kappa_std)
+np.savetxt("{}/eig_average.dat".format(args.input_dir), eig_avg)
+np.savetxt("{}/eig_std.dat".format(args.input_dir), eig_std)
+np.savetxt("{}/eigvals_average.dat".format(args.input_dir), eigvals_avg)
+np.savetxt("{}/eigvals_std.dat".format(args.input_dir), eigvals_std)
+np.savetxt("{}/exc_620_average.dat".format(args.input_dir), exc_620_avg)
+np.savetxt("{}/exc_620_std.dat".format(args.input_dir), exc_620_std)
+np.savetxt("{}/rmsd_avg.dat".format(args.input_dir), rmsd_avg)
+np.savetxt("{}/rmsd_std.dat".format(args.input_dir), rmsd_std)
 
 # experimental data: this filename construction's ugly
 if (args.protein is 'LHCII'):
