@@ -10,17 +10,18 @@ program coupling_calc
   character(200) :: input_file, jij_file, pop_file,&
     eigvecs_file, eigvals_file, mu_i_file, mu_n_file, lambda_i_file,&
     gamma_i_file, spectra_input_file, aw_output_file, fw_output_file,&
-    kappa_file, theta_file, com_file
+    kappa_file, theta_file, com_file, lutlen_file
   character(3), dimension(:), allocatable :: unique_pigments
   character(5) :: atom_code, pigment_code
   character(100), dimension(:), allocatable :: coord_files,&
     gnt_files
   integer :: i, j, k, control_len, tau,&
-    num_unique_pigments, unique_index, myunit
+    num_unique_pigments, unique_index, myunit, lun
   integer, dimension(:), allocatable :: coord_lengths, pigment_counts,&
     block_indices
   real :: start_time, end_time
-  real(dp) :: r, e2kb, kc, temperature, d_raw, ratio
+  real(dp) :: r, e2kb, kc, temperature, d_raw, ratio, lutlen
+  real(dp), dimension(3) :: lutc3, lutc23
   real(dp), dimension(:), allocatable :: eigvals, ei, lambda,&
     lifetimes, dipoles, raw_osc, norm_osc, osc_check, block_eigvals
   real(dp), dimension(:,:), allocatable :: coords_i, coords_j,&
@@ -64,9 +65,10 @@ program coupling_calc
   fw_output_file  = trim(adjustl(input_dir)) // "/fw.dat"
   pop_file        = trim(adjustl(input_dir)) // "/populations.dat"
   spectra_input_file = "in/input_spectra.dat"
-  kappa_file  = trim(adjustl(input_dir)) // "/kappa.dat"
-  theta_file  = trim(adjustl(input_dir)) // "/theta.dat"
-  com_file  = trim(adjustl(input_dir)) // "/c_o_m.dat"
+  kappa_file      = trim(adjustl(input_dir)) // "/kappa.dat"
+  theta_file      = trim(adjustl(input_dir)) // "/theta.dat"
+  com_file        = trim(adjustl(input_dir)) // "/c_o_m.dat"
+  lutlen_file     = trim(adjustl(input_dir)) // "/lut620len.out"
 
   ! first number is e_c^2 / 1.98E-23 * 1E-10, for conversion
   ! the 1.98E-23 isn't kB, it's some conversion factor;
@@ -204,6 +206,23 @@ program coupling_calc
 
     do k = 1, coord_lengths(i)
       read(10, fmt='(A5, 1X)', advance='no') atom_code
+      if (i.eq.15) then
+        write(*, *) atom_code
+        if ((trim(adjustl(atom_code))).eq."C23") then
+          lutc23 = coords_i(1:3, k)
+        end if
+        if ((trim(adjustl(atom_code))).eq."C3") then
+          lutc3 = coords_i(1:3, k)
+        end if
+        lutlen = sqrt(sum((lutc23 - lutc3)**2))
+        open(newunit=lun, file=lutlen_file)
+        write(lun, *) lutc23 - lutc3
+        write(lun, *) lutlen
+        do j = 1, control_len
+          write(lun, *) dot_product((lutc23 - lutc3), mu(j, :))
+        end do
+        close(lun)
+      end if
       read(10, fmt=coord_fmt) coords_i(1, k), coords_i(2, k),&
                               coords_i(3, k), coords_i(4, k)
       if (trim(adjustl(pigment_code)).eq."CHL") then

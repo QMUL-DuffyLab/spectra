@@ -36,6 +36,7 @@ aws = np.zeros_like(initial_data)
 fws = np.zeros_like(initial_data)
 jij = np.zeros_like(np.loadtxt("{}/{}/J_ij.out".format(args.input_dir, numbers[0])))
 eig = np.zeros_like(jij)
+lut620len = np.zeros((len(numbers), ) + np.shape(np.loadtxt("{}/{}/lut620len.out".format(args.input_dir, numbers[0]), skiprows=1)))
 
 theta_shape = (len(numbers), ) + np.shape(jij)
 exc_620_coupling = np.zeros((len(numbers), np.shape(jij)[0]))
@@ -115,6 +116,7 @@ if args.recalc is 1:
         # likewise the couplings - only squared couplings appear in the rates
         eigs[i] = np.square(eigs[i])
         exc_620_coupling[i] = np.square(exc_620_coupling[i])
+        lut620len[i] = np.loadtxt("{}/lut620len.out".format(direc),skiprows=1)
 
         thetas[i] = np.loadtxt("{}/theta.dat".format(direc))
         kappas[i] = np.loadtxt("{}/kappa.dat".format(direc))
@@ -178,6 +180,8 @@ exc_620_avg = np.mean(exc_620_coupling, axis=0)
 exc_620_std = np.std(exc_620_coupling, axis=0)
 rmsd_avg    = np.sqrt(np.mean(rijsq, axis=0))
 rmsd_std    = np.std(rijsq, axis=0)
+lut620len_avg   = np.mean(lut620len, axis=0)
+lut620len_std   = np.std(lut620len, axis=0)
 np.savetxt("{}/jij_average.dat".format(args.input_dir), jij_avg)
 np.savetxt("{}/jij_std.dat".format(args.input_dir), jij_std)
 np.savetxt("{}/theta_average.dat".format(args.input_dir), theta_avg)
@@ -190,8 +194,10 @@ np.savetxt("{}/eigvals_average.dat".format(args.input_dir), eigvals_avg)
 np.savetxt("{}/eigvals_std.dat".format(args.input_dir), eigvals_std)
 np.savetxt("{}/exc_620_average.dat".format(args.input_dir), exc_620_avg)
 np.savetxt("{}/exc_620_std.dat".format(args.input_dir), exc_620_std)
-np.savetxt("{}/rmsd_avg.dat".format(args.input_dir), rmsd_avg)
+np.savetxt("{}/rmsd_average.dat".format(args.input_dir), rmsd_avg)
 np.savetxt("{}/rmsd_std.dat".format(args.input_dir), rmsd_std)
+np.savetxt("{}/lut620len_average.dat".format(args.input_dir), lut620len_avg)
+np.savetxt("{}/lut620len_std.dat".format(args.input_dir), lut620len_std)
 
 # experimental data: this filename construction's ugly
 if (args.protein is 'LHCII'):
