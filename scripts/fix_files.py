@@ -29,8 +29,18 @@ cla_tresp = np.genfromtxt("in/cla_tresp.dat", comments='#',
                           encoding='utf-8', dtype=None)
 chl_tresp = np.genfromtxt("in/chl_tresp.dat", comments='#',
                           encoding='utf-8', dtype=None)
-lut_tresp = np.genfromtxt("in/lut_tresp.dat", comments='#',
-                          encoding='utf-8', dtype=None)
+# lut_tresp = np.genfromtxt("in/lut_tresp.dat", comments='#',
+#                           encoding='utf-8', dtype=None)
+if (args.protein) == 'VANGELIS':
+    lut_tresp = np.genfromtxt("in/lut_vangelis.dat", comments='#',
+                              encoding='utf-8', dtype=None)
+elif (args.protein) == 'LHCII':
+    lut_tresp = np.genfromtxt("in/lut_tiejun.dat", comments='#',
+                              encoding='utf-8', dtype=None)
+elif (args.protein) == 'NLLZ':
+    lut_tresp = np.genfromtxt("in/lut_tiejun.dat", comments='#',
+                              encoding='utf-8', dtype=None)
+
 cla_tresp = [list(line) for line in zip(*cla_tresp)]
 chl_tresp = [list(line) for line in zip(*chl_tresp)]
 lut_tresp = [list(line) for line in zip(*lut_tresp)]
