@@ -18,7 +18,9 @@ parser.add_argument("-i", "--input_dir", default='out/LHCII',
         help="Relative path to input directory.")
 parser.add_argument("-p", "--protein", default='LHCII',
         help="the protein we're looking at ")
-parser.add_argument("-c", "--compress", type=int, default=1,
+parser.add_argument("-c", "--compress", type=int, default=0,
+        help="Compress each frame of data - 1 if yes, 0 if no")
+parser.add_argument("-d", "--delete", type=int, default=0,
         help="Compress each frame of data - 1 if yes, 0 if no")
 parser.add_argument("-r", "--recalc", type=int, default=1,
         help="Recalculate the average - 1 if yes, 0 if no")
@@ -136,6 +138,9 @@ if args.recalc is 1:
 
         if (args.compress == 1):
             subprocess.run(["zip", "-rm", "{}.zip".format(direc), "{}".format(number)], check=True)
+
+        if (args.delete == 1):
+            subprocess.run(["rm", "-rf", "{}".format(number)], check=True)
 
     print("\nDone.")
     aws = aws / float(len(numbers))
