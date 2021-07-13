@@ -146,9 +146,6 @@ for index, key in enumerate(pigments.keys()):
     output_basenames[key] = args.input_dir + '/' + pigments[key]
     os.makedirs(output_basenames[key], exist_ok=True)
 
-print(res_to_index)
-print(output_basenames)
-
 for item in filelist:
     # same deal - load in the PDB file
     f = open(item, mode='r')

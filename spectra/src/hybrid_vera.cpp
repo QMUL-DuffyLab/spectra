@@ -76,7 +76,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
         ji_work = ji * fc;
 
         /* e_xa is also delta_xy_ba in this case since y_b = {0} */
-        /* first element is the S0-S1 width which is all we need */
+        /* the S0-S1 width is the first element which is all we need */
         v_abs.width = x[car_index].get_widths(0);
         /* now we have to calculate the rate between every delta_xy_ba */
         v_abs.centre = e_xa;

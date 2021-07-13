@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 # tested on python 3.7
 """
-For LHCII data only atm - average the A(w) and F(w) data over every snapshot,
-write them out, plot them.
 """
 
 import os
 import argparse
 import subprocess
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
-from plot_aw import plot_aw_fw
+import seaborn as sns
+from plot import plot_all
 
 parser = argparse.ArgumentParser(description="Generate control and osc. strength files")
 parser.add_argument("-i", "--input_dir", default='out/LHCII',
@@ -204,20 +204,4 @@ np.savetxt("{}/rmsd_std.dat".format(args.input_dir), rmsd_std)
 np.savetxt("{}/lut620len_average.dat".format(args.input_dir), lut620len_avg)
 np.savetxt("{}/lut620len_std.dat".format(args.input_dir), lut620len_std)
 
-# experimental data: this filename construction's ugly
-if (args.protein is 'LHCII'):
-    aw_exp = np.loadtxt("out/{}/aw_exp.dat".format(args.protein), skiprows=1)
-    fw_exp = np.loadtxt("out/{}/fw_exp.dat".format(args.protein), skiprows=1)
-else:
-    aw_exp = np.zeros_like(aws)
-    fw_exp = np.zeros_like(aws)
-
-draw_maximums = (True, True, True)
-plot_aw_fw(aws, fws, aw_exp, fw_exp, draw_maximums, args.input_dir)
-
-fig, ax = plt.subplots()
-plt.title(r'Lifetime: avg = $ {} $, $ \sigma = {} $'.format(avg_tau, np.std(taus[:, 1])))
-plt.xlabel("Frame")
-plt.ylabel(r'$ \left< \tau \right>$')
-plt.plot(taus[:, 0], taus[:, 1])
-plt.savefig("{}/tau.pdf".format(args.input_dir))
+plot_all(args.input_dir)

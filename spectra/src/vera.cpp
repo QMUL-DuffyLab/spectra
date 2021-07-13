@@ -1192,10 +1192,10 @@ k_i_xa(VERA x, unsigned n_chl, unsigned n_car,
               double delta_xy_ba = x.get_w_elec(a[0]) - x.get_w_elec(b[0]);
               e_xa = x.get_w_elec(a[0]);
               /* widths should be given as S0-S1, S0-S2, S1-S2, S1-Sn,
-               * then a[0] + b[0] - 1 will always point to the right one */
+               * then a[0] + b[0] - 1 will always point to the right one.
+               * but atm we're only concerned with S0-S1 so just pick that*/
               /* v_abs.width = x.get_widths(a[0] + b[0] - 1); */
-
-              v_abs.width = 1070.0;
+              v_abs.width = x.get_widths(0);
               double fc_sq = 1.;
 
               for (unsigned alpha = 0; alpha < x.n_normal; alpha++) {
