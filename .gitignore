@@ -21,3 +21,4 @@ docs/latex/*
 !docs/latex/refman.pdf
 cpptraj.log
 *.ipynb_checkpoints/
+*.ipynb
