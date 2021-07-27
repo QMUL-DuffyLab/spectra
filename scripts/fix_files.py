@@ -177,7 +177,11 @@ for item in filelist:
 
     for pdb_line in arr:
         if pdb_line[0] == "ATOM":
-            index = res_to_index[str(pdb_line[4])]
+            try:
+                index = res_to_index[str(pdb_line[4])]
+            except KeyError:
+                continue # ignore any residue we don't know about
+
             output_files[index] = output_basenames[str(pdb_line[4])]\
                     + '/frame{}.csv'.format(frame) 
             atom_code = pdb_line[2]
@@ -201,7 +205,13 @@ for item in filelist:
                          pdb_line[6], pdb_line[7], 0.0])
 
         elif pdb_line[0] == "TER":
-            index = res_to_index[str(pdb_line[3])]
+            # some files don't have CONECT info or details in the
+            # TER line; in that case just skip
+            try:
+                index = res_to_index[str(pdb_line[3])]
+            except IndexError:
+                continue
+
             footer_list[index].append(pdb_line)
             # this depends on the fact that the residues
             # are listed sequentially in the PDB file!!

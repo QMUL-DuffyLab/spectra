@@ -31,10 +31,13 @@ cd_calc(unsigned n_chl, unsigned ns, double **chiw, double **mu,
 
   for (unsigned n = 0; n < n_chl; n++) {
     for (unsigned m = 0; m < n_chl; m++) {
+
       cross(mu[n], mu[m], v);
+
       for (unsigned l = 0; l < 3; l++) {
         rnm[l] = com[n][l] - com[m][l];
       }
+
       dd = dot(v, rnm);
 
       double *g = (double *)calloc(ns, sizeof(double));
@@ -48,9 +51,9 @@ cd_calc(unsigned n_chl, unsigned ns, double **chiw, double **mu,
       for (unsigned l = 0; l < ns; l++) {
         cd[l] -= g[l] * dd * (-2. * PI * ((float)l / (ns * TOFS)));
       }
+
       free(g);
-
-
     }
   }
+  free(chiw_sums);
 }
