@@ -147,6 +147,7 @@ main(int argc, char** argv)
 
   Jij      = read_eigvecs(p->jij_file, p->N);
 
+  /* fprintf(stdout, "EIG CHECK!\n"); */
   /* for (unsigned i = 0; i < p->n_chl; i++) { */
   /*   for (unsigned j = 0; j < p->n_chl; j++) { */
   /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
@@ -249,12 +250,21 @@ main(int argc, char** argv)
       pump[i][j]   = chiw[i][j] * ww[j];
       integral[j] += out[j][0]  * musq[i];
       double omega = j * 2. * M_PI / (TOFS * p->tau);
-      normed_ai[i][j] = (out[j][0] * omega);
-      normed_fi[i][j] = (ft_out[j][0] * pow(omega, 3.));
+      /* normed_ai[i][j] = (out[j][0] * omega); */
+      /* normed_fi[i][j] = (ft_out[j][0] * pow(omega, 3.)); */
+      normed_ai[i][j] = out[j][0];
+      normed_fi[i][j] = ft_out[j][0];
     }
+    /* 2. * pi / TOFS * p->tau is the (constant) dx for the integral:
+     * the 2. pi is due to the definition of TOFS!!! */
+    /* ai_sum = trapezoid(normed_ai[i], 1. / (TOFS * p->tau), p->tau); */
+    /* fi_sum = trapezoid(normed_fi[i], 1. / (TOFS * p->tau), p->tau); */
     ai_sum = trapezoid(normed_ai[i], 2. * M_PI / (TOFS * p->tau), p->tau);
     fi_sum = trapezoid(normed_fi[i], 2. * M_PI / (TOFS * p->tau), p->tau);
     for (unsigned int j = 0; j < p->tau; j++) {
+      /* NB: the 2\pi is because FFTW outputs unnormalised transforms */
+      /* normed_ai[i][j] = normed_ai[i][j] / (2. * M_PI * ai_sum); */
+      /* normed_fi[i][j] = normed_fi[i][j] / (2. * M_PI * fi_sum); */
       normed_ai[i][j] = normed_ai[i][j] / (ai_sum);
       normed_fi[i][j] = normed_fi[i][j] / (fi_sum);
     }
@@ -435,7 +445,7 @@ main(int argc, char** argv)
     }
   }
 
-  bool print_i_xa = false;
+  bool print_i_xa = true;
   if (print_i_xa) {
     /* fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n", */
     /*     k_chl_car.size(), n_chl, n_car, n_s_cars[0]); */
