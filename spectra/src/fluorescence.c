@@ -265,6 +265,7 @@ transfer_matrix
           /* kij will be 0 on the diagonal so we
            * don't need to worry about excluding it */
           Tij[i][j] += (-1. * kij[i][k]);
+          fprintf(stdout, "%2u %2u %2u %8.5e\n", i, j, k, Tij[i][j]);
         }
       } else {
         Tij[i][j] = kij[j][i]; /* incoming rate! */

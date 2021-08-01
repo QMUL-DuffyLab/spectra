@@ -108,15 +108,16 @@ main(int argc, char** argv)
   mu              = (double **)calloc(p->n_chl, sizeof(double*));
   gi_array        = (fftw_complex**)
                     fftw_malloc(p->n_chl * sizeof(fftw_complex*));
-  eig             = (double **)calloc(p->n_chl, sizeof(double*));
   wij             = (double **)calloc(p->n_chl, sizeof(double*));
   kij             = (double **)calloc(p->n_chl, sizeof(double*));
   chiw            = (double **)calloc(p->n_chl, sizeof(double*));
   pump            = (double **)calloc(p->n_chl, sizeof(double*));
 
+  eig             = (double **)calloc(p->N, sizeof(double*));
   Jij             = (double **)calloc(p->N, sizeof(double*));
   for (i = 0; i < p->N; i++) {
     Jij[i]             = (double *)calloc(p->N, sizeof(double));
+    eig[i]             = (double *)calloc(p->N, sizeof(double));
   }
                       
   for (i = 0; i < p->n_chl; i++) {
@@ -124,7 +125,6 @@ main(int argc, char** argv)
     gi_array[i]        = (fftw_complex*)
                           fftw_malloc(p->tau * sizeof(fftw_complex));
     mu[i]              = (double *)calloc(3, sizeof(double));
-    eig[i]             = (double *)calloc(p->n_chl, sizeof(double));
     wij[i]             = (double *)calloc(p->n_chl, sizeof(double));
     kij[i]             = (double *)calloc(p->n_chl, sizeof(double));
     chiw[i]            = (double *)calloc(p->tau, sizeof(double));
@@ -141,11 +141,17 @@ main(int argc, char** argv)
 
   /* read 2d stuff */
   gi_array = read_gi(p->gi_files, p->n_chl, p->tau);
-  eig      = read_eigvecs(p->eigvecs_file, p->n_chl);
+  eig      = read_eigvecs(p->eigvecs_file, p->N);
   mu       = read_mu(p->mu_file, p->n_chl);
   ww       = incident(pump_properties, p->tau);
 
   Jij      = read_eigvecs(p->jij_file, p->N);
+
+  /* for (unsigned i = 0; i < p->n_chl; i++) { */
+  /*   for (unsigned j = 0; j < p->n_chl; j++) { */
+  /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
+  /*   } */
+  /* } */
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = (char *)malloc(200 * sizeof(char));
@@ -180,6 +186,14 @@ main(int argc, char** argv)
   }
 
   kij = rate_calc(p->n_chl, eig, wij, line_params);
+
+  /* fprintf(stdout, "\n\nNEXT EIG CHECK:\n\n"); */
+  /* for (unsigned i = 0; i < p->n_chl; i++) { */
+  /*   for (unsigned j = 0; j < p->n_chl; j++) { */
+  /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
+  /*   } */
+  /* } */
+
   check_detailed_balance(p->n_chl, protocol.T, 1e-5, kij, wij);
   rates = relaxation_rates(p->n_chl, gamma);
   char fn[200];
@@ -341,6 +355,18 @@ main(int argc, char** argv)
   }
   fprintf(stdout, "\n");
 
+  double *k_columns = (double *)calloc(p->n_chl, sizeof(double));
+  for (unsigned i = 0; i < p->n_chl; i++) {
+    for (unsigned j = 0; j < p->n_chl; j++) {
+      if (i != j) {
+        k_columns[i] -= odep.Tij[i][j];
+      }
+    }
+    fprintf(stdout, "%2u %8.5e %8.5e\n", i, k_columns[i], odep.Tij[i][i]);
+  }
+  free(k_columns);
+  /* exit(0); */
+
   fprintf(stdout, "\n----------\n"
                     "VERA RATES\n"
                     "----------\n\n");
@@ -378,6 +404,13 @@ main(int argc, char** argv)
 
   std::vector<std::vector<double>> k_chl_car;
 
+  /* fprintf(stdout, "\n\nNEXT EIG CHECK\n\n"); */
+  /* for (unsigned i = 0; i < p->n_chl; i++) { */
+  /*   for (unsigned j = 0; j < p->n_chl; j++) { */
+  /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
+  /*   } */
+  /* } */
+
   if (hybrid) {
     k_chl_car = k_i_xa_hybrid(cars, n_chl,
       n_car, p->tau, eig, eigvals,
@@ -402,7 +435,7 @@ main(int argc, char** argv)
     }
   }
 
-  bool print_i_xa = true;
+  bool print_i_xa = false;
   if (print_i_xa) {
     /* fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n", */
     /*     k_chl_car.size(), n_chl, n_car, n_s_cars[0]); */
@@ -436,10 +469,30 @@ main(int argc, char** argv)
   /* VERA *vera_ptr = &vera; */
   if (hybrid) {
     k_tot = hybrid_transfer(n_chl, n_car, cars, gamma, Jij,
-        k_chl_car, odep.Tij, car_decays);
+        k_chl_car, /* odep.Tij */kij, car_decays);
   } else {
     /* k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij, */
     /*         k_chl_car, odep.Tij); */
+  }
+
+  k_columns = (double *)calloc(n_total, sizeof(double));
+  for (unsigned i = 0; i < n_total; i++) {
+    for (unsigned j = 0; j < n_total; j++) {
+      if (i != j) {
+        k_columns[i] -= k_tot[j][i];
+      }
+    }
+    fprintf(stdout, "%2u %8.5e %8.5e\n", i, k_columns[i], k_tot[i][i]);
+  }
+  free(k_columns);
+  /* exit(0); */
+
+  fprintf(stdout, "TOTAL TRANSFER MATRIX\n\n");
+  for (unsigned i = 0; i < n_total; i++) {
+    for (unsigned j = 0; j < n_total; j++) {
+      fprintf(stdout, "%10.6f ", k_tot[i][j]);
+    }
+    fprintf(stdout, "\n");
   }
 
   strcpy(fn, p->pop_file);
@@ -469,8 +522,12 @@ main(int argc, char** argv)
   } else {
     p_i = hybrid_boltz(p->n_chl, n_car, beta, eigvals, cars); 
   }
+  fprintf(stdout, "HYBRID BOLTZ\n");
   double boltz_sum = 0.0;
   for (i = 0; i < p->N; i++) {
+    if (i < p->n_chl) {
+      fprintf(stdout, "%2u %8.5f\n", i, p_i[i]);
+    }
     boltz_sum += boltz[i] * musq[i];
   }
 
@@ -702,7 +759,7 @@ main(int argc, char** argv)
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
   unsigned int MAX_ITER = 4000; /* 4 ns */
-  unsigned int print_pop = 0, life = 0;
+  unsigned int print_pop = 1, life = 0;
   status = 0;
   double sum = 0.;
   bool life_yet = false;
@@ -777,9 +834,9 @@ main(int argc, char** argv)
 
     }
 
-    /* if (abs(total_sum - 1.) > 1E-3) { */
-    /*   fprintf(stdout, "step %4u, sum = %10.6e, loss = %10.6e\n", */
-    /*       i, total_sum, 1. - total_sum); */
+    /* if (abs(total_sum - 1.) > 1E-6) { */
+      fprintf(stdout, "step %4u, total sum = %10.6e, loss = %10.6e\n",
+          i, total_sum, 1. - total_sum);
     /* } */
 
     fprintf(gp, "%+12.8e\n", sum);
@@ -821,7 +878,7 @@ main(int argc, char** argv)
 
     fprintf(fp, "\n");
     if(print_pop) {
-      fprintf(stdout, ". sum = %12.8e\n", sum);
+      fprintf(stdout, ". chl sum = %12.8e\n", sum);
     }
 
     if (i > 0) {

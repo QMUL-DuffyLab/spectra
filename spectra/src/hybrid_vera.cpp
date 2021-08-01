@@ -30,8 +30,15 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
     n_s_totals[i] = vib_totals[i] * x[i].n_elec;
   }
   bool print_decay_details = false;
-  bool print_details = false;
+  bool print_details = true;
   bool output_lineshapes = false;
+
+  /* fprintf(stdout, "\n\nEIG CHECK IN K_I_XA:\n\n"); */
+  /* for (unsigned i = 0; i < n_chl; i++) { */
+  /*   for (unsigned j = 0; j < n_chl; j++) { */
+  /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
+  /*   } */
+  /* } */
 
   for (unsigned carotenoid = n_chl;
       carotenoid < n_chl + n_car; carotenoid++) {
@@ -46,6 +53,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
               /* * pow(eig[n][chl_index], 2.) */
               /* * Jij[m][carotenoid] * Jij[n][carotenoid]; */
               * Jij[m][carotenoid];
+          /* fprintf(stdout, "eig(%2u %2u) = %8.5f, J(%2u %2u) = %12.8e\n", m, chl_index, eig[m][chl_index], m, carotenoid, Jij[m][carotenoid]); */
         }
       /* } */
 
@@ -140,7 +148,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
            * */
           char snum[3], car_num[2], num[2];
           if (carotenoid == n_chl) {
-            char fn[200] = "out/NLLZ/7_PROD_2/2/1000/car_01.dat\0";
+            char fn[200] = "out/steered/neutral/1/E/100/car_01.dat\0";
             int status = snprintf(snum, 3, "%02lu", ii - vib_totals[car_index]);
             memcpy(car_num, snum, 2);
             status = generate_filename(sizeof(fn), fn, "01", snum);
@@ -167,7 +175,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
             }
           }
           if (ii == vib_totals[car_index]) {
-            char fn[200] = "out/NLLZ/7_PROD_2/2/1000/chl_01.dat\0";
+            char fn[200] = "out/steered/neutral/1/E/100/chl_01.dat\0";
             int status = snprintf(snum, 3, "%02u", chl_index);
             memcpy(num, snum, 2);
             /* fprintf(stdout, "num = %s", num); */
@@ -207,11 +215,11 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
         if (print_details) {
           fprintf(stdout, "chl = %2u, car = %2u,"
           " state = (%2lu, %2lu, %2lu): "
-          /* "e_chl = %10.6e, e_car = %10.6e, " */
+          "e_chl = %10.6e, e_car = %10.6e, "
           "FC = %10.6e, chl->car = %10.6e,"
           " car->chl = %10.6e\n", chl_index, carotenoid,
           a[0], a[1], a[2],
-          /* eigvals[chl_index], e_xa, */
+          eigvals[chl_index], e_xa,
           fc, chl_car, car_chl);
         }
 
@@ -267,7 +275,7 @@ car_transfer(VERA x, double *decays)
 }
 
 double**
-hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
+hybrid_transfer_old(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
     double *gamma, double **Jij, std::vector<std::vector<double>> k_i_delta,
     double **redfield_rates, double **car_decays)
 {
@@ -377,8 +385,17 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
             /* need to subtract the outward rates to the carotenoids */
             for (unsigned k = 0; k < n_car; k++) {
               for (unsigned vib = 0; vib < n_vib_tot[k]; vib++) {
+                fprintf(stdout, "i_chls, i==j ");
+
                 k_tot[j][i] -= k_i_delta[k][sub2ind({i - 1, vib, 0},
                                chl_car_extents[k])];
+
+                fprintf(stdout, "%2u %2u %2u %10.6e %10.6e\n",
+                    i, j, vib,
+                    k_i_delta[k][sub2ind({i - 1, vib, 0},
+                      chl_car_extents[k])],
+                    k_tot[j][i]);
+
               }
             }
           }
@@ -388,28 +405,54 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
       for (unsigned k = 0; k < n_car; k++) {
         if (i_chls) {
           if (j_in_car[k]) {
-            k_tot[j][i] += k_i_delta[k][sub2ind({i - 1,
+            fprintf(stdout, "i_chls, j_in_car: ");
+            k_tot[j][i] = k_i_delta[k][sub2ind({i - 1,
                 j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])];
+
+            fprintf(stdout, "%2u %2u %2lu %2u %10.6e %10.6e\n",
+                j, i, j - (car_gs_indices[k] + 1), i - 1,
+                k_i_delta[k][sub2ind({i - 1,
+                j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])],
+                k_tot[j][i]);
           }
         }
 
         if (i == car_gs_indices[k]) {
           if (j_in_car[k]) {
-            k_tot[i][j] += car_decays[k][j - (car_gs_indices[k] + 1)];
+            fprintf(stdout, "i==car_gs, j_in_car: ");
+            fprintf(stdout, "%2u %2u %2u %2lu %10.6e\n",
+                i, j, i - 1, j - (car_gs_indices[k] + 1),
+                car_decays[k][j - (car_gs_indices[k] + 1)]);
+            k_tot[j][i] += car_decays[k][j - (car_gs_indices[k] + 1)];
           }
         }
 
         if (i_in_car[k]) {
           if (j_chls) {
-            k_tot[j][i] += k_i_delta[k][sub2ind({j - 1,
+            fprintf(stdout, "i_in_car, j_chls: ");
+
+            k_tot[j][i] = k_i_delta[k][sub2ind({j - 1,
                 i - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])];
+
+            fprintf(stdout, "%2u %2u %2u %2lu %10.6e %10.6e\n",
+                j, i, j - 1, i - (car_gs_indices[k] + 1),
+                k_i_delta[k][sub2ind({j - 1,
+                i - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])],
+                k_tot[j][i]);
           }
           if (j_in_car[k]) {
             if (i == j) {
-              k_tot[i][j] -= car_decays[k][j - (car_gs_indices[k] + 1)];
+              fprintf(stdout, "i==j in car: i, j = %2u %2u\n", i, j);
+              k_tot[j][i] -= car_decays[k][j - (car_gs_indices[k] + 1)];
+              fprintf(stdout, "decay: %10.6e\n",
+                  car_decays[k][j - (car_gs_indices[k] + 1)]);
               for (unsigned m = 0; m < n_chl; m++) {
                 k_tot[j][i] -= k_i_delta[k][sub2ind({m,
                     j - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])];
+                fprintf(stdout, "from chl %2u: %10.6e k_tot = %10.6e\n",
+                    m, k_i_delta[k][sub2ind({m,
+                    j - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])],
+                    k_tot[j][i]);
               }
             }
             std::vector<size_t> i_subs = ind2sub(i - (car_gs_indices[k] + 1),
@@ -420,14 +463,222 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
             i_subs[0]++; j_subs[0]++;
             size_t i_index = sub2ind(i_subs, car_extents[k]);
             size_t j_index = sub2ind(j_subs, car_extents[k]);
-            k_tot[i][j] = car_rates[k][sub2ind({i_index, j_index},
+            k_tot[j][i] += car_rates[k][sub2ind({i_index, j_index},
                 {x[k].n_total, x[k].n_total})];
+            fprintf(stdout, "i_in_car, j_in_car: %2u %2u %10.6e %10.6e\n",
+                i, j, car_rates[k][sub2ind({i_index, j_index},
+                {x[k].n_total, x[k].n_total})], k_tot[j][i]);
           }
         }
       }
 
     } // j
   }
+  return k_tot;
+
+}
+
+double**
+hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
+    double *gamma, double **Jij, std::vector<std::vector<double>> k_i_delta,
+    double **redfield_rates, double **car_decays)
+{
+  /* n_vib_tot is the total number of vibrational levels
+   * per electronic state; we only need this here because
+   * we're not concerned with hot ground states/S2 */
+  std::vector<size_t> n_vib_tot(n_car, 0);
+  size_t size = n_chl + 1;
+  for (unsigned i = 0; i < n_car; i++) {
+    n_vib_tot[i] = pow(x[i].n_vib + 1, x[i].n_normal);
+    size += n_vib_tot[i] + 1;
+  }
+
+  double **k_tot = (double **)calloc(size, sizeof(double*));
+  for (unsigned i = 0; i < size; i++) {
+    k_tot[i] = (double *)calloc(size, sizeof(double));
+  }
+
+  std::vector<std::vector<size_t>> car_extents;
+  for (unsigned i = 0; i < n_car; i++) {
+    car_extents.push_back(x[i].get_pop_extents());
+  }
+
+  /* NB: this assumes n_vib_tot is the same for each carotenoid!
+   * this could be fixed pretty easily - make k_i_xa_hybrid return
+   * a vector of vectors, one for each carotenoid, then make the 
+   * below a vector of vectors in the same way
+   */
+  /* std::vector<size_t> chl_car_extents = {n_chl, n_car, n_vib_tot[0], 2}; */
+  std::vector<std::vector<size_t>> chl_car_extents;
+  for (unsigned i = 0; i < n_car; i++) {
+    chl_car_extents.push_back({n_chl, n_vib_tot[i], 2});
+  }
+
+  std::vector<std::vector<double>> car_rates;
+  for (unsigned i = 0; i < n_car; i++) {
+    car_rates.push_back(x[i].intra_rates());
+  }
+
+  std::vector<size_t> car_gs_indices(n_car, 0);
+  car_gs_indices[0] = n_chl + 1;
+  for (unsigned k = 1; k < n_car; k++) {
+    car_gs_indices[k] = car_gs_indices[k - 1] + n_vib_tot[k - 1] + 1;
+  }
+
+  std::vector<bool> i_in_car(n_car, false);
+  std::vector<bool> j_in_car(n_car, false);
+
+  unsigned rgs = 0;
+  for (unsigned i = 0; i < size; i++) {
+    for (unsigned j = 0; j < size; j++) {
+      for (unsigned k = 0; k < n_car; k++) {
+        /* need to reset each time */
+        i_in_car[k] = false;
+        j_in_car[k] = false;
+      }
+
+      for (unsigned k = n_car; k--;) {
+        /* this looks weird but bear with me:
+         * we want it to be true if i / j correspond to an actual
+         * vibronic state on the carotenoid. if they correspond to the
+         * ad-hoc ground state index, we don't want these to be true;
+         * we deal with that case separately */
+        if (i == car_gs_indices[k]) break;
+        /* also: cast both to int bc otherwise you get wraparound */
+        if ((int)i > (int)car_gs_indices[k]) {
+          i_in_car[k] = true;
+          break;
+        }
+      }
+
+      for (unsigned k = n_car; k--;) {
+        if (j == car_gs_indices[k]) break;
+        if ((int)j > (int)car_gs_indices[k]) {
+          j_in_car[k] = true;
+          break;
+        }
+      }
+
+      bool i_rgs  = (i == rgs);
+      bool j_rgs  = (j == rgs);
+      bool i_chls = (i > rgs && i <= n_chl);
+      bool j_chls = (j > rgs && j <= n_chl);
+
+      if (i == j) continue; /* deal with this at the end */
+
+      if (i_rgs) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          k_tot[i][j] += (1. / (1000 * gamma[j - 1]));
+        }
+      }
+
+      if (j_rgs) {
+        /* nothing comes out of Redfield ground state */
+        continue;
+      }
+
+      if (i_chls) {
+        if (j_rgs) {
+          continue;
+        }
+        if (j_chls) {
+          k_tot[j][i] = redfield_rates[i - 1][j - 1];
+        }
+      } // i_chls
+
+      for (unsigned k = 0; k < n_car; k++) {
+        if (i_chls) {
+          if (j_in_car[k]) {
+            fprintf(stdout, "i_chls, j_in_car: ");
+            k_tot[j][i] = k_i_delta[k][sub2ind({i - 1,
+                j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])];
+
+            fprintf(stdout, "%2u %2u %2lu %2u %10.6e %10.6e\n",
+                j, i, j - (car_gs_indices[k] + 1), i - 1,
+                k_i_delta[k][sub2ind({i - 1,
+                j - (car_gs_indices[k] + 1), 0}, chl_car_extents[k])],
+                k_tot[j][i]);
+          }
+        }
+
+        if (i == car_gs_indices[k]) {
+          if (j_in_car[k]) {
+            fprintf(stdout, "i==car_gs, j_in_car: ");
+            fprintf(stdout, "%2u %2u %2u %2lu %10.6e\n",
+                i, j, i - 1, j - (car_gs_indices[k] + 1),
+                car_decays[k][j - (car_gs_indices[k] + 1)]);
+            k_tot[i][j] += car_decays[k][j - (car_gs_indices[k] + 1)];
+          }
+        }
+
+        if (i_in_car[k]) {
+          if (j_chls) {
+            fprintf(stdout, "i_in_car, j_chls: ");
+
+            k_tot[j][i] = k_i_delta[k][sub2ind({j - 1,
+                i - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])];
+
+            fprintf(stdout, "%2u %2u %2u %2lu %10.6e %10.6e\n",
+                j, i, j - 1, i - (car_gs_indices[k] + 1),
+                k_i_delta[k][sub2ind({j - 1,
+                i - (car_gs_indices[k] + 1), 1}, chl_car_extents[k])],
+                k_tot[j][i]);
+          }
+          if (j == car_gs_indices[k]) {
+            fprintf(stdout, "i_in_car, j==car_gs: ");
+            fprintf(stdout, "%2u %2u %2u %2lu %10.6e\n",
+                i, j, i - 1, j - (car_gs_indices[k] + 1),
+                car_decays[k][j - (car_gs_indices[k] + 1)]);
+            k_tot[j][i] = car_decays[k][i - (car_gs_indices[k] + 1)];
+          }
+
+          if (j_in_car[k]) {
+            std::vector<size_t> i_subs = ind2sub(i - (car_gs_indices[k] + 1),
+                car_extents[k]);
+            std::vector<size_t> j_subs = ind2sub(j - (car_gs_indices[k] + 1),
+                car_extents[k]);
+            /* S1! */
+            i_subs[0]++; j_subs[0]++;
+            size_t i_index = sub2ind(i_subs, car_extents[k]);
+            size_t j_index = sub2ind(j_subs, car_extents[k]);
+            k_tot[j][i] += car_rates[k][sub2ind({i_index, j_index},
+                {x[k].n_total, x[k].n_total})];
+            fprintf(stdout, "i_in_car, j_in_car: %2u %2u %10.6e %10.6e\n",
+                i, j, car_rates[k][sub2ind({i_index, j_index},
+                {x[k].n_total, x[k].n_total})], k_tot[j][i]);
+          }
+        }
+      }
+
+    } // j
+  }
+
+  /* now deal with the diagonals */
+  for (unsigned i = 0; i < size; i++) {
+
+    bool car_gs = false;
+    /* this could easily be achieved by starting the loop
+     * at 1 but i've kept it this way for clarity */
+    if (i == rgs) continue;
+
+    for (unsigned k = 0; k < n_car; k++) {
+      if (i == car_gs_indices[k]) car_gs = true;;
+    }
+
+    if (car_gs) continue;
+
+    for (unsigned j = 0; j < size; j++) {
+      if (i == j) {
+        continue;
+      } else {
+        k_tot[i][i] -= k_tot[j][i];
+      }
+    }
+  }
+
   return k_tot;
 
 }
@@ -470,7 +721,7 @@ hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
         i_in_car[k] = false;
       }
       for (unsigned k = n_car; k--;) {
-        if ((int)i > (int)car_starts[k]) {
+        if ((int)i >= (int)car_starts[k]) {
           i_in_car[k] = true;
           break;
         }
@@ -486,6 +737,7 @@ hybrid_boltz(unsigned n_chl, unsigned n_car, double beta,
 
           work[i] = exp(-beta * e_xa);
           work_sum += work[i];
+          fprintf(stdout, "%2u %8.5e %8.5e\n", i, e_xa, work_sum);
         }
       }
 
