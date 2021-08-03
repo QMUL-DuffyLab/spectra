@@ -138,7 +138,7 @@ redfield_rate(unsigned int N, double **eig,
    * over and switching between forster/redfield element-wise */
   double elem = 0.0, rate = 0.;
   double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
-  unsigned short print_kij = 1;
+  unsigned short print_kij = 0;
   unsigned short print_details = 0;
   void *vptr;
   for (unsigned k = 0; k < N; k++) {
@@ -182,7 +182,7 @@ rate_calc(unsigned int N, double **eig,
 
   double elem = 0.0;
   double cmperps = 2 * M_PI * CMS * 100 * 1E-12;
-  unsigned short print_kij = 1;
+  unsigned short print_kij = 0;
   unsigned short print_details = 0;
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
@@ -246,7 +246,7 @@ transfer_matrix
    * this can be optimised a lot later */
   unsigned int i, j, k;
   double **Tij;
-  unsigned short print_Tij = 1;
+  unsigned short print_Tij = 0;
   Tij = (double **)calloc(N, sizeof(double*));
   for (i = 0; i < N; i++) {
     Tij[i] = (double *)calloc(N, sizeof(double));
@@ -265,7 +265,7 @@ transfer_matrix
           /* kij will be 0 on the diagonal so we
            * don't need to worry about excluding it */
           Tij[i][j] += (-1. * kij[i][k]);
-          fprintf(stdout, "%2u %2u %2u %8.5e\n", i, j, k, Tij[i][j]);
+          /* fprintf(stdout, "%2u %2u %2u %8.5e\n", i, j, k, Tij[i][j]); */
         }
       } else {
         Tij[i][j] = kij[j][i]; /* incoming rate! */

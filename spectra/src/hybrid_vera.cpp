@@ -15,8 +15,8 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
   double *fi_ad  = (double *)calloc(tau, sizeof(double));
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<std::vector<double>> k_i_xa(n_car);
-  unsigned short print_ji = 1;
-  unsigned short print_delta_fc = 1;
+  unsigned short print_ji = 0;
+  unsigned short print_delta_fc = 0;
   std::vector<std::vector<size_t>> pop_extents;
   for (unsigned i = 0; i < n_car; i++) {
     pop_extents.push_back(x[i].get_pop_extents()); 
@@ -31,7 +31,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
   }
   bool print_decay_details = false;
   bool print_details = false;
-  bool output_lineshapes = true;
+  bool output_lineshapes = false;
 
   /* fprintf(stdout, "\n\nEIG CHECK IN K_I_XA:\n\n"); */
   /* for (unsigned i = 0; i < n_chl; i++) { */

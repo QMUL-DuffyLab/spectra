@@ -249,7 +249,7 @@ main(int argc, char** argv)
       chiw[i][j]   = out[j][0]  * musq[i];
       pump[i][j]   = chiw[i][j] * ww[j];
       integral[j] += out[j][0]  * musq[i];
-      double omega = j * 2. * M_PI / (TOFS * p->tau);
+      /* double omega = j * 2. * M_PI / (TOFS * p->tau); */
       /* normed_ai[i][j] = (out[j][0] * omega); */
       /* normed_fi[i][j] = (ft_out[j][0] * pow(omega, 3.)); */
       normed_ai[i][j] = out[j][0];
@@ -346,7 +346,6 @@ main(int argc, char** argv)
   double *f = (double *)calloc(p->n_chl, sizeof(double));
   /* double *y = (double *)calloc(p->n_chl, sizeof(double)); */
   /* check convergence */
-  double *yprev = (double *)calloc(p->n_chl, sizeof(double));
   double *boltz = (double *)calloc(p->n_chl, sizeof(double));
 
   boltz = bcs(p->n_chl, eigvals, protocol.T);
@@ -364,18 +363,6 @@ main(int argc, char** argv)
     /* } */
   }
   fprintf(stdout, "\n");
-
-  double *k_columns = (double *)calloc(p->n_chl, sizeof(double));
-  for (unsigned i = 0; i < p->n_chl; i++) {
-    for (unsigned j = 0; j < p->n_chl; j++) {
-      if (i != j) {
-        k_columns[i] -= odep.Tij[i][j];
-      }
-    }
-    fprintf(stdout, "%2u %8.5e %8.5e\n", i, k_columns[i], odep.Tij[i][i]);
-  }
-  free(k_columns);
-  /* exit(0); */
 
   fprintf(stdout, "\n----------\n"
                     "VERA RATES\n"
@@ -413,14 +400,6 @@ main(int argc, char** argv)
   }
 
   std::vector<std::vector<double>> k_chl_car;
-
-  /* fprintf(stdout, "\n\nNEXT EIG CHECK\n\n"); */
-  /* for (unsigned i = 0; i < p->n_chl; i++) { */
-  /*   for (unsigned j = 0; j < p->n_chl; j++) { */
-  /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
-  /*   } */
-  /* } */
-
   if (hybrid) {
     k_chl_car = k_i_xa_hybrid(cars, n_chl,
       n_car, p->tau, eig, eigvals,
@@ -447,8 +426,6 @@ main(int argc, char** argv)
 
   bool print_i_xa = true;
   if (print_i_xa) {
-    /* fprintf(stdout, "%6lu, %2lu, %2lu, %3lu\n", */
-    /*     k_chl_car.size(), n_chl, n_car, n_s_cars[0]); */
     for (unsigned k = 0; k < n_car; k++) {
       for (unsigned j = 0; j < k_chl_car[k].size(); j = j + 2) {
         std::vector<size_t> subs = ind2sub(j, {n_chl, n_s_cars[k], 2});
@@ -479,30 +456,10 @@ main(int argc, char** argv)
   /* VERA *vera_ptr = &vera; */
   if (hybrid) {
     k_tot = hybrid_transfer(n_chl, n_car, cars, gamma, Jij,
-        k_chl_car, /* odep.Tij */kij, car_decays);
+        k_chl_car, kij, car_decays);
   } else {
     /* k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij, */
     /*         k_chl_car, odep.Tij); */
-  }
-
-  k_columns = (double *)calloc(n_total, sizeof(double));
-  for (unsigned i = 0; i < n_total; i++) {
-    for (unsigned j = 0; j < n_total; j++) {
-      if (i != j) {
-        k_columns[i] -= k_tot[j][i];
-      }
-    }
-    fprintf(stdout, "%2u %8.5e %8.5e\n", i, k_columns[i], k_tot[i][i]);
-  }
-  free(k_columns);
-  /* exit(0); */
-
-  fprintf(stdout, "TOTAL TRANSFER MATRIX\n\n");
-  for (unsigned i = 0; i < n_total; i++) {
-    for (unsigned j = 0; j < n_total; j++) {
-      fprintf(stdout, "%10.6f ", k_tot[i][j]);
-    }
-    fprintf(stdout, "\n");
   }
 
   strcpy(fn, p->pop_file);
@@ -716,7 +673,10 @@ main(int argc, char** argv)
 
   p0 = (double *)calloc(n_total, sizeof(double));
   double *p0_chl = (double *)calloc(p->n_chl, sizeof(double));
-  p0_chl = bcs(p->n_chl, eigvals, protocol.T);
+  p0_chl = guess(population_guess,
+      bcs(p->n_chl, eigvals, protocol.T), 
+      musq, max, p->n_chl);
+  /* p0_chl = ; */
   double p0_sum = 0.;
   for (unsigned i = 0; i < p->n_chl; i++) {
     /* p0[i] = 1. / p->n_chl; */
@@ -769,7 +729,7 @@ main(int argc, char** argv)
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
   unsigned int MAX_ITER = 4000; /* 4 ns */
-  unsigned int print_pop = 1, life = 0;
+  unsigned int print_pop = 0, life = 0;
   status = 0;
   double sum = 0.;
   bool life_yet = false;
@@ -844,10 +804,10 @@ main(int argc, char** argv)
 
     }
 
-    /* if (abs(total_sum - 1.) > 1E-6) { */
+    if (abs(total_sum - 1.) > 1E-8) {
       fprintf(stdout, "step %4u, total sum = %10.6e, loss = %10.6e\n",
           i, total_sum, 1. - total_sum);
-    /* } */
+    }
 
     fprintf(gp, "%+12.8e\n", sum);
 
@@ -980,9 +940,7 @@ main(int argc, char** argv)
   free(eigvals); free(gamma); free(lambda);
   free(line_params);
   free(car_decays);
-  /* free(y); */
   free(f);
-  free(yprev);
   free(rates);
   free(chiw); free(pump); free(chiw_ints);
   free(p);

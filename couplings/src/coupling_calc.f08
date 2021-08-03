@@ -29,7 +29,7 @@ program coupling_calc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
   inc_lut_2 = .false.
-  verbose = .true.
+  verbose = .false.
   add_energy_noise = .false.
   print_jij = .false.
   print_jij_diag = .false.
@@ -207,7 +207,7 @@ program coupling_calc
     do k = 1, coord_lengths(i)
       read(10, fmt='(A5, 1X)', advance='no') atom_code
       if (i.eq.15) then
-        write(*, *) atom_code
+        ! write(*, *) atom_code
         if ((trim(adjustl(atom_code))).eq."C23") then
           lutc23 = coords_i(1:3, k)
         end if
