@@ -137,7 +137,7 @@ double C_OBO(double w, double l, double g);
 size_t sub2ind(std::vector<size_t> subscripts,
        std::vector<size_t> extents);
 std::vector<size_t> ind2sub(size_t index, std::vector<size_t> extents);
-VERA create_VERA_from_file(char *filename);
+VERA create_VERA_from_file(const char *filename);
 void func(double t, double *y, double *ydot, void *data);
 double thermal_osc(std::vector<size_t> a,
                    std::vector<double> w_alpha, double beta);

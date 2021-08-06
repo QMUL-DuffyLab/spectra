@@ -19,7 +19,7 @@ main(int argc, char** argv)
   char *line, **lineshape_files;
   double kd;
   fftw_complex **gi_array;
-  double *eigvals, *ei, *gamma, *rates, *musq, *chi_p,
+  double *eigvals, *gamma, *rates, *musq, *chi_p,
          *lambda, *integral, *chiw_ints, *ww,
          **wij, **kij, **Jij, **mu, **eig, **chiw, **pump;
   Parameters *line_params;
@@ -50,16 +50,6 @@ main(int argc, char** argv)
     .duration = 70.0E-3
   };
 
-  pulse VERA_pump = {
-    .type = GAUSSIAN,
-    .target_state = 2,
-    .amplitude = 100.,
-    .centre = 20000.,
-    .width = 10.,
-    .t_peak = 0.1,
-    .duration = 70.0E-3,
-  };
-
   pulse VERA_absorption = {
     .type = GAUSSIAN,
     .target_state = 0,
@@ -75,17 +65,19 @@ main(int argc, char** argv)
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MUSQ;
 
-  /* malloc carotenoid stuff */
-  /* VERA *cars = (VERA *)malloc(p->n_car * sizeof(VERA)); */
+  /* this is a kind of hack to get rid of some compiler warnings:
+   * really, I should read in the filenames for the VERA parameters
+   * as const char** and then iterate over that list to create
+   * the vector of carotenoids here. but that's unnecessary rn */
+  const char* lut1 = "in/LUT620.dat";
+  const char* lut2 = "in/LUT621.dat";
+
   std::vector<VERA> cars;
-  /* shouldn't hardcode this in principle. but */
   if (p->n_car == 1) {
-    cars.push_back(create_VERA_from_file("in/LUT620.dat"));
+    cars.push_back(create_VERA_from_file(lut1));
   } else {
-    cars.push_back(create_VERA_from_file("in/LUT620.dat"));
-    cars.push_back(create_VERA_from_file("in/LUT621.dat"));
-    /* cars[0] = create_VERA_from_file("in/LUT620.dat"); */
-    /* cars[1] = create_VERA_from_file("in/LUT621.dat"); */
+    cars.push_back(create_VERA_from_file(lut1));
+    cars.push_back(create_VERA_from_file(lut2));
   }
 
   /* malloc 1d stuff, read them in */
@@ -443,7 +435,7 @@ main(int argc, char** argv)
 
   double **k_tot = (double **)calloc(n_total, sizeof(double *));
   for (unsigned i = 0; i < n_total; i++) {
-    double *k_tot = (double *)calloc(n_total, sizeof(double));
+    k_tot[i] = (double *)calloc(n_total, sizeof(double));
   }
 
   /* not finished - should give option to just read in the total rates */
@@ -453,14 +445,13 @@ main(int argc, char** argv)
 
   }
 
-  /* VERA *vera_ptr = &vera; */
-  if (hybrid) {
+  /* if (hybrid) { */
     k_tot = hybrid_transfer(n_chl, n_car, cars, gamma, Jij,
         k_chl_car, kij, car_decays);
-  } else {
+  /* } else { */
     /* k_tot = total_rates(n_chl, vera.intra_rates(), n_car, n_s_car, gamma, Jij, */
     /*         k_chl_car, odep.Tij); */
-  }
+  /* } */
 
   strcpy(fn, p->pop_file);
   status = generate_filename(sizeof(fn), fn,
@@ -705,7 +696,7 @@ main(int argc, char** argv)
     strcpy(fn, p->fw_file);
     status = generate_filename(sizeof(fn), fn, "fw", "cd");
     if(status != 0) {
-      fprintf(stdout, "CD filename not constructed\n", i);
+      fprintf(stdout, "CD filename not constructed, status %d\n", i);
     } else {
       fp = fopen(fn, "w");
       fprintf(stdout, "\nWriting CD file\n\n");
@@ -724,16 +715,22 @@ main(int argc, char** argv)
                     "POPULATION DYNAMICS\n"
                     "-------------------\n\n");
 
+  /* note - this could be sped up by making life_yet the condition
+   * of a while loop, that way we break out once we reach 1/e on the
+   * chlorophylls. also write_pop_to_file currently does nothing - I
+   * changed the averaging script so I can delete unwanted files, so
+   * it doesn't really matter whether we save the populations here */
+
   double ti = 0.0; double dt = 1.0; double thresh = 1e-10;
   double *pt = (double *)calloc(n_total, sizeof(double));
   /* use previous step to check convergence */
   double *pt_prev = (double *)calloc(n_total, sizeof(double));
-  unsigned int MAX_ITER = 4000; /* 4 ns */
-  unsigned int print_pop = 0, life = 0;
+  unsigned int MAX_ITER = 5000; /* 4 ns */
+  unsigned int print_pop = 0;
   status = 0;
   double sum = 0.;
   bool life_yet = false;
-  bool write_pop_to_file = false;
+  /* bool write_pop_to_file = false; */
 
   FILE *gp;
   strcpy(fn, p->pop_file);

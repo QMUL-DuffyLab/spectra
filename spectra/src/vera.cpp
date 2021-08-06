@@ -197,7 +197,7 @@ func(double t, double *y, double *ydot, void *data)
  */
 
 VERA
-create_VERA_from_file(char *filename)
+create_VERA_from_file(const char *filename)
 {
   size_t i, n_elec, n_normal, n_vib = 0;
   double beta = 0.; double mu_ratio = 0.; double s2_stokes = 0.;
