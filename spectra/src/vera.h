@@ -38,6 +38,7 @@ class VERA {
                 std::vector<double> g_ivr,
                 std::vector<double> di
                 );
+    ~VERA();
     /* this needs changing - should the set functions be public? */
     void set_extents();
     void set_w_elec(double* wi, size_t n_wi);

@@ -60,7 +60,8 @@ main(int argc, char** argv)
     .duration = 70.0E-3,
   };
 
-  bool calculate_CD = true;
+  /* this is more trouble than it's worth lol */
+  bool calculate_CD = false;
 
   /* form of P_i(0) - check steady_state.h for details */
   ss_init population_guess = MUSQ;
@@ -81,14 +82,13 @@ main(int argc, char** argv)
   }
 
   /* malloc 1d stuff, read them in */
-  eigvals     = (double *)calloc(p->n_chl, sizeof(double));
-  gamma       = (double *)calloc(p->n_chl, sizeof(double));
-  rates       = (double *)calloc(p->n_chl, sizeof(double));
+  /* eigvals     = (double *)calloc(p->n_chl, sizeof(double)); */
+  /* gamma       = (double *)calloc(p->n_chl, sizeof(double)); */
+  /* rates       = (double *)calloc(p->n_chl, sizeof(double)); */
   musq        = (double *)calloc(p->n_chl, sizeof(double));
-  lambda      = (double *)calloc(p->n_chl, sizeof(double));
+  /* lambda      = (double *)calloc(p->n_chl, sizeof(double)); */
   line_params = (Parameters *)malloc(p->n_chl * sizeof(Parameters));
   chiw_ints   = (double *)calloc(p->n_chl, sizeof(double));
-  ww          = (double *)calloc(p->tau, sizeof(double));
   integral    = (double *)calloc(p->tau, sizeof(double));
   in          = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
   out         = (fftw_complex *)fftw_malloc(p->tau * sizeof(fftw_complex));
@@ -97,28 +97,24 @@ main(int argc, char** argv)
 
   /* malloc 2d stuff */
   lineshape_files = (char **)malloc(p->n_chl * sizeof(char*));
-  mu              = (double **)calloc(p->n_chl, sizeof(double*));
-  gi_array        = (fftw_complex**)
-                    fftw_malloc(p->n_chl * sizeof(fftw_complex*));
+  /* mu              = (double **)calloc(p->n_chl, sizeof(double*)); */
   wij             = (double **)calloc(p->n_chl, sizeof(double*));
-  kij             = (double **)calloc(p->n_chl, sizeof(double*));
+  /* kij             = (double **)calloc(p->n_chl, sizeof(double*)); */
   chiw            = (double **)calloc(p->n_chl, sizeof(double*));
   pump            = (double **)calloc(p->n_chl, sizeof(double*));
 
-  eig             = (double **)calloc(p->N, sizeof(double*));
-  Jij             = (double **)calloc(p->N, sizeof(double*));
+  /* eig             = (double **)calloc(p->N, sizeof(double*)); */
+  /* Jij             = (double **)calloc(p->N, sizeof(double*)); */
   for (i = 0; i < p->N; i++) {
-    Jij[i]             = (double *)calloc(p->N, sizeof(double));
-    eig[i]             = (double *)calloc(p->N, sizeof(double));
+    /* Jij[i]             = (double *)calloc(p->N, sizeof(double)); */
+    /* eig[i]             = (double *)calloc(p->N, sizeof(double)); */
   }
                       
   for (i = 0; i < p->n_chl; i++) {
     lineshape_files[i] = (char *)malloc(200 * sizeof(char));
-    gi_array[i]        = (fftw_complex*)
-                          fftw_malloc(p->tau * sizeof(fftw_complex));
-    mu[i]              = (double *)calloc(3, sizeof(double));
+    /* mu[i]              = (double *)calloc(3, sizeof(double)); */
     wij[i]             = (double *)calloc(p->n_chl, sizeof(double));
-    kij[i]             = (double *)calloc(p->n_chl, sizeof(double));
+    /* kij[i]             = (double *)calloc(p->n_chl, sizeof(double)); */
     chiw[i]            = (double *)calloc(p->tau, sizeof(double));
     pump[i]            = (double *)calloc(p->tau, sizeof(double));
   }
@@ -138,13 +134,6 @@ main(int argc, char** argv)
   ww       = incident(pump_properties, p->tau);
 
   Jij      = read_eigvecs(p->jij_file, p->N);
-
-  /* fprintf(stdout, "EIG CHECK!\n"); */
-  /* for (unsigned i = 0; i < p->n_chl; i++) { */
-  /*   for (unsigned j = 0; j < p->n_chl; j++) { */
-  /*     fprintf(stdout, "eig[%2u][%2u] = %8.5f\n", i, j, eig[i][j]); */
-  /*   } */
-  /* } */
 
   fp = fopen(argv[3], "r"); /* read in list of lineshape files here */
   line = (char *)malloc(200 * sizeof(char));
@@ -340,7 +329,7 @@ main(int argc, char** argv)
   /* check convergence */
   double *boltz = (double *)calloc(p->n_chl, sizeof(double));
 
-  boltz = bcs(p->n_chl, eigvals, protocol.T);
+  bcs(p->n_chl, eigvals, protocol.T, boltz);
   fprintf(stdout, "\n-----------------\nBOLTZMANN WEIGHTS\n"
                   "-----------------\n\n");
   fprintf(stdout, "Pigment    p_i   |μ^2|*p_i\n");
@@ -433,10 +422,10 @@ main(int argc, char** argv)
     fprintf(stdout, "sum of rates = %12.8e\n", k_sum);
   }
 
-  double **k_tot = (double **)calloc(n_total, sizeof(double *));
-  for (unsigned i = 0; i < n_total; i++) {
-    k_tot[i] = (double *)calloc(n_total, sizeof(double));
-  }
+  /* double **k_tot = (double **)calloc(n_total, sizeof(double *)); */
+  /* for (unsigned i = 0; i < n_total; i++) { */
+  /*   k_tot[i] = (double *)calloc(n_total, sizeof(double)); */
+  /* } */
 
   /* not finished - should give option to just read in the total rates */
   bool read_car_rates = false;
@@ -445,6 +434,7 @@ main(int argc, char** argv)
 
   }
 
+  double **k_tot;
   /* if (hybrid) { */
     k_tot = hybrid_transfer(n_chl, n_car, cars, gamma, Jij,
         k_chl_car, kij, car_decays);
@@ -472,7 +462,8 @@ main(int argc, char** argv)
 
   void *params = &odep;
   double *p0 = guess(population_guess, boltz, musq, max, p->n_chl);
-  double *p_i = (double *)calloc(p->n_chl, sizeof(double));
+  /* double *p_i = (double *)calloc(p->n_chl, sizeof(double)); */
+  double *p_i;
 
   bool steady_state = false;
   if (steady_state) {
@@ -482,7 +473,7 @@ main(int argc, char** argv)
   }
   fprintf(stdout, "HYBRID BOLTZ\n");
   double boltz_sum = 0.0;
-  for (i = 0; i < p->N; i++) {
+  for (i = 0; i < p->n_chl; i++) {
     if (i < p->n_chl) {
       fprintf(stdout, "%2u %8.5f\n", i, p_i[i]);
     }
@@ -518,7 +509,6 @@ main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
   }
-  free(boltz); 
 
   /* fluorescence spectrum */
   /* need to zero the running integral before FFT! */
@@ -663,11 +653,11 @@ main(int argc, char** argv)
   free(p0);
 
   p0 = (double *)calloc(n_total, sizeof(double));
-  double *p0_chl = (double *)calloc(p->n_chl, sizeof(double));
-  p0_chl = guess(population_guess,
-      bcs(p->n_chl, eigvals, protocol.T), 
-      musq, max, p->n_chl);
-  /* p0_chl = ; */
+  /* this line might not be necessary - is boltz changed before here? */
+  bcs(p->n_chl, eigvals, protocol.T, boltz);
+  double *p0_chl = guess(population_guess,
+      boltz, musq, max, p->n_chl);
+
   double p0_sum = 0.;
   for (unsigned i = 0; i < p->n_chl; i++) {
     /* p0[i] = 1. / p->n_chl; */
@@ -680,11 +670,12 @@ main(int argc, char** argv)
   free(p0_chl);
 
   if (calculate_CD) {
-    double **com = (double **)calloc(p->n_chl, sizeof(double *));
-    for (unsigned i = 0; i < p->n_chl; i++) {
-      com[i] = (double *)calloc(3, sizeof(double));
-    }
-    com = read_mu(p->com_file, p->n_chl);
+    /* double **com = (double **)calloc(p->n_chl, sizeof(double *)); */
+    /* for (unsigned i = 0; i < p->n_chl; i++) { */
+    /*   com[i] = (double *)calloc(3, sizeof(double)); */
+    /* } */
+
+    double **com = read_mu(p->com_file, p->n_chl);
 
     double *cdw = (double *)calloc(p->tau, sizeof(double));
     cd_calc(n_chl, p->tau, chiw, mu, eig, com, eigvals, cdw);
@@ -693,6 +684,7 @@ main(int argc, char** argv)
       free(com[i]);
     }
     free(com);
+
     strcpy(fn, p->fw_file);
     status = generate_filename(sizeof(fn), fn, "fw", "cd");
     if(status != 0) {
@@ -748,7 +740,6 @@ main(int argc, char** argv)
   for (i = 0; i < MAX_ITER; i++) {
     total_sum = 0.;
     sum = 0.;
-    pt_prev[j] = pt[j];
 
     ti = (i * dt);
     population(n_total, ti, pt, Tij_vr, Tij_vr_inv, Tij_wr, p0);
@@ -761,6 +752,10 @@ main(int argc, char** argv)
     }
 
     for (j = 0; j < n_total; j++) {
+      /* fprintf(stdout, "i = %5d, j = %2d, pt_prev[j] = %5.3e" */
+      /*     ", pt[j] = %5.3e\n", i, j, pt_prev[j], pt[j]); */
+      /* pt_prev[j] = pt[j]; */
+
       fprintf(fp, "%+12.8e ", pt[j]);
 
       total_sum += pt[j];
@@ -876,21 +871,6 @@ main(int argc, char** argv)
   fclose(fp);
   fclose(gp);
 
-  /* fprintf(stdout, "\n------------\n" */
-  /*                   "FORSTER TEST\n" */
-  /*                   "------------\n\n"); */
-
-  /* prototype for an array of them */
-  /* chromophore *cs[p->N]; */
-  /* for (i = 0; i < p->N; i++) { */
-  /*   cs[i] = create_chromophore(p->tau); */
-  /* } */
-
-  /* double k_610_620 = forster_test(); */
-  /* fprintf(stdout, "610-620 Forster rate = %8.6e => %12.8f ps\n", */
-  /*         k_610_620, 1. / k_610_620); */
-
-
   /* deallocations of 2d stuff */
   for (i = 0; i < n_total; i++) {
     /* free_chromophore(cs[i]); */
@@ -899,9 +879,13 @@ main(int argc, char** argv)
     free(Tij_wr[i]);
     free(k_tot[i]);
   }
+  free(Tij_vr);
+  free(Tij_vr_inv);
+  free(Tij_wr);
+  free(k_tot); 
+
   for (i = 0; i < p->n_chl; i++) {
     free(lineshape_files[i]);
-    free(eig[i]);
     free(mu[i]);
     free(wij[i]);
     free(kij[i]);
@@ -913,10 +897,8 @@ main(int argc, char** argv)
     fftw_free(gi_array[i]);
   }
   free(mu);
-  free(eig);
   free(wij);
   free(kij); 
-  free(k_tot); 
   free(odep.Tij);
   free(pt);
   free(pt_prev);
@@ -925,22 +907,29 @@ main(int argc, char** argv)
 
   for (i = 0; i < p->N; i++) {
     free(Jij[i]);
+    free(eig[i]);
   }
   free(Jij);
+  free(eig);
+
+  for (i = 0; i < p->n_car; i++) {
+    free(car_decays[i]);
+  }
+  free(car_decays);
 
   fftw_free(gi_array);
-  /* fftw_cleanup(); */
+  fftw_cleanup();
 
-  free(p0); free(Tij_vr); free(Tij_vr_inv); free(Tij_wr);
+  free(p0);
   free(line); free(lineshape_files);
   free(integral);
   free(eigvals); free(gamma); free(lambda);
   free(line_params);
-  free(car_decays);
   free(f);
+  free(musq);
   free(rates);
+  free(boltz);
   free(chiw); free(pump); free(chiw_ints);
   free(p);
 
-  exit(EXIT_SUCCESS);
 }

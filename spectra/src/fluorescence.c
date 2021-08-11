@@ -85,19 +85,6 @@ intensity(double w, double t, pulse p)
   }
 }
 
-gsl_matrix*
-array_to_gsl_matrix(unsigned int n1, unsigned int n2, double** mat)
-{
-  /* take n1*n2 double array, return equivalent gsl_matrix * */
-  gsl_matrix *res = gsl_matrix_alloc(n1, n2);
-  for (unsigned int i = 0; i < n1; i++) {
-    for (unsigned int j = 0; j < n2; j++) {
-      gsl_matrix_set(res, i, j, mat[i][j]);
-    }
-  }
-  return res;
-}
-
 void
 check_detailed_balance(unsigned n, double t, double thresh,
                        double **kij, double **wij)
@@ -326,15 +313,16 @@ odefunc(double x, const double *y, double *f, void *params)
   return GSL_SUCCESS;
 }
 
-double*
-bcs (unsigned const int N, const double* eigvals, const double T)
+void
+bcs (unsigned const int N, const double* eigvals,
+     const double T, double *res)
 {
   /* calculate t = 0 boltzmannised exciton populations */
   /* note that kB / (h C) in wavenumbers comes out as about 0.69
    * and 1 / (0.69 T) == 1.439 / T */
   double beta = 1.439 / T;
   double sum = 0.0;
-  double *populations = (double *)calloc(N, sizeof(double));
+  /* double *populations = (double *)calloc(N, sizeof(double)); */
   short print_weights = 0;
   for (unsigned int i = 0; i < N; i++) {
     if (print_weights) {
@@ -343,9 +331,8 @@ bcs (unsigned const int N, const double* eigvals, const double T)
     sum += exp(-1. * beta * eigvals[i]);
   }
   for (unsigned int i = 0; i < N; i++) {
-    populations[i] = exp(-1. * beta * eigvals[i]) / sum;
+    res[i] = exp(-1. * beta * eigvals[i]) / sum;
   }
-  return populations;
 }
 
 double

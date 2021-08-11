@@ -439,6 +439,10 @@ VERA::VERA(size_t elec, size_t norm, size_t vib,
   fc_calc();
 }
 
+VERA::~VERA()
+{
+}
+
 void
 VERA::set_w_elec(double* wi, size_t n_wi)
 {

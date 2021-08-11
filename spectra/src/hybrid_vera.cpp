@@ -11,7 +11,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
     vib_totals[i] = pow(x[i].n_vib + 1, x[i].n_normal);
   }
   double ji = 0., ji_work = 0.;
-  double *abs = (double *)calloc(tau, sizeof(double));
+  /* double *abs = (double *)calloc(tau, sizeof(double)); */
   double *fi_ad  = (double *)calloc(tau, sizeof(double));
   double *ai_fd  = (double *)calloc(tau, sizeof(double));
   std::vector<std::vector<double>> k_i_xa(n_car);
@@ -75,7 +75,7 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
         v_abs.width = x[car_index].get_widths(0);
         /* now we have to calculate the rate between every delta_xy_ba */
         v_abs.centre = e_xa;
-        abs = incident(v_abs, tau);
+        double *abs = incident(v_abs, tau);
 
         for (unsigned step = 0; step < tau; step++) {
           fi_ad[step] = normed_fi[chl_index][step] * abs[step];
@@ -212,10 +212,12 @@ k_i_xa_hybrid(std::vector<VERA> x, unsigned n_chl, unsigned n_car, unsigned tau,
           fc, chl_car, car_chl);
         }
 
+        free(abs);
+
       } // ii
     }
   } // chl_index
-  free(abs);
+  /* free(abs); */
   free(fi_ad);
   free(ai_fd);
 
