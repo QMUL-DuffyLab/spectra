@@ -76,7 +76,7 @@ def construct_input_files(pigment_dirs, direc, snapshot_number, protein,
         if (include_protein):
             output_path = "{}/{}/{}".format(direc, protein, snapshot_number)
         else:
-            output_path = "{}/{}".format(direc, protein, snapshot_number)
+            output_path = "{}/{}".format(direc, snapshot_number)
     else:
         if (include_protein):
             output_path = "{}/{}/r_{}/{}".format(direc, protein, num_repeats, snapshot_number)

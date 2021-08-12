@@ -55,19 +55,6 @@ incident(pulse p, unsigned int tau)
   return ww;
 }
 
-void Gaussian(unsigned n, double* w,
-        double Delta_j0_ba, double Delta_w, double *gau)
-{
-  /* first convert the FHWM into a variance */
-  double sig = Delta_w / (2.0 * sqrt(2.0 * log(2.0)));
-  /* normalization constant */
-  double norm=1.0 / (sig * sqrt(2.0 * PI));
-  /* shape function */
-  for (unsigned i = 0; i < n; i++) {
-    gau[i] = norm * exp(-0.5 * pow(w[i] - Delta_j0_ba, 2.) / (pow(sig, 2.)));
-  }
-}
-
 double
 intensity(double w, double t, pulse p)
 {
@@ -266,51 +253,6 @@ transfer_matrix
     }
   }
   return Tij;
-}
-
-int
-jacobian (double t, const double y[], double *dfdy,
-          double dfdt[], void *params)
-{
-  /* in this and odefunc we should be able to use the same
-   * transfer matrix as for the steady state case - I
-   * deliberately didn't add the incident light source term */
-  (void)(t); (void)(y);
-  ode_params *p = (ode_params *) params;
-
-  gsl_matrix_view dfdy_mat = gsl_matrix_view_array (dfdy, p->N, p->N);
-
-  gsl_matrix *m_ptr = &dfdy_mat.matrix;	/* m_ptr points to the matrix */
-
-  unsigned short print_elem = 0;
-  for (unsigned int i = 0; i < p->N; i++) {
-    for (unsigned int j = 0; j < p->N; j++) {
-      gsl_matrix_set (m_ptr, i, j, p->Tij[i][j]);
-      if (print_elem) {
-        fprintf(stdout, "%d %d %8.6f ", i, j, p->Tij[i][j]);
-      }
-    }
-    if (print_elem) {
-      fprintf(stdout, "\n");
-    }
-    dfdt[i] = 0.0; /* explicit t dependence of f[i] */
-  }
-  return GSL_SUCCESS;
-}
-
-int
-odefunc(double x, const double *y, double *f, void *params)
-{
-  (void)(x); /* suppress unused parameter warning */
-  unsigned int i, j;
-  ode_params *p = (ode_params *) params;
-  for (i = 0; i < p->N; i++) {
-    f[i] = 0.; /* lol otherwise it just diverges */
-    for (j = 0; j < p->N; j++) {
-      f[i] += p->Tij[i][j] * y[j];
-    }
-  }
-  return GSL_SUCCESS;
 }
 
 void

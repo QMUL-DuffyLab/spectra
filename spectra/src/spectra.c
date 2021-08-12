@@ -819,11 +819,15 @@ main(int argc, char** argv)
         } else {
           fprintf(stdout, "tau file could not be created");
         }
-        status = generate_filename(sizeof(fn), fn, "tau", "pop_at_tau");
+        status = generate_filename(sizeof(fn), fn, "tau", "gs_pops_at_tau");
         if (status == 0) {
           FILE *hp = fopen(fn, "w");
-          for (unsigned j = 0; j < n_total; j++) {
-            fprintf(hp, "%+12.8e ", pt[j]);
+          /* redfield gs */
+          fprintf(hp, "%+12.8e\n", pt[0]);
+          /* first car */
+          fprintf(hp, "%+12.8e\n", pt[p->n_chl + 1]);
+          for (unsigned j = 1; j < p->n_car; j++) {
+            fprintf(hp, "%+12.8e\n", pt[p->n_chl + 1 + n_s_cars[j] + j]);
           }
           cl = fclose(hp);
           if (cl != 0) {
@@ -854,7 +858,7 @@ main(int argc, char** argv)
 
   }
 
-  status = generate_filename(sizeof(fn), fn, "pop_at_tau", "final_pop");
+  status = generate_filename(sizeof(fn), fn, "gs_pops_at_tau", "final_pop");
   if (status == 0) {
     FILE *hp = fopen(fn, "w");
     fprintf(hp, "%+12.8e ", total_sum);

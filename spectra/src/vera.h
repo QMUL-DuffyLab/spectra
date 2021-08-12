@@ -6,8 +6,8 @@
 #include <chrono>
 #include <cstdlib>
 #include <stdlib.h>
-#include "helper.h"
-#include "LSODA.h"
+/* #include "helper.h" */
+/* #include "LSODA.h" */
 #include "forster.h"
 #include "fluorescence.h"
 

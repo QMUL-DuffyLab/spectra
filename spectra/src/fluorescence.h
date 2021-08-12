@@ -72,20 +72,13 @@ typedef struct pulse {
 
 
 double* incident(pulse p, unsigned int tau);
-void Gaussian(unsigned n, double* w,
-        double Delta_j0_ba, double Delta_w, double *gau);
 double intensity(double w, double t, pulse p);
-gsl_matrix* array_to_gsl_matrix(unsigned int n1,
-            unsigned int n2, double** mat);
 void check_detailed_balance(unsigned n, double t, double thresh,
                             double **kij, double **wij);
 double** rate_calc (unsigned int N, double **eig,
                     double** wij, Parameters *p);
 double* relaxation_rates (unsigned int N, double* gamma);
 double **transfer_matrix (unsigned int N, double* relax, double** kij);
-int odefunc (double x, const double *y, double *f, void *params);
-int jacobian (double t, const double y[], double *dfdy,
-              double dfdt[], void *params);
 void bcs (unsigned const int N, const double* eigvals,
              const double T, double *res);
 double trapezoid(double *f, double dx, unsigned int n);

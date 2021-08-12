@@ -28,7 +28,7 @@ program coupling_calc
     Jij, Jeig, mu, mu_ex, r_charge, kappa, theta, bloc
   complex(cdp), dimension(:,:), allocatable :: gnt
 
-  inc_lut_2 = .false.
+  inc_lut_2 = .true.
   verbose = .false.
   add_energy_noise = .false.
   print_jij = .false.

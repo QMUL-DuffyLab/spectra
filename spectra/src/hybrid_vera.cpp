@@ -390,7 +390,7 @@ hybrid_transfer(unsigned n_chl, unsigned n_car, std::vector<VERA> x,
             i_subs[0]++; j_subs[0]++;
             size_t i_index = sub2ind(i_subs, car_extents[k]);
             size_t j_index = sub2ind(j_subs, car_extents[k]);
-            k_tot[j][i] += car_rates[k][sub2ind({i_index, j_index},
+            k_tot[i][j] += car_rates[k][sub2ind({i_index, j_index},
                 {x[k].n_total, x[k].n_total})];
             /* fprintf(stdout, "i_in_car, j_in_car: %2u %2u %10.6e %10.6e\n", */
             /*     i, j, car_rates[k][sub2ind({i_index, j_index}, */
