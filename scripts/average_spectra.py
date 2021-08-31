@@ -127,14 +127,14 @@ if args.recalc is 1:
         avg_tau = avg_tau + taus[i, 1]
         final_pop[i, 0] = int(number)
         final_pop[i, 1] = np.loadtxt("{}/final_pop.dat".format(direc))
-        pop_at_tau = np.loadtxt("{}/pop_at_tau.dat".format(direc))
-        if (len(pop_at_tau) == 49):
+        pop_at_tau = np.loadtxt("{}/gs_pops_at_tau.dat".format(direc))
+        if (len(pop_at_tau) == 3):
             gs_pops[i, 0] = pop_at_tau[0]
-            gs_pops[i, 1] = pop_at_tau[15]
-            gs_pops[i, 2] = pop_at_tau[32]
+            gs_pops[i, 1] = pop_at_tau[1]
+            gs_pops[i, 2] = pop_at_tau[2]
         else:
             gs_pops[i, 0] = pop_at_tau[0]
-            gs_pops[i, 1] = pop_at_tau[15]
+            gs_pops[i, 1] = pop_at_tau[1]
 
         if (args.compress == 1):
             subprocess.run(["zip", "-rm", "{}.zip".format(direc), "{}".format(number)], check=True)

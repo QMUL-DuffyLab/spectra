@@ -82,20 +82,7 @@ def plot_aw_fw(path):
     plt.legend()
     plt.tight_layout()
     plt.savefig("{}/aw_fw.pdf".format(path))
-
-if __name__ == '__main__': 
-    parser = argparse.ArgumentParser(description="Plot A(w)")
-    parser.add_argument("-d", "--dir", default='out/LHCII',
-                        help="directory of A(w) and F(w) data to plot")
-    parser.add_argument("-f", "--frame", default=1,
-                        help="MD frame to calculate for - pass 0 to \
-                        loop over all frames")
-
-    args = parser.parse_args()
-
-    print("Plotting A(w) and F(w)")
-
-    plot_aw_fw(args.dir)
+    plt.close()
 
 def plot_heatmap(data, out, *args, kwargs={}, plot_kwargs={}, cbar_kwargs={}):
     '''
@@ -150,45 +137,64 @@ def plot_heatmap(data, out, *args, kwargs={}, plot_kwargs={}, cbar_kwargs={}):
         cbar.ax.set_xticklabels(kwargs['cbar_ticklabels'])
         
     fig.savefig(out)
+    plt.close()
 
 def plot_all(path):
     plot_aw_fw(path)
 
+    figsize=(10,8)
     sns.set(font_scale=2) 
-    pigments = ['CHL601', 'CLA602', 'CLA603', 'CLA604', 'CHL605', 'CHL606', 'CHL607', 'CHL608', 'CHL609', 'CLA610', 'CLA611', 'CLA612', 'CLA613', 'CLA614', 'LUT620', 'LUT621']
+    pigments = [r'Chl \textit{b} 601', r'Chl \textit{a} 602', r'Chl \textit{a} 603', r'Chl \textit{a} 604', r'Chl \textit{b} 605', r'Chl \textit{b} 606', r'Chl \textit{b} 607', r'Chl \textit{b} 608', r'Chl \textit{b} 609', r'Chl \textit{a} 610', r'Chl \textit{a} 611', r'Chl \textit{a} 612', r'Chl \textit{a} 613', r'Chl \textit{a} 614', r'Lut 620', r'Lut 621']
     valfmt = "{:3.1f}"
     valfmt = matplotlib.ticker.StrMethodFormatter(valfmt)
 
     taus = np.loadtxt("{}/{}".format(path, "tau.dat"))
     tau_avg = np.loadtxt("{}/tau_average.dat".format(path))
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=figsize)
     ax.set_title(r'$ \left< \tau \right> = {:8.3f} $ ps, $ \sigma = {:8.3f} $ ps'.format(tau_avg[0], tau_avg[1]))
     plt.xlabel("Frame")
-    plt.ylabel(r'$ \left< \tau \right>$')
+    plt.ylabel(r'Lifetime $ \tau $ (ps)')
     plt.plot(taus[:, 0], taus[:, 1])
+    plt.tight_layout()
     plt.savefig("{}/tau.pdf".format(path))
+    plt.close()
 
     ''' lifetime histogram'''
-    fig, ax = plt.subplots(figsize=(12, 8))
-    ax.hist(taus[:, 1], edgecolor='k')
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.hist(taus[:, 1], edgecolor='k', bins=50, histtype='step')
     ax.set_xlabel(r' Lifetime $ \tau $')
     ax.set_ylabel(r'Counts')
     ax.set_title(r'$ \left< \tau \right> = {:8.3f} $ ps, $ \sigma = {:8.3f} $ ps'.format(tau_avg[0], tau_avg[1]))
+    plt.tight_layout()
     plt.savefig("{}/tau_hist.pdf".format(path))
+    plt.close()
 
     '''620-612 coupling'''
-    fig, ax = plt.subplots(figsize=(12,8))
+    fig, ax = plt.subplots(figsize=figsize)
     ax.plot(np.loadtxt("{}/j620cl.dat".format(path))[:, 2])
     ax.set_ylabel(r'620-612 coupling $ (cm^{-1}) $')
     ax.set_xlabel(r'Frame')
+    plt.tight_layout()
     fig.savefig("{}/j620612.pdf".format(path))
+    plt.close()
+
+    '''620-612 coupling vs. lifetime'''
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.scatter(np.loadtxt("{}/tau.dat".format(path))[:, 1], np.loadtxt("{}/j620cl.dat".format(path))[:, 2])
+    ax.set_ylabel(r'$ J_{620-612} (\text{cm}^{-1}) $')
+    ax.set_xlabel(r'$ \tau $ (ps)')
+    plt.tight_layout()
+    fig.savefig("{}/j620612_tau.pdf".format(path))
+    plt.close()
 
     '''620 squared dipole moment'''
-    fig, ax = plt.subplots(figsize=(12,8))
+    fig, ax = plt.subplots(figsize=figsize)
     ax.plot(np.loadtxt("{}/musq620.dat".format(path)))
     ax.set_xlabel("Frame")
     ax.set_ylabel(r'$ \mu^{2}_{\text{LUT620}} $')
+    plt.tight_layout()
     fig.savefig("{}/musq620.pdf".format(path))
+    plt.close()
 
     ''' 
     big plot with participation / coupling data
@@ -235,11 +241,13 @@ def plot_all(path):
     sideax.set_xticks([])
     sideax.set_yticks([])
     #sideax.yaxis.set_ticks_position('right')
-    sideax.set_title(r'$ \left< J^{2}_{\text{\Large{exc}},\, \text{\Large{LUT620}}} \right>  $', pad=12.0, fontsize=28)
+    sideax.set_title(r'$ \left< J^{2}_{\text{\Large{exc}},\, \text{\Large{Lut 620}}} \right>  $', pad=12.0, fontsize=28)
     for i in range(len(exc_620_coupling[:14])):
         sideax.text(0, i + 0.5, "{:3.1f}".format(exc_620_coupling[i]), ha="center", va="center", color="k")
         
+    # plt.tight_layout()
     plt.savefig("{}/exciton_heatmap.pdf".format(path), bbox_inches='tight')
+    plt.close()
 
         
     kwargs = {
@@ -277,3 +285,16 @@ def plot_all(path):
     plot_kwargs['vmax'] = +50.
     del kwargs['cbar_ticklabels']
     plot_heatmap(np.ma.masked_where(jij > 1000.0, jij), "{}/jij.pdf".format(path), kwargs=kwargs, plot_kwargs=plot_kwargs)
+
+if __name__ == '__main__': 
+    parser = argparse.ArgumentParser(description="Plot A(w)")
+    parser.add_argument("-d", "--dir", default='out/LHCII',
+                        help="directory of A(w) and F(w) data to plot")
+    parser.add_argument("-f", "--frame", default=1,
+                        help="MD frame to calculate for - pass 0 to \
+                        loop over all frames")
+
+    args = parser.parse_args()
+
+    plot_all(args.dir)
+

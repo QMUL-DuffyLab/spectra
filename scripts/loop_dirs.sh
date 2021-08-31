@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-for i in structures/monomer/*/* ; do
+for i in structures/steered/neutral/*/* ; do
   if [ -d "$i" ]; then
     ./scripts/run.py -T 300.0 -c 2 -ps 1 -pc 0 -f 0 -i $i
     out=${i/structures/out}
