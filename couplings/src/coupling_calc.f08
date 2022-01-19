@@ -30,7 +30,7 @@ program coupling_calc
 
   inc_lut_2 = .false.
   verbose = .false.
-  add_energy_noise = .true.
+  add_energy_noise = .false.
   print_jij = .false.
   print_jij_diag = .false.
   call cpu_time(start_time)

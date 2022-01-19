@@ -19,9 +19,6 @@
  * stop that newline from being passed to fopen() later I use the
  * line[strcspn()] = 0 trick to set the newline to a null char.
  *
- * strndup is the last remaining gnu99 extension I use in the whole
- * repo; I will eventually get around to fixing that but I'm lazy :)
- *
  * NB: check how to free those malloc'd struct members, I can't
  * remember if there's some fancy stuff you have to do or not.
  */

@@ -1,27 +1,25 @@
 PLACEHOLDER README
 ==================
 
-this code takes MD data of some pigments along with corresponding spectroscopic data and calculates couplings, excitonic states, absorption and fluorescence spectra and population dynamics.
+this code takes MD data of some pigments along with corresponding spectroscopic data and calculates couplings, excitonic states, absorption and fluorescence spectra and population dynamics using Redfield theory and VERA.
 it's not particularly convenient to use (or well written!) yet, pls bear with me :)
 
 throughout this repo I've labelled pigments by ligand codes from RCSB PDB; e.g. chlorophyll a is CLA, chlorophyll b is CHL, fucoxanthin is A86, etc. etc.
 
 lineshapes for individual pigments are in the lineshape folder; the only reason to mess with these is if the parameters or spectral desnsity ansatzes change.
 
-The integrator contained in files `helper.h, LSODA.h, LSODA.cpp` is [Dilawar Singh](https://github.com/dilawar/libsoda)'s C++ version of LSODA from QUADPACK.
-
 REQUIREMENTS
 ------------
 
-basic requirements are `gcc, gfortran, LAPACK, FFTW`. I use exactly one `gnu99` C extension (`strndup`) which could easily be changed but I'm lazy, otherwise I think it's all strictly `C99`.
-The fortran code is all strictly `f2008`, not that it's very complicated or requires any specific F2008 behaviour.
+basic requirements are `gcc/g++, gfortran, LAPACK, FFTW`.
+The fortran code is all strictly `f2008`, not that it's very complicated or requires any specific F2008 behaviour, and I think the rest is strict `C++11`; some of it is just old `C99` code with the malloc calls changed to be C++ compliant.
 For the plotting scripts you need python 3.7, numpy and matplotlib set up with latex support - I use latex in the line and axis labels because I like them to look nice.
 If you have all those things you might need to add something like
 ```
 plt.rcParams['text.usetex'] = True
-plt.rcParams['text.latex.preamble'] = \usepackage{amsmath}\usepackage{sfmath}
+plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}\usepackage{sfmath}'
 ```
-but NB I have no idea how to escape that preamble correctly - I have these set in my matplotlibrc.
+I think that preamble should be escaped correctly but I have it set in my matplotlibrc so I'm not sure.
 
 COMPILATION
 -----------
@@ -33,7 +31,7 @@ RUNNING
 -------
 
 just do `./scripts/run.py -f NUM` in the root folder for whichever frame number `NUM` you want to look at.
-Running it with `-f 0` will loop over 1000 frames; I haven't bothered yet to put in a check and see how many frames there are although that'd probably be easy enough.
+Running it with `-f 0` will loop over all the frames it finds so you can run it easily in batch mode.
 
 the python script is clever enough to notice if the required lineshape data isn't there and will attempt to create it if it isn't.
 there are also two parameters which affect everything; T, the temperature we're simulating at and τ, the length (in femtoseconds) that we've calculated line-broadening functions for.
@@ -52,3 +50,5 @@ It does this by generating dicts and checking keys in both files.
 The script `scripts/plot_aw.py` is run after each frame in the run script and plots A(w) and F(w), with corresponding experimental data ripped from the supplementary material in [Tomas Mancal's arxiv paper](http://arxiv.org/abs/1512.00887) (ultimately from a different paper but I forget where).
 It also plots them together on the same axis without doing any normalisation to see what the raw data looks like.
 Finally the script `scripts/average_spectra.py` loops over all 1000 frames and sums A(w) and F(w), then plots their averages in the same way - reason for this being that an individual frame of MD data can have weird instantaneous couplings due to the movement of the pigments.
+
+The file `vera.def` contains all the parameters we use to describe the carotenoids - changes to these are very non-trivial and the parameters there are taken from fits to TA data of lutein in pyridine, so unless you very much know what you're doing I wouldn't mess with them.
